@@ -844,6 +844,33 @@ body {
   font-size: 24px;
 }
 
+.btn-loot {
+  position: relative;
+}
+
+.btn-loot .badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--accent-red);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.btn-loot .badge:empty,
+.btn-loot .badge[data-count="0"] {
+  display: none;
+}
+
 /* === Debug Panel === */
 .debug-panel {
   display: flex;
