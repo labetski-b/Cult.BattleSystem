@@ -18,7 +18,6 @@ import {
     BattleState
 } from './systems/GameState';
 import { Enemy } from './models/Enemy';
-import { formatDungeonProgress } from './systems/DungeonSystem';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, Item, SlotType, Rarity } from './models/Item';
 
 // DOM элементы
