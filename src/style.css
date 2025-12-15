@@ -258,11 +258,6 @@ body {
   padding: 4px 10px;
 }
 
-/* Рамка для новой карточки - зеленая */
-.item-comparison .item-card.new {
-  border-color: var(--accent-green) !important;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
-}
 
 .item-slot-icon {
   font-size: 32px;
@@ -281,6 +276,7 @@ body {
 
 .item-comparison .item-power {
   font-size: 20px;
+  color: var(--text-primary);
 }
 
 .item-meta {
