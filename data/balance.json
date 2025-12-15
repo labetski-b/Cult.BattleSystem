@@ -1,0 +1,59 @@
+{
+    "rarityMultipliers": {
+        "common": 1.0,
+        "rare": 1.5,
+        "epic": 2.5,
+        "legendary": 5.0
+    },
+    "rarityWeights": {
+        "common": 70,
+        "rare": 20,
+        "epic": 8,
+        "legendary": 2
+    },
+    "lampLevels": [
+        {
+            "level": 1,
+            "maxRarity": "common",
+            "maxItemLevel": 5,
+            "upgradeCost": 100
+        },
+        {
+            "level": 2,
+            "maxRarity": "rare",
+            "maxItemLevel": 10,
+            "upgradeCost": 300
+        },
+        {
+            "level": 3,
+            "maxRarity": "epic",
+            "maxItemLevel": 20,
+            "upgradeCost": 800
+        },
+        {
+            "level": 4,
+            "maxRarity": "legendary",
+            "maxItemLevel": 50,
+            "upgradeCost": 2000
+        }
+    ],
+    "dungeonScaling": {
+        "baseEnemyPower": 50,
+        "powerPerStage": 1.12,
+        "enemiesPerWave": {
+            "min": 1,
+            "max": 3
+        },
+        "bossMultiplier": 2.5
+    },
+    "combat": {
+        "baseDamage": 10,
+        "hpPerPower": 2,
+        "damagePerPower": 0.5
+    },
+    "economy": {
+        "goldPerEnemy": 10,
+        "goldPerStageClear": 50,
+        "lampsPerMinute": 1
+    }
+}

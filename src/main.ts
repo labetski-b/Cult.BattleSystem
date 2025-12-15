@@ -1,0 +1,552 @@
+import './style.css';
+import {
+    GameState,
+    createNewGame,
+    loadGame,
+    openLoot,
+    equipFromInventory,
+    upgradeLamp,
+    addLamps,
+    addGold,
+    resetGame,
+    getBalance,
+    saveGame,
+    generateEnemiesForBattle,
+    startStepBattle,
+    applyBattleResult,
+    executeBattleRound,
+    BattleState
+} from './systems/GameState';
+import { Enemy } from './models/Enemy';
+import { formatDungeonProgress } from './systems/DungeonSystem';
+import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, Item, SlotType, Rarity } from './models/Item';
+
+// DOM элементы
+const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
+
+// Инициализация игры
+let gameState: GameState = loadGame() || createNewGame();
+let pendingItem: Item | null = null; // Предмет ожидающий решения
+
+// Состояние пошагового боя
+let currentBattle: BattleState | null = null;
+let currentEnemies: Enemy[] = [];
+let isAutoMode: boolean = false;
+let autoIntervalId: number | null = null;
+
+// Иконки слотов
+const SLOT_ICONS: Record<SlotType, string> = {
+    helmet: '🪖',
+    armor: '🛡️',
+    weapon: '⚔️',
+    shield: '🔰',
+    boots: '👢',
+    accessory: '💍'
+};
+
+// Цена продажи предмета
+function calculateSellPrice(item: Item): number {
+    const rarityMultiplier: Record<Rarity, number> = {
+        common: 1,
+        rare: 2,
+        epic: 5,
+        legendary: 20
+    };
+    return Math.floor(item.power * rarityMultiplier[item.rarity] * 0.5);
+}
+
+// Обновление UI
+function updateUI(): void {
+    const balance = getBalance();
+
+    // Ресурсы
+    $('#gold').textContent = gameState.hero.gold.toString();
+    $('#lamps').textContent = gameState.hero.lamps.toString();
+
+    // Сила героя (пересчитываем из HP и damage по той же формуле что и враги)
+    // Враги: HP = power * 0.6, damage = power * 0.13
+    // Обратно: power = HP / 0.6 + damage / 0.13 (примерно)
+    // Упрощённо: power = maxHp + damage * 5
+    const heroPower = gameState.hero.maxHp + gameState.hero.damage * 5;
+    $('#hero-power').textContent = heroPower.toString();
+
+    // Подземелье
+    $('#dungeon-title').textContent = formatDungeonProgress(gameState.dungeon).toUpperCase();
+    $('#enemy-power').textContent = gameState.dungeon.currentEnemyPower.toString();
+
+    // Статы героя (над экипировкой)
+    $('#hero-hp-display').textContent = `${gameState.hero.hp}/${gameState.hero.maxHp}`;
+    $('#hero-damage-display').textContent = gameState.hero.damage.toString();
+
+    // Обновляем точки прогресса
+    document.querySelectorAll('.dot').forEach((dot, index) => {
+        const stage = index + 1;
+        dot.classList.remove('active', 'completed');
+        if (stage < gameState.dungeon.stage) {
+            dot.classList.add('completed');
+        } else if (stage === gameState.dungeon.stage) {
+            dot.classList.add('active');
+        }
+    });
+
+    // Экипировка
+    renderEquipment();
+
+    // Лампа
+    $('#lamp-level').textContent = gameState.lamp.level.toString();
+    $('#lamp-rarity').textContent = gameState.lamp.maxRarity;
+
+    const currentLampConfig = balance.lampLevels.find(l => l.level === gameState.lamp.level);
+    const nextLampConfig = balance.lampLevels.find(l => l.level === gameState.lamp.level + 1);
+
+    const upgradeBtn = $('#upgrade-lamp-btn') as HTMLButtonElement;
+    if (nextLampConfig && currentLampConfig) {
+        $('#upgrade-cost').textContent = currentLampConfig.upgradeCost.toString();
+        upgradeBtn.disabled = gameState.hero.gold < currentLampConfig.upgradeCost;
+    } else {
+        upgradeBtn.textContent = 'MAX';
+        upgradeBtn.disabled = true;
+    }
+
+    // Кнопка Loot
+    const lootBtn = $('#loot-btn') as HTMLButtonElement;
+    lootBtn.disabled = gameState.hero.lamps <= 0;
+}
+
+// Рендер экипировки
+function renderEquipment(): void {
+    const grid = $('#equipment-grid');
+    grid.innerHTML = '';
+
+    for (const slotType of SLOT_TYPES) {
+        const item = gameState.hero.equipment[slotType];
+        const slot = document.createElement('div');
+        slot.className = `slot ${item ? `filled ${item.rarity}` : ''}`;
+
+        if (item) {
+            const hpText = item.hp > 0 ? `+${item.hp}❤️` : '';
+            const dmgText = item.damage > 0 ? `+${item.damage}⚔️` : '';
+            slot.innerHTML = `
+        <span class="slot-icon">${SLOT_ICONS[slotType]}</span>
+        <span class="slot-stats">${hpText} ${dmgText}</span>
+      `;
+            slot.title = `${item.name} (Lvl ${item.level}) - HP: +${item.hp}, DMG: +${item.damage}`;
+        } else {
+            slot.innerHTML = `
+        <span class="slot-icon" style="opacity: 0.3">${SLOT_ICONS[slotType]}</span>
+        <span style="font-size: 10px">${SLOT_NAMES[slotType].split(' ')[1]}</span>
+      `;
+        }
+
+        grid.appendChild(slot);
+    }
+}
+
+// Показать результат боя
+function showBattleResult(victory: boolean, details: string): void {
+    const result = $('#battle-result');
+    result.classList.remove('hidden', 'victory', 'defeat');
+    result.classList.add(victory ? 'victory' : 'defeat');
+
+    $('#result-title').textContent = victory ? '🎉 Победа!' : '💀 Поражение';
+    $('#result-details').textContent = details;
+}
+
+// ===== ПОШАГОВЫЙ БОЙ =====
+
+// Показать арену боя
+function showBattleArena(): void {
+    $('#battle-arena').classList.remove('hidden');
+    $('#battle-result').classList.add('hidden');
+}
+
+// Скрыть арену боя
+function hideBattleArena(): void {
+    $('#battle-arena').classList.add('hidden');
+    stopAutoMode();
+}
+
+// Отрисовать врагов в арене
+function renderEnemiesInArena(): void {
+    const container = $('#enemies-container');
+    container.innerHTML = '';
+
+    if (!currentBattle) return;
+
+    currentBattle.enemies.forEach((enemy, index) => {
+        const isDead = enemy.hp <= 0;
+        const hpPercent = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
+
+        const enemyEl = document.createElement('div');
+        enemyEl.className = `battle-unit enemy-unit ${isDead ? 'dead' : ''}`;
+        enemyEl.id = `enemy-${index}`;
+        enemyEl.innerHTML = `
+            <div class="unit-sprite">${enemy.name.includes('👑') ? '👑' : '👹'}</div>
+            <div class="unit-name">${enemy.name}</div>
+            <div class="unit-stats">
+                <span class="stat-damage">⚔️ ${enemy.damage}</span>
+            </div>
+            <div class="unit-hp-bar">
+                <div class="hp-fill ${isDead ? 'empty' : ''}" style="width: ${hpPercent}%"></div>
+                <span>${enemy.hp}/${enemy.maxHp}</span>
+            </div>
+        `;
+        container.appendChild(enemyEl);
+    });
+}
+
+// Обновить UI боя
+function updateBattleUI(): void {
+    if (!currentBattle) return;
+
+    // Обновить раунд
+    $('#battle-round').textContent = currentBattle.currentTurn.toString();
+
+    // Обновить HP героя
+    const heroHpPercent = Math.max(0, (currentBattle.hero.hp / currentBattle.hero.maxHp) * 100);
+    $('#battle-hero-hp-fill').style.width = `${heroHpPercent}%`;
+    $('#battle-hero-hp-text').textContent = `${Math.max(0, currentBattle.hero.hp)}/${currentBattle.hero.maxHp}`;
+    $('#hero-damage').textContent = currentBattle.hero.damage.toString();
+
+    // Обновить врагов
+    renderEnemiesInArena();
+
+    // Обновить лог боя (последние 5 записей)
+    const logContainer = $('#battle-log');
+    const recentLogs = currentBattle.log.slice(-5);
+    logContainer.innerHTML = recentLogs.map(entry => {
+        const isHeroAttack = entry.attacker === 'Герой';
+        return `<div class="log-entry ${isHeroAttack ? 'hero-attack' : 'enemy-attack'}">
+            <span class="attacker">${entry.attacker}</span> →
+            <span class="target">${entry.target}</span>:
+            <span class="damage">-${entry.damage}</span>
+        </div>`;
+    }).join('');
+
+    // Прокрутить лог вниз
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+// Анимация атаки (для будущего использования с пошаговой анимацией)
+function _animateAttack(isHeroAttack: boolean): Promise<void> {
+    return new Promise(resolve => {
+        const element = isHeroAttack ? $('#battle-hero') : document.querySelector(`#enemies-container .enemy-unit:not(.dead)`);
+        if (element) {
+            element.classList.add('attacking');
+            setTimeout(() => {
+                element.classList.remove('attacking');
+                resolve();
+            }, 300);
+        } else {
+            resolve();
+        }
+    });
+}
+
+// Анимация получения урона (для будущего использования)
+function _animateDamage(isHero: boolean): Promise<void> {
+    return new Promise(resolve => {
+        const element = isHero ? $('#battle-hero') : document.querySelector(`#enemies-container .enemy-unit:not(.dead)`);
+        if (element) {
+            element.classList.add('damaged');
+            setTimeout(() => {
+                element.classList.remove('damaged');
+                resolve();
+            }, 300);
+        } else {
+            resolve();
+        }
+    });
+}
+
+// Экспорт для потенциального использования
+void _animateAttack;
+void _animateDamage;
+
+// Выполнить один шаг боя
+async function executeBattleStep(): Promise<void> {
+    if (!currentBattle || currentBattle.isComplete) return;
+
+    // Выполнить раунд
+    currentBattle = executeBattleRound(currentBattle);
+    updateBattleUI();
+
+    // Проверить завершение
+    if (currentBattle.isComplete) {
+        finishBattle();
+    }
+}
+
+// Завершить бой
+function finishBattle(): void {
+    stopAutoMode();
+
+    if (!currentBattle) return;
+
+    const result = applyBattleResult(gameState, currentBattle, currentEnemies);
+
+    // Показать результат
+    if (result.victory) {
+        showBattleResult(true, `Побеждено врагов: ${result.enemiesDefeated.length} | +${result.goldReward + getBalance().economy.goldPerStageClear}🪙`);
+    } else {
+        showBattleResult(false, `Вы погибли! Враги были слишком сильны.`);
+    }
+
+    // Сбросить состояние боя
+    currentBattle = null;
+    currentEnemies = [];
+
+    updateUI();
+}
+
+// Запустить авто-режим
+function startAutoMode(): void {
+    if (isAutoMode) return;
+    isAutoMode = true;
+    $('#battle-auto-btn').textContent = 'Стоп';
+    $('#battle-auto-btn').classList.add('active');
+
+    autoIntervalId = window.setInterval(() => {
+        if (currentBattle && !currentBattle.isComplete) {
+            executeBattleStep();
+        } else {
+            stopAutoMode();
+        }
+    }, 500);
+}
+
+// Остановить авто-режим
+function stopAutoMode(): void {
+    isAutoMode = false;
+    $('#battle-auto-btn').textContent = 'Авто';
+    $('#battle-auto-btn').classList.remove('active');
+
+    if (autoIntervalId !== null) {
+        clearInterval(autoIntervalId);
+        autoIntervalId = null;
+    }
+}
+
+// Пропустить бой (выполнить до конца)
+function skipBattle(): void {
+    if (!currentBattle) return;
+    stopAutoMode();
+
+    while (!currentBattle.isComplete && currentBattle.currentTurn < 100) {
+        currentBattle = executeBattleRound(currentBattle);
+    }
+
+    updateBattleUI();
+    finishBattle();
+}
+
+// Начать новый бой
+function startBattle(): void {
+    // Восстанавливаем HP героя перед боем
+    gameState.hero.hp = gameState.hero.maxHp;
+    saveGame(gameState);
+
+    // Генерируем врагов
+    currentEnemies = generateEnemiesForBattle(gameState);
+
+    // Инициализируем бой
+    currentBattle = startStepBattle(gameState, currentEnemies);
+
+    // Показываем арену
+    showBattleArena();
+    updateBattleUI();
+}
+
+// Показать попап лута с сравнением
+function showLootPopup(newItem: Item): void {
+    pendingItem = newItem;
+
+    const popup = $('#loot-popup');
+    popup.classList.remove('hidden');
+
+    const equippedItem = gameState.hero.equipment[newItem.slot];
+
+    // Форматирование статов предмета
+    const formatItemStats = (item: Item) => {
+        const parts = [];
+        if (item.hp > 0) parts.push(`+${item.hp}❤️`);
+        if (item.damage > 0) parts.push(`+${item.damage}⚔️`);
+        return parts.join(' ');
+    };
+
+    // Новый предмет
+    const newCard = $('#new-item');
+    newCard.className = `item-card new ${newItem.rarity}`;
+    $('#new-item-slot').textContent = SLOT_ICONS[newItem.slot];
+    $('#new-item-name').textContent = newItem.name;
+    $('#new-item-name').style.color = RARITY_COLORS[newItem.rarity];
+    $('#new-item-power').textContent = formatItemStats(newItem);
+    $('#new-item-meta').textContent = `Lvl ${newItem.level} • ${newItem.rarity}`;
+
+    // Экипированный предмет
+    const eqCard = $('#equipped-item');
+    if (equippedItem) {
+        eqCard.className = `item-card equipped ${equippedItem.rarity}`;
+        $('#equipped-item-slot').textContent = SLOT_ICONS[equippedItem.slot];
+        $('#equipped-item-name').textContent = equippedItem.name;
+        $('#equipped-item-name').style.color = RARITY_COLORS[equippedItem.rarity];
+        $('#equipped-item-power').textContent = formatItemStats(equippedItem);
+        $('#equipped-item-meta').textContent = `Lvl ${equippedItem.level} • ${equippedItem.rarity}`;
+    } else {
+        eqCard.className = 'item-card equipped';
+        $('#equipped-item-slot').textContent = SLOT_ICONS[newItem.slot];
+        $('#equipped-item-name').textContent = 'Пусто';
+        $('#equipped-item-name').style.color = 'var(--text-secondary)';
+        $('#equipped-item-power').textContent = '+0❤️ +0⚔️';
+        $('#equipped-item-meta').textContent = '—';
+    }
+
+    // Разница в статах
+    const hpDiff = (newItem.hp || 0) - (equippedItem?.hp || 0);
+    const dmgDiff = (newItem.damage || 0) - (equippedItem?.damage || 0);
+    const diffEl = $('#power-diff');
+    diffEl.classList.remove('positive', 'negative', 'neutral');
+
+    const diffParts = [];
+    if (hpDiff !== 0) diffParts.push(`${hpDiff > 0 ? '+' : ''}${hpDiff}❤️`);
+    if (dmgDiff !== 0) diffParts.push(`${dmgDiff > 0 ? '+' : ''}${dmgDiff}⚔️`);
+
+    if (hpDiff > 0 || dmgDiff > 0) {
+        diffEl.classList.add('positive');
+    } else if (hpDiff < 0 || dmgDiff < 0) {
+        diffEl.classList.add('negative');
+    } else {
+        diffEl.classList.add('neutral');
+    }
+    diffEl.textContent = diffParts.length > 0 ? diffParts.join(' ') : '±0';
+
+    // Цена продажи
+    const sellPrice = calculateSellPrice(newItem);
+    $('#sell-price').textContent = `+${sellPrice}🪙`;
+
+    // Кнопка надеть — подсветка если апгрейд
+    const equipBtn = $('#equip-btn');
+    const isDowngrade = hpDiff < 0 && dmgDiff < 0;
+    equipBtn.classList.toggle('downgrade', isDowngrade);
+}
+
+// Закрыть попап лута
+function closeLootPopup(): void {
+    $('#loot-popup').classList.add('hidden');
+    pendingItem = null;
+}
+
+// Продать предмет
+function sellPendingItem(): void {
+    if (!pendingItem) return;
+
+    const sellPrice = calculateSellPrice(pendingItem);
+    gameState.hero.gold += sellPrice;
+
+    // Удаляем из инвентаря если там был
+    const idx = gameState.inventory.findIndex(i => i.id === pendingItem!.id);
+    if (idx !== -1) {
+        gameState.inventory.splice(idx, 1);
+    }
+
+    saveGame(gameState);
+    closeLootPopup();
+    updateUI();
+}
+
+// Надеть предмет
+function equipPendingItem(): void {
+    if (!pendingItem) return;
+
+    // Надеваем (старый предмет уходит в никуда — продаём автоматически)
+    const oldItem = gameState.hero.equipment[pendingItem.slot];
+    if (oldItem) {
+        gameState.hero.gold += calculateSellPrice(oldItem);
+    }
+
+    equipFromInventory(gameState, pendingItem.id);
+    closeLootPopup();
+    updateUI();
+}
+
+// Обработчики событий
+function setupEventListeners(): void {
+    // LOOT
+    $('#loot-btn').addEventListener('click', () => {
+        const item = openLoot(gameState);
+        if (item) {
+            showLootPopup(item);
+            updateUI();
+        }
+    });
+
+    // FIGHT - теперь запускает пошаговый бой
+    $('#fight-btn').addEventListener('click', () => {
+        startBattle();
+    });
+
+    // Кнопки управления боем
+    $('#battle-step-btn').addEventListener('click', () => {
+        executeBattleStep();
+    });
+
+    $('#battle-auto-btn').addEventListener('click', () => {
+        if (isAutoMode) {
+            stopAutoMode();
+        } else {
+            startAutoMode();
+        }
+    });
+
+    $('#battle-skip-btn').addEventListener('click', () => {
+        skipBattle();
+    });
+
+    // Закрыть результат боя
+    $('#close-result-btn').addEventListener('click', () => {
+        $('#battle-result').classList.add('hidden');
+        hideBattleArena();
+    });
+
+    // Попап лута: продать
+    $('#sell-btn').addEventListener('click', sellPendingItem);
+
+    // Попап лута: надеть
+    $('#equip-btn').addEventListener('click', equipPendingItem);
+
+    // Закрытие попапа по клику на overlay
+    $('.loot-popup-overlay').addEventListener('click', () => {
+        // По умолчанию — продаём
+        sellPendingItem();
+    });
+
+    // Улучшение лампы
+    $('#upgrade-lamp-btn').addEventListener('click', () => {
+        if (upgradeLamp(gameState)) {
+            updateUI();
+        }
+    });
+
+    // Дебаг
+    $('#add-lamps').addEventListener('click', () => {
+        addLamps(gameState, 10);
+        updateUI();
+    });
+
+    $('#add-gold').addEventListener('click', () => {
+        addGold(gameState, 100);
+        updateUI();
+    });
+
+    // Сброс
+    $('#reset-btn').addEventListener('click', () => {
+        if (confirm('Сбросить весь прогресс?')) {
+            gameState = resetGame();
+            updateUI();
+        }
+    });
+}
+
+// Запуск
+setupEventListeners();
+updateUI();

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cult Battle System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- Header с ресурсами -->
+    <header class="header">
+      <div class="resources">
+        <div class="resource">
+          <span class="icon">🪙</span>
+          <span id="gold">0</span>
+        </div>
+        <div class="resource">
+          <span class="icon">🏮</span>
+          <span id="lamps">0</span>
+        </div>
+      </div>
+      <button id="reset-btn" class="btn-icon" title="Сбросить игру">🔄</button>
+    </header>
+
+    <!-- Сравнение силы: Герой vs Dungeon -->
+    <section class="power-comparison">
+      <div class="power-tab cult">
+        <div class="power-label">Сила Культа</div>
+        <div class="power-value" id="hero-power">0</div>
+      </div>
+      <div class="power-tab enemy">
+        <div class="power-label">
+          <span id="dungeon-title">DUNGEON 1-1</span>
+        </div>
+        <div class="power-value" id="enemy-power">50</div>
+      </div>
+    </section>
+
+    <!-- Прогресс подземелья -->
+    <section class="dungeon-progress">
+      <div class="progress-bar">
+        <div class="progress-dots">
+          <span class="dot" data-stage="1"></span>
+          <span class="dot" data-stage="2"></span>
+          <span class="dot boss" data-stage="3">💀</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Арена боя (скрыта по умолчанию) -->
+    <section id="battle-arena" class="battle-arena hidden">
+      <div class="arena-header">
+        <span>Раунд <span id="battle-round">1</span></span>
+      </div>
+
+      <div class="arena-field">
+        <!-- Герой слева -->
+        <div class="arena-side hero-side">
+          <div class="battle-unit hero-unit" id="battle-hero">
+            <div class="unit-sprite">⚔️</div>
+            <div class="unit-name">Герой</div>
+            <div class="unit-stats">
+              <span class="stat-damage">⚔️ <span id="hero-damage">15</span></span>
+            </div>
+            <div class="unit-hp-bar">
+              <div class="hp-fill" id="battle-hero-hp-fill"></div>
+              <span id="battle-hero-hp-text">280/280</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- VS разделитель -->
+        <div class="arena-vs">VS</div>
+
+        <!-- Враги справа -->
+        <div class="arena-side enemies-side" id="enemies-container">
+          <!-- Враги генерируются динамически -->
+        </div>
+      </div>
+
+      <!-- Лог боя -->
+      <div class="battle-log" id="battle-log">
+        <!-- Записи боя -->
+      </div>
+
+      <!-- Кнопки управления боем -->
+      <div class="battle-controls">
+        <button id="battle-step-btn" class="btn btn-step">Следующий ход</button>
+        <button id="battle-auto-btn" class="btn btn-auto">Авто</button>
+        <button id="battle-skip-btn" class="btn btn-skip">Пропустить</button>
+      </div>
+    </section>
+
+    <!-- Результат боя -->
+    <section id="battle-result" class="battle-result hidden">
+      <div class="result-content">
+        <h3 id="result-title">Победа!</h3>
+        <p id="result-details"></p>
+        <button id="close-result-btn" class="btn btn-primary">OK</button>
+      </div>
+    </section>
+
+    <!-- Попап лута -->
+    <section id="loot-popup" class="loot-popup hidden">
+      <div class="loot-popup-overlay"></div>
+      <div class="loot-popup-content">
+        <h3>Новый предмет!</h3>
+        <div class="item-comparison">
+          <div class="item-card new" id="new-item">
+            <div class="item-badge">НОВЫЙ</div>
+            <div class="item-slot-icon" id="new-item-slot">⚔️</div>
+            <div class="item-name" id="new-item-name">Легендарный Меч</div>
+            <div class="item-stats">
+              <span class="item-power" id="new-item-power">+50</span>
+            </div>
+            <div class="item-meta" id="new-item-meta">Lvl 10 • Epic</div>
+          </div>
+          <div class="vs-divider">VS</div>
+          <div class="item-card equipped" id="equipped-item">
+            <div class="item-badge">НАДЕТО</div>
+            <div class="item-slot-icon" id="equipped-item-slot">⚔️</div>
+            <div class="item-name" id="equipped-item-name">Пусто</div>
+            <div class="item-stats">
+              <span class="item-power" id="equipped-item-power">+0</span>
+            </div>
+            <div class="item-meta" id="equipped-item-meta">—</div>
+          </div>
+        </div>
+        <div class="power-diff" id="power-diff"></div>
+        <div class="loot-actions">
+          <button id="sell-btn" class="btn btn-sell">
+            <span>Продать</span>
+            <span id="sell-price">+10🪙</span>
+          </button>
+          <button id="equip-btn" class="btn btn-equip">Надеть</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Экипировка -->
+    <section class="equipment">
+      <div class="equipment-header">
+        <h3>Экипировка</h3>
+        <div class="hero-combat-stats">
+          <span class="combat-stat hp">❤️ <span id="hero-hp-display">100/100</span></span>
+          <span class="combat-stat damage">⚔️ <span id="hero-damage-display">10</span></span>
+        </div>
+      </div>
+      <div class="equipment-grid" id="equipment-grid"></div>
+    </section>
+
+    <!-- Лампа -->
+    <section class="lamp-section">
+      <div class="lamp-info">
+        <span class="lamp-icon">🏮</span>
+        <div class="lamp-stats">
+          <div>Лампа Lvl <span id="lamp-level">1</span></div>
+          <div class="lamp-details">
+            Макс. редкость: <span id="lamp-rarity">Common</span>
+          </div>
+        </div>
+        <button id="upgrade-lamp-btn" class="btn btn-small">
+          Улучшить (<span id="upgrade-cost">100</span>🪙)
+        </button>
+      </div>
+    </section>
+
+    <!-- Главные кнопки -->
+    <footer class="action-bar">
+      <button id="loot-btn" class="btn btn-loot">
+        <span class="btn-icon">🏮</span>
+        <span>LOOT</span>
+      </button>
+      <button id="fight-btn" class="btn btn-fight">
+        <span class="btn-icon">⚔️</span>
+        <span>FIGHT</span>
+      </button>
+    </footer>
+
+    <!-- Дебаг панель -->
+    <section class="debug-panel">
+      <button id="add-lamps" class="btn btn-debug">+10 🏮</button>
+      <button id="add-gold" class="btn btn-debug">+100 🪙</button>
+    </section>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
