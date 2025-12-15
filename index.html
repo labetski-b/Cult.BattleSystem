@@ -27,28 +27,29 @@
       <button id="reset-btn" class="btn-icon" title="Сбросить игру">🔄</button>
     </header>
 
-    <!-- Сравнение силы: Герой vs Dungeon -->
+    <!-- Прогресс подземелья -->
+    <section class="dungeon-progress">
+      <div class="dungeon-title" id="dungeon-title">DUNGEON 1</div>
+      <div class="progress-bar">
+        <div class="progress-dots">
+          <span class="dot" data-stage="1"></span>
+          <span class="dot" data-stage="2"></span>
+          <span class="dot" data-stage="3"></span>
+          <span class="dot" data-stage="4"></span>
+          <span class="dot boss" data-stage="5">💀</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Сравнение силы: Герой vs Противник -->
     <section class="power-comparison">
       <div class="power-tab cult">
         <div class="power-label">⚡ Сила Культа</div>
         <div class="power-value" id="hero-power">0</div>
       </div>
       <div class="power-tab enemy">
-        <div class="power-label">
-          ⚡ <span id="dungeon-title">DUNGEON 1-1</span>
-        </div>
+        <div class="power-label">⚡ Сила Противника</div>
         <div class="power-value" id="enemy-power">50</div>
-      </div>
-    </section>
-
-    <!-- Прогресс подземелья -->
-    <section class="dungeon-progress">
-      <div class="progress-bar">
-        <div class="progress-dots">
-          <span class="dot" data-stage="1"></span>
-          <span class="dot" data-stage="2"></span>
-          <span class="dot boss" data-stage="3">💀</span>
-        </div>
       </div>
     </section>
 

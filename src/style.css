@@ -96,6 +96,14 @@ body {
   border-radius: var(--radius);
 }
 
+.dungeon-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
 .dungeon-progress .progress-bar {
   margin: 0;
 }

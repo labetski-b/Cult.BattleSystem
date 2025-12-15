@@ -70,8 +70,8 @@ function updateUI(): void {
     const heroPower = gameState.hero.maxHp + gameState.hero.damage * 5;
     $('#hero-power').textContent = heroPower.toString();
 
-    // Подземелье
-    $('#dungeon-title').textContent = formatDungeonProgress(gameState.dungeon).toUpperCase();
+    // Подземелье - теперь показываем только номер главы
+    $('#dungeon-title').textContent = `DUNGEON ${gameState.dungeon.chapter}`;
     $('#enemy-power').textContent = gameState.dungeon.currentEnemyPower.toString();
 
     // Статы героя (над экипировкой)
