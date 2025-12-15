@@ -78,8 +78,8 @@ function updateUI(): void {
     $('#dungeon-title').textContent = `DUNGEON ${gameState.dungeon.chapter}`;
     $('#enemy-power').textContent = gameState.dungeon.currentEnemyPower.toString();
 
-    // Статы героя (над экипировкой)
-    $('#hero-hp-display').textContent = `${gameState.hero.hp}/${gameState.hero.maxHp}`;
+    // Статы героя (над экипировкой) — только максимум HP
+    $('#hero-hp-display').textContent = gameState.hero.maxHp.toString();
     $('#hero-damage-display').textContent = gameState.hero.damage.toString();
 
     // Обновляем точки прогресса
