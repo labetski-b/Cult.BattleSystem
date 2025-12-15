@@ -374,19 +374,11 @@ function showLootPopup(newItem: Item): void {
     const hpDiff = (newItem.hp || 0) - (equippedItem?.hp || 0);
     const dmgDiff = (newItem.damage || 0) - (equippedItem?.damage || 0);
 
-    // Форматирование статов для текущего предмета (обычный цвет, две строки)
-    const formatEquippedStats = (item: Item | null) => {
+    // Форматирование статов предмета (две строки)
+    const formatStats = (item: Item | null) => {
         const hp = item?.hp || 0;
         const dmg = item?.damage || 0;
         return `<div>+${hp} ❤️</div><div>+${dmg} ⚔️</div>`;
-    };
-
-    // Форматирование статов для нового предмета (цветные, две строки)
-    const formatNewStats = (item: Item) => {
-        const hpColor = hpDiff > 0 ? 'var(--accent-green)' : hpDiff < 0 ? 'var(--accent-red)' : 'inherit';
-        const dmgColor = dmgDiff > 0 ? 'var(--accent-green)' : dmgDiff < 0 ? 'var(--accent-red)' : 'inherit';
-
-        return `<div style="color: ${hpColor}">+${item.hp} ❤️</div><div style="color: ${dmgColor}">+${item.damage} ⚔️</div>`;
     };
 
     // Новый предмет
@@ -395,7 +387,7 @@ function showLootPopup(newItem: Item): void {
     $('#new-item-slot').textContent = SLOT_ICONS[newItem.slot];
     $('#new-item-name').textContent = newItem.name;
     $('#new-item-name').style.color = RARITY_COLORS[newItem.rarity];
-    $('#new-item-power').innerHTML = formatNewStats(newItem);
+    $('#new-item-power').innerHTML = formatStats(newItem);
     $('#new-item-meta').textContent = `Lvl ${newItem.level} • ${newItem.rarity}`;
 
     // Экипированный предмет
@@ -405,14 +397,14 @@ function showLootPopup(newItem: Item): void {
         $('#equipped-item-slot').textContent = SLOT_ICONS[equippedItem.slot];
         $('#equipped-item-name').textContent = equippedItem.name;
         $('#equipped-item-name').style.color = RARITY_COLORS[equippedItem.rarity];
-        $('#equipped-item-power').innerHTML = formatEquippedStats(equippedItem);
+        $('#equipped-item-power').innerHTML = formatStats(equippedItem);
         $('#equipped-item-meta').textContent = `Lvl ${equippedItem.level} • ${equippedItem.rarity}`;
     } else {
         eqCard.className = 'item-card equipped';
         $('#equipped-item-slot').textContent = SLOT_ICONS[newItem.slot];
         $('#equipped-item-name').textContent = 'Пусто';
         $('#equipped-item-name').style.color = 'var(--text-secondary)';
-        $('#equipped-item-power').innerHTML = formatEquippedStats(null);
+        $('#equipped-item-power').innerHTML = formatStats(null);
         $('#equipped-item-meta').textContent = '—';
     }
 
