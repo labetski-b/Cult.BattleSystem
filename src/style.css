@@ -250,13 +250,6 @@ body {
   color: var(--text-secondary);
 }
 
-.item-card.new .item-badge {
-  color: var(--accent-green);
-  background: var(--bg-secondary);
-  border: 1px solid var(--accent-green);
-  border-radius: 4px;
-  padding: 4px 10px;
-}
 
 
 .item-slot-icon {
