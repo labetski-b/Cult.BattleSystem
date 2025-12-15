@@ -370,12 +370,27 @@ function showLootPopup(newItem: Item): void {
 
     const equippedItem = gameState.hero.equipment[newItem.slot];
 
-    // Форматирование статов предмета
-    const formatItemStats = (item: Item) => {
+    // Разница в статах (нужна для цветов)
+    const hpDiff = (newItem.hp || 0) - (equippedItem?.hp || 0);
+    const dmgDiff = (newItem.damage || 0) - (equippedItem?.damage || 0);
+
+    // Форматирование статов для текущего предмета (серые)
+    const formatEquippedStats = (item: Item | null) => {
+        if (!item) return '+0 ❤️  +0 ⚔️';
         const parts = [];
-        if (item.hp > 0) parts.push(`+${item.hp}❤️`);
-        if (item.damage > 0) parts.push(`+${item.damage}⚔️`);
-        return parts.join(' ');
+        if (item.hp > 0) parts.push(`+${item.hp} ❤️`);
+        if (item.damage > 0) parts.push(`+${item.damage} ⚔️`);
+        return parts.join('  ') || '+0 ❤️  +0 ⚔️';
+    };
+
+    // Форматирование статов для нового предмета (цветные)
+    const formatNewStats = (item: Item) => {
+        const hpColor = hpDiff > 0 ? 'var(--accent-green)' : hpDiff < 0 ? 'var(--accent-red)' : 'inherit';
+        const dmgColor = dmgDiff > 0 ? 'var(--accent-green)' : dmgDiff < 0 ? 'var(--accent-red)' : 'inherit';
+
+        const hpPart = `<span style="color: ${hpColor}">+${item.hp} ❤️</span>`;
+        const dmgPart = `<span style="color: ${dmgColor}">+${item.damage} ⚔️</span>`;
+        return `${hpPart}  ${dmgPart}`;
     };
 
     // Новый предмет
@@ -384,7 +399,7 @@ function showLootPopup(newItem: Item): void {
     $('#new-item-slot').textContent = SLOT_ICONS[newItem.slot];
     $('#new-item-name').textContent = newItem.name;
     $('#new-item-name').style.color = RARITY_COLORS[newItem.rarity];
-    $('#new-item-power').textContent = formatItemStats(newItem);
+    $('#new-item-power').innerHTML = formatNewStats(newItem);
     $('#new-item-meta').textContent = `Lvl ${newItem.level} • ${newItem.rarity}`;
 
     // Экипированный предмет
@@ -394,26 +409,24 @@ function showLootPopup(newItem: Item): void {
         $('#equipped-item-slot').textContent = SLOT_ICONS[equippedItem.slot];
         $('#equipped-item-name').textContent = equippedItem.name;
         $('#equipped-item-name').style.color = RARITY_COLORS[equippedItem.rarity];
-        $('#equipped-item-power').textContent = formatItemStats(equippedItem);
+        $('#equipped-item-power').textContent = formatEquippedStats(equippedItem);
         $('#equipped-item-meta').textContent = `Lvl ${equippedItem.level} • ${equippedItem.rarity}`;
     } else {
         eqCard.className = 'item-card equipped';
         $('#equipped-item-slot').textContent = SLOT_ICONS[newItem.slot];
         $('#equipped-item-name').textContent = 'Пусто';
         $('#equipped-item-name').style.color = 'var(--text-secondary)';
-        $('#equipped-item-power').textContent = '+0❤️ +0⚔️';
+        $('#equipped-item-power').textContent = formatEquippedStats(null);
         $('#equipped-item-meta').textContent = '—';
     }
 
-    // Разница в статах
-    const hpDiff = (newItem.hp || 0) - (equippedItem?.hp || 0);
-    const dmgDiff = (newItem.damage || 0) - (equippedItem?.damage || 0);
+    // Разница в статах (для отображения)
     const diffEl = $('#power-diff');
     diffEl.classList.remove('positive', 'negative', 'neutral');
 
     const diffParts = [];
-    if (hpDiff !== 0) diffParts.push(`${hpDiff > 0 ? '+' : ''}${hpDiff}❤️`);
-    if (dmgDiff !== 0) diffParts.push(`${dmgDiff > 0 ? '+' : ''}${dmgDiff}⚔️`);
+    if (hpDiff !== 0) diffParts.push(`${hpDiff > 0 ? '+' : ''}${hpDiff} ❤️`);
+    if (dmgDiff !== 0) diffParts.push(`${dmgDiff > 0 ? '+' : ''}${dmgDiff} ⚔️`);
 
     if (hpDiff > 0 || dmgDiff > 0) {
         diffEl.classList.add('positive');
@@ -422,7 +435,7 @@ function showLootPopup(newItem: Item): void {
     } else {
         diffEl.classList.add('neutral');
     }
-    diffEl.textContent = diffParts.length > 0 ? diffParts.join(' ') : '±0';
+    diffEl.textContent = diffParts.length > 0 ? diffParts.join('  ') : '±0';
 
     // Цена продажи
     const sellPrice = calculateSellPrice(newItem);

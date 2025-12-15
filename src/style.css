@@ -252,6 +252,20 @@ body {
 
 .item-card.new .item-badge {
   color: var(--accent-green);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--accent-green);
+  border-radius: 4px;
+}
+
+/* Рамка для новой карточки - зеленая */
+.item-comparison .item-card.new {
+  border-color: var(--accent-green) !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+/* Характеристики текущего предмета - серые */
+.item-card.equipped .item-stats {
+  color: var(--text-secondary);
 }
 
 .item-slot-icon {
