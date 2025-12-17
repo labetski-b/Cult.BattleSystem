@@ -1,5 +1,7 @@
-// Типы редкости предметов
-export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+import raritiesData from '../../data/rarities.json';
+
+// Типы редкости предметов (из JSON)
+export type Rarity = 'common' | 'good' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'immortal';
 
 // Слоты экипировки
 export type SlotType = 'helmet' | 'armor' | 'weapon' | 'shield' | 'boots' | 'accessory';
@@ -15,12 +17,39 @@ export const SLOT_NAMES: Record<SlotType, string> = {
     accessory: '💍 Аксессуар'
 };
 
-export const RARITY_COLORS: Record<Rarity, string> = {
-    common: '#9ca3af',
-    rare: '#3b82f6',
-    epic: '#a855f7',
-    legendary: '#f59e0b'
-};
+// Загружаем редкости из JSON
+interface RarityConfig {
+    id: string;
+    name: string;
+    nameRu: string;
+    color: string;
+    multiplier: number;
+}
+
+const rarities: RarityConfig[] = raritiesData as RarityConfig[];
+
+// Генерируем RARITY_COLORS из JSON
+export const RARITY_COLORS: Record<Rarity, string> = Object.fromEntries(
+    rarities.map(r => [r.id, r.color])
+) as Record<Rarity, string>;
+
+// Генерируем множители из JSON
+export const RARITY_MULTIPLIERS: Record<Rarity, number> = Object.fromEntries(
+    rarities.map(r => [r.id, r.multiplier])
+) as Record<Rarity, number>;
+
+// Русские названия редкостей
+export const RARITY_NAMES_RU: Record<Rarity, string> = Object.fromEntries(
+    rarities.map(r => [r.id, r.nameRu])
+) as Record<Rarity, string>;
+
+// Порядок редкостей (для сравнения)
+export const RARITY_ORDER: Rarity[] = rarities.map(r => r.id) as Rarity[];
+
+// Экспорт данных редкостей
+export function getRarities(): RarityConfig[] {
+    return rarities;
+}
 
 export interface Item {
     id: string;
@@ -51,10 +80,10 @@ export function generateItemId(): string {
     return `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-// Расчёт силы предмета
-export function calculateItemPower(level: number, rarity: Rarity, rarityMultipliers: Record<Rarity, number>): number {
+// Расчёт силы предмета (использует RARITY_MULTIPLIERS из JSON)
+export function calculateItemPower(level: number, rarity: Rarity): number {
     const basePower = level * 10;
-    return Math.floor(basePower * rarityMultipliers[rarity]);
+    return Math.floor(basePower * RARITY_MULTIPLIERS[rarity]);
 }
 
 // Расчёт статов предмета (hp и damage) на основе слота и силы
@@ -69,9 +98,12 @@ export function calculateItemStats(slot: SlotType, power: number): { hp: number;
 // Генерация имени предмета
 const ITEM_PREFIXES: Record<Rarity, string[]> = {
     common: ['Простой', 'Обычный', 'Базовый'],
+    good: ['Добротный', 'Хороший', 'Качественный'],
     rare: ['Редкий', 'Улучшенный', 'Крепкий'],
     epic: ['Эпический', 'Мощный', 'Великий'],
-    legendary: ['Легендарный', 'Мифический', 'Божественный']
+    mythic: ['Мифический', 'Древний', 'Священный'],
+    legendary: ['Легендарный', 'Божественный', 'Прославленный'],
+    immortal: ['Бессмертный', 'Вечный', 'Небесный']
 };
 
 const ITEM_TYPES: Record<SlotType, string[]> = {

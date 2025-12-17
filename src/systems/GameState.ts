@@ -1,7 +1,7 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
 import { Item, calculateItemStats } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
-import { Lamp, createLamp, generateItemFromLamp, LampConfig } from '../models/Lamp';
+import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL } from '../models/Lamp';
 import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, DungeonConfig } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
 import balanceData from '../../data/balance.json';
@@ -10,11 +10,8 @@ import balanceData from '../../data/balance.json';
 export type { BattleState, BattleResult };
 export { executeBattleRound };
 
-// Типы из баланса
+// Типы из баланса (только для dungeonScaling, combat, economy)
 interface BalanceData {
-    rarityMultipliers: Record<string, number>;
-    rarityWeights: Record<string, number>;
-    lampLevels: LampConfig[];
     dungeonScaling: DungeonConfig;
     combat: CombatConfig;
     economy: {
@@ -46,7 +43,7 @@ export function createNewGame(): GameState {
 
     return {
         hero,
-        lamp: createLamp(balance.lampLevels[0]),
+        lamp: createLamp(1),
         dungeon: createDungeonProgress(),
         inventory: [],
         lastBattleResult: null,
@@ -84,6 +81,14 @@ export function loadGame(): GameState | null {
                 }
             }
 
+            // Миграция: конвертируем старый формат лампы в новый
+            if (typeof state.lamp !== 'object' || state.lamp === null) {
+                state.lamp = createLamp(1);
+            } else if ('maxRarity' in state.lamp) {
+                // Старый формат с maxRarity - конвертируем в новый
+                state.lamp = createLamp(state.lamp.level || 1);
+            }
+
             // Пересчитываем статы героя после миграции
             updateHeroStats(state.hero);
 
@@ -108,11 +113,7 @@ export function openLoot(state: GameState): Item | null {
 
     state.hero.lamps--;
 
-    const item = generateItemFromLamp(
-        state.lamp,
-        balance.rarityWeights as Record<string, number>,
-        balance.rarityMultipliers as Record<string, number>
-    );
+    const item = generateItemFromLamp(state.lamp);
 
     state.inventory.push(item);
     state.lastLootedItem = item;
@@ -189,17 +190,19 @@ export function fight(state: GameState): BattleResult {
 // Улучшить лампу
 export function upgradeLamp(state: GameState): boolean {
     const currentLevel = state.lamp.level;
-    const nextConfig = balance.lampLevels.find(l => l.level === currentLevel + 1);
 
-    if (!nextConfig) return false; // Максимальный уровень
+    // Проверяем, не максимальный ли уровень
+    if (currentLevel >= MAX_LAMP_LEVEL) {
+        return false;
+    }
 
-    const currentConfig = balance.lampLevels.find(l => l.level === currentLevel);
-    if (!currentConfig) return false;
+    const cost = getUpgradeCost(currentLevel);
+    if (cost === null) return false;
 
-    if (state.hero.gold < currentConfig.upgradeCost) return false;
+    if (state.hero.gold < cost) return false;
 
-    state.hero.gold -= currentConfig.upgradeCost;
-    state.lamp = createLamp(nextConfig);
+    state.hero.gold -= cost;
+    state.lamp = createLamp(currentLevel + 1);
 
     saveGame(state);
     return true;
@@ -226,6 +229,11 @@ export function resetGame(): GameState {
 // Получить текущий баланс
 export function getBalance(): BalanceData {
     return balance;
+}
+
+// Получить конфиг текущего уровня лампы
+export function getCurrentLampConfig(state: GameState) {
+    return getLampLevelConfig(state.lamp.level);
 }
 
 // ===== Пошаговый бой =====

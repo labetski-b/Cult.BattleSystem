@@ -18,7 +18,8 @@ import {
     BattleState
 } from './systems/GameState';
 import { Enemy } from './models/Enemy';
-import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, Item, SlotType, Rarity } from './models/Item';
+import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity } from './models/Item';
+import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
 
 // DOM элементы
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
@@ -47,17 +48,18 @@ const SLOT_ICONS: Record<SlotType, string> = {
 function calculateSellPrice(item: Item): number {
     const rarityMultiplier: Record<Rarity, number> = {
         common: 1,
+        good: 1.5,
         rare: 2,
         epic: 5,
-        legendary: 20
+        mythic: 10,
+        legendary: 20,
+        immortal: 50
     };
     return Math.floor(item.power * rarityMultiplier[item.rarity] * 0.5);
 }
 
 // Обновление UI
 function updateUI(): void {
-    const balance = getBalance();
-
     // Ресурсы
     $('#gold').textContent = gameState.hero.gold.toString();
     $('#lamps').textContent = gameState.hero.lamps.toString();
@@ -97,16 +99,28 @@ function updateUI(): void {
     renderEquipment();
 
     // Лампа
+    const lampConfig = getLampLevelConfig(gameState.lamp.level);
     $('#lamp-level').textContent = gameState.lamp.level.toString();
-    $('#lamp-rarity').textContent = gameState.lamp.maxRarity;
 
-    const currentLampConfig = balance.lampLevels.find(l => l.level === gameState.lamp.level);
-    const nextLampConfig = balance.lampLevels.find(l => l.level === gameState.lamp.level + 1);
+    // Показываем максимальную доступную редкость (по правильному порядку)
+    const rarityOrder: Rarity[] = ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal'];
+    const availableRarities = Object.keys(lampConfig.weights) as Rarity[];
+    // Находим максимальную по порядку
+    let maxRarity: Rarity = 'common';
+    for (const r of rarityOrder) {
+        if (availableRarities.includes(r)) {
+            maxRarity = r;
+        }
+    }
+    $('#lamp-rarity').textContent = RARITY_NAMES_RU[maxRarity] || maxRarity;
+    $('#lamp-rarity').style.color = RARITY_COLORS[maxRarity];
 
+    const upgradeCost = getUpgradeCost(gameState.lamp.level);
     const upgradeBtn = $('#upgrade-lamp-btn') as HTMLButtonElement;
-    if (nextLampConfig && currentLampConfig) {
-        $('#upgrade-cost').textContent = currentLampConfig.upgradeCost.toString();
-        upgradeBtn.disabled = gameState.hero.gold < currentLampConfig.upgradeCost;
+    if (upgradeCost !== null && gameState.lamp.level < MAX_LAMP_LEVEL) {
+        $('#upgrade-cost').textContent = upgradeCost.toString();
+        upgradeBtn.disabled = gameState.hero.gold < upgradeCost;
+        upgradeBtn.style.display = '';
     } else {
         upgradeBtn.textContent = 'MAX';
         upgradeBtn.disabled = true;
@@ -441,6 +455,46 @@ function closeLootPopup(): void {
     pendingItem = null;
 }
 
+// Показать попап вероятностей редкостей
+function showRarityPopup(): void {
+    const popup = $('#rarity-popup');
+    const list = $('#rarity-list');
+
+    const lampConfig = getLampLevelConfig(gameState.lamp.level);
+    const weights = lampConfig.weights;
+
+    // Считаем общий вес
+    let totalWeight = 0;
+    for (const w of Object.values(weights)) {
+        totalWeight += w as number;
+    }
+
+    // Порядок редкостей для отображения
+    const rarityOrder: Rarity[] = ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal'];
+
+    list.innerHTML = '';
+    for (const rarity of rarityOrder) {
+        const weight = (weights as Record<Rarity, number>)[rarity];
+        if (weight && weight > 0) {
+            const chance = ((weight / totalWeight) * 100).toFixed(1);
+            const row = document.createElement('div');
+            row.className = `rarity-row ${rarity}`;
+            row.innerHTML = `
+                <span class="rarity-name">${RARITY_NAMES_RU[rarity]}</span>
+                <span class="rarity-chance">${chance}%</span>
+            `;
+            list.appendChild(row);
+        }
+    }
+
+    popup.classList.remove('hidden');
+}
+
+// Закрыть попап вероятностей
+function closeRarityPopup(): void {
+    $('#rarity-popup').classList.add('hidden');
+}
+
 // Продать предмет
 function sellPendingItem(): void {
     if (!pendingItem) return;
@@ -531,6 +585,13 @@ function setupEventListeners(): void {
             updateUI();
         }
     });
+
+    // Показать вероятности редкостей (клик по иконке лампы)
+    $('#lamp-icon-btn').addEventListener('click', showRarityPopup);
+
+    // Закрыть попап вероятностей
+    $('#close-rarity-popup').addEventListener('click', closeRarityPopup);
+    $('.rarity-popup-overlay').addEventListener('click', closeRarityPopup);
 
     // Дебаг
     $('#add-lamps').addEventListener('click', () => {

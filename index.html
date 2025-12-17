@@ -158,7 +158,7 @@
     <!-- Лампа -->
     <section class="lamp-section">
       <div class="lamp-info">
-        <span class="lamp-icon">🏮</span>
+        <span class="lamp-icon" id="lamp-icon-btn" style="cursor: pointer;">🏮</span>
         <div class="lamp-stats">
           <div>Лампа Lvl <span id="lamp-level">1</span></div>
           <div class="lamp-details">
@@ -168,6 +168,18 @@
         <button id="upgrade-lamp-btn" class="btn btn-small">
           Улучшить (<span id="upgrade-cost">100</span>🪙)
         </button>
+      </div>
+    </section>
+
+    <!-- Попап вероятностей редкостей -->
+    <section id="rarity-popup" class="rarity-popup hidden">
+      <div class="rarity-popup-overlay"></div>
+      <div class="rarity-popup-content">
+        <h3>🏮 Шансы выпадения</h3>
+        <div class="rarity-list" id="rarity-list">
+          <!-- Заполняется динамически -->
+        </div>
+        <button id="close-rarity-popup" class="btn btn-primary">OK</button>
       </div>
     </section>
 

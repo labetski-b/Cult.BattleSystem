@@ -13,9 +13,12 @@
 
   /* Rarity colors */
   --rarity-common: #9ca3af;
+  --rarity-good: #22c55e;
   --rarity-rare: #3b82f6;
   --rarity-epic: #a855f7;
+  --rarity-mythic: #f43f5e;
   --rarity-legendary: #f59e0b;
+  --rarity-immortal: #fbbf24;
 
   --radius: 12px;
   --radius-sm: 8px;
@@ -224,6 +227,10 @@ body {
   border-color: var(--rarity-common);
 }
 
+.item-comparison .item-card.good {
+  border-color: var(--rarity-good);
+}
+
 .item-comparison .item-card.rare {
   border-color: var(--rarity-rare);
 }
@@ -232,9 +239,19 @@ body {
   border-color: var(--rarity-epic);
 }
 
+.item-comparison .item-card.mythic {
+  border-color: var(--rarity-mythic);
+  box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);
+}
+
 .item-comparison .item-card.legendary {
   border-color: var(--rarity-legendary);
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.item-comparison .item-card.immortal {
+  border-color: var(--rarity-immortal);
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
 }
 
 .item-badge {
@@ -549,6 +566,10 @@ body {
   border-color: var(--rarity-common);
 }
 
+.item-card.good {
+  border-color: var(--rarity-good);
+}
+
 .item-card.rare {
   border-color: var(--rarity-rare);
 }
@@ -557,9 +578,19 @@ body {
   border-color: var(--rarity-epic);
 }
 
+.item-card.mythic {
+  border-color: var(--rarity-mythic);
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, var(--bg-card) 100%);
+}
+
 .item-card.legendary {
   border-color: var(--rarity-legendary);
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, var(--bg-card) 100%);
+}
+
+.item-card.immortal {
+  border-color: var(--rarity-immortal);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, var(--bg-card) 100%);
 }
 
 .item-name {
@@ -665,6 +696,10 @@ body {
   border-color: var(--rarity-common);
 }
 
+.slot.filled.good {
+  border-color: var(--rarity-good);
+}
+
 .slot.filled.rare {
   border-color: var(--rarity-rare);
 }
@@ -673,8 +708,16 @@ body {
   border-color: var(--rarity-epic);
 }
 
+.slot.filled.mythic {
+  border-color: var(--rarity-mythic);
+}
+
 .slot.filled.legendary {
   border-color: var(--rarity-legendary);
+}
+
+.slot.filled.immortal {
+  border-color: var(--rarity-immortal);
 }
 
 .slot .slot-icon {
@@ -718,6 +761,10 @@ body {
   border-color: var(--rarity-common);
 }
 
+.inventory-item.good {
+  border-color: var(--rarity-good);
+}
+
 .inventory-item.rare {
   border-color: var(--rarity-rare);
 }
@@ -726,9 +773,19 @@ body {
   border-color: var(--rarity-epic);
 }
 
+.inventory-item.mythic {
+  border-color: var(--rarity-mythic);
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+}
+
 .inventory-item.legendary {
   border-color: var(--rarity-legendary);
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.inventory-item.immortal {
+  border-color: var(--rarity-immortal);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
 }
 
 /* === Lamp Section === */
@@ -1175,6 +1232,101 @@ body {
     opacity: 0;
     transform: translateY(-30px);
   }
+}
+
+/* === Rarity Popup === */
+.rarity-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.rarity-popup-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.rarity-popup-content {
+  position: relative;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 340px;
+  width: 100%;
+  animation: popIn 0.3s ease;
+}
+
+.rarity-popup-content h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.rarity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.rarity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--rarity-common);
+}
+
+.rarity-row.common { border-left-color: var(--rarity-common); }
+.rarity-row.good { border-left-color: var(--rarity-good); }
+.rarity-row.rare { border-left-color: var(--rarity-rare); }
+.rarity-row.epic { border-left-color: var(--rarity-epic); }
+.rarity-row.mythic { border-left-color: var(--rarity-mythic); }
+.rarity-row.legendary { border-left-color: var(--rarity-legendary); }
+.rarity-row.immortal { border-left-color: var(--rarity-immortal); }
+
+.rarity-row .rarity-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.rarity-row .rarity-chance {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.rarity-row.common .rarity-name { color: var(--rarity-common); }
+.rarity-row.good .rarity-name { color: var(--rarity-good); }
+.rarity-row.rare .rarity-name { color: var(--rarity-rare); }
+.rarity-row.epic .rarity-name { color: var(--rarity-epic); }
+.rarity-row.mythic .rarity-name { color: var(--rarity-mythic); }
+.rarity-row.legendary .rarity-name { color: var(--rarity-legendary); }
+.rarity-row.immortal .rarity-name { color: var(--rarity-immortal); }
+
+.rarity-row.common .rarity-chance { color: var(--rarity-common); }
+.rarity-row.good .rarity-chance { color: var(--rarity-good); }
+.rarity-row.rare .rarity-chance { color: var(--rarity-rare); }
+.rarity-row.epic .rarity-chance { color: var(--rarity-epic); }
+.rarity-row.mythic .rarity-chance { color: var(--rarity-mythic); }
+.rarity-row.legendary .rarity-chance { color: var(--rarity-legendary); }
+.rarity-row.immortal .rarity-chance { color: var(--rarity-immortal); }
+
+.rarity-popup-content .btn-primary {
+  width: 100%;
 }
 
 /* === Responsive === */
