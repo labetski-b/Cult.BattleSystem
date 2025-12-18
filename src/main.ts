@@ -146,6 +146,7 @@ function renderEquipment(): void {
             const dmgText = item.damage > 0 ? `+${item.damage}⚔️` : '';
             slot.innerHTML = `
         <span class="slot-icon">${SLOT_ICONS[slotType]}</span>
+        <span class="slot-level">Lv${item.level}</span>
         <span class="slot-stats">${hpText} ${dmgText}</span>
       `;
             slot.title = `${item.name} (Lvl ${item.level}) - HP: +${item.hp}, DMG: +${item.damage}`;

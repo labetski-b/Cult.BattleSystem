@@ -1,4 +1,4 @@
-import { Rarity, Item, SlotType, SLOT_TYPES, generateItemId, generateItemName, calculateItemPower, calculateItemStats } from './Item';
+import { Rarity, Item, SlotType, SLOT_TYPES, generateItemId, generateItemName, calculateItemPower, calculateItemStats, rollItemLevel } from './Item';
 import lampLevelsData from '../../data/lamp-levels.json';
 
 // Типы для конфигурации уровней лампы
@@ -73,7 +73,9 @@ export function rollRarity(weights: Partial<Record<Rarity, number>>): Rarity {
 }
 
 // Генерация предмета из лампы
-export function generateItemFromLamp(lamp: Lamp): Item {
+// lamp — определяет редкость (веса)
+// dungeonChapter — определяет уровень предмета (базовые статы)
+export function generateItemFromLamp(lamp: Lamp, dungeonChapter: number): Item {
     const config = getLampLevelConfig(lamp.level);
 
     // Случайный слот
@@ -82,8 +84,8 @@ export function generateItemFromLamp(lamp: Lamp): Item {
     // Случайная редкость по весам текущего уровня лампы
     const rarity = rollRarity(config.weights);
 
-    // Уровень предмета = уровень лампы (или можно сделать диапазон)
-    const level = lamp.level;
+    // Уровень предмета = от dungeonChapter (с диапазоном из items.json)
+    const level = rollItemLevel(dungeonChapter);
 
     // Рассчитываем силу
     const power = calculateItemPower(level, rarity);

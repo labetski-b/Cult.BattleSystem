@@ -724,6 +724,15 @@ body {
   font-size: 24px;
 }
 
+.slot .slot-level {
+  font-size: 10px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 .slot .slot-power {
   font-size: 11px;
   color: var(--accent-gold);

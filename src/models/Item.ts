@@ -1,4 +1,5 @@
 import raritiesData from '../../data/rarities.json';
+import itemsConfig from '../../data/items.json';
 
 // Типы редкости предметов (из JSON)
 export type Rarity = 'common' | 'good' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'immortal';
@@ -62,28 +63,27 @@ export interface Item {
     slot: SlotType;
 }
 
-// Какие слоты дают какие статы (в процентах от power)
+// Какие слоты дают какие статы (в процентах от power) - из items.json
 // helmet, armor, shield, boots - больше HP
 // weapon - больше урона
 // accessory - 50/50
-export const SLOT_STAT_RATIOS: Record<SlotType, { hpRatio: number; damageRatio: number }> = {
-    helmet: { hpRatio: 0.8, damageRatio: 0.2 },
-    armor: { hpRatio: 0.9, damageRatio: 0.1 },
-    weapon: { hpRatio: 0.1, damageRatio: 0.9 },
-    shield: { hpRatio: 0.7, damageRatio: 0.3 },
-    boots: { hpRatio: 0.6, damageRatio: 0.4 },
-    accessory: { hpRatio: 0.5, damageRatio: 0.5 }
-};
+export const SLOT_STAT_RATIOS = itemsConfig.slotRatios as Record<SlotType, { hpRatio: number; damageRatio: number }>;
 
 // Генерация ID
 export function generateItemId(): string {
     return `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-// Расчёт силы предмета (использует RARITY_MULTIPLIERS из JSON)
+// Расчёт силы предмета (использует basePowerPerLevel из items.json и RARITY_MULTIPLIERS из rarities.json)
 export function calculateItemPower(level: number, rarity: Rarity): number {
-    const basePower = level * 10;
+    const basePower = level * itemsConfig.basePowerPerLevel;
     return Math.floor(basePower * RARITY_MULTIPLIERS[rarity]);
+}
+
+// Генерация уровня предмета (от dungeonChapter - offset до dungeonChapter)
+export function rollItemLevel(dungeonChapter: number): number {
+    const minLevel = Math.max(1, dungeonChapter - itemsConfig.levelRange.minLevelOffset);
+    return Math.floor(Math.random() * (dungeonChapter - minLevel + 1)) + minLevel;
 }
 
 // Расчёт статов предмета (hp и damage) на основе слота и силы

@@ -113,7 +113,8 @@ export function openLoot(state: GameState): Item | null {
 
     state.hero.lamps--;
 
-    const item = generateItemFromLamp(state.lamp);
+    // Передаём dungeon.chapter для определения уровня предмета
+    const item = generateItemFromLamp(state.lamp, state.dungeon.chapter);
 
     state.inventory.push(item);
     state.lastLootedItem = item;
