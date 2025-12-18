@@ -1,5 +1,5 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
-import { Item, calculateItemStats } from '../models/Item';
+import { Item, migrateItemStats } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
 import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL } from '../models/Lamp';
 import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, DungeonConfig } from './DungeonSystem';
@@ -74,7 +74,7 @@ export function loadGame(): GameState | null {
                 if (item) {
                     if (item.hp === undefined || item.damage === undefined) {
                         // Пересчитываем статы на основе power и слота
-                        const stats = calculateItemStats(item.slot, item.power);
+                        const stats = migrateItemStats(item.slot, item.power);
                         item.hp = stats.hp;
                         item.damage = stats.damage;
                     }

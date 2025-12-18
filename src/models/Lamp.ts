@@ -1,4 +1,4 @@
-import { Rarity, Item, SlotType, SLOT_TYPES, generateItemId, generateItemName, calculateItemPower, calculateItemStats, rollItemLevel } from './Item';
+import { Rarity, Item, SlotType, SLOT_TYPES, generateItemId, generateItemName, calculateItemStats, rollItemLevel } from './Item';
 import lampLevelsData from '../../data/lamp-levels.json';
 
 // Типы для конфигурации уровней лампы
@@ -87,18 +87,15 @@ export function generateItemFromLamp(lamp: Lamp, dungeonChapter: number): Item {
     // Уровень предмета = от dungeonChapter (с диапазоном из items.json)
     const level = rollItemLevel(dungeonChapter);
 
-    // Рассчитываем силу
-    const power = calculateItemPower(level, rarity);
-
-    // Рассчитываем HP и урон на основе слота и силы
-    const stats = calculateItemStats(slot, power);
+    // Рассчитываем статы (hp, damage, power) с учётом effectivePower = hp + 4*dmg
+    const stats = calculateItemStats(slot, level, rarity);
 
     return {
         id: generateItemId(),
         name: generateItemName(slot, rarity),
         rarity,
         level,
-        power,
+        power: stats.power,  // effectivePower = hp + 4 * damage
         hp: stats.hp,
         damage: stats.damage,
         slot

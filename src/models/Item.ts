@@ -74,24 +74,52 @@ export function generateItemId(): string {
     return `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-// Расчёт силы предмета (использует basePowerPerLevel из items.json и RARITY_MULTIPLIERS из rarities.json)
-export function calculateItemPower(level: number, rarity: Rarity): number {
-    const basePower = level * itemsConfig.basePowerPerLevel;
-    return Math.floor(basePower * RARITY_MULTIPLIERS[rarity]);
-}
-
 // Генерация уровня предмета (от dungeonChapter - offset до dungeonChapter)
 export function rollItemLevel(dungeonChapter: number): number {
     const minLevel = Math.max(1, dungeonChapter - itemsConfig.levelRange.minLevelOffset);
     return Math.floor(Math.random() * (dungeonChapter - minLevel + 1)) + minLevel;
 }
 
-// Расчёт статов предмета (hp и damage) на основе слота и силы
-export function calculateItemStats(slot: SlotType, power: number): { hp: number; damage: number } {
+// Расчёт статов предмета с учётом effectivePower = hp + 4*dmg
+// Генерирует статы так, чтобы effectivePower попадал в targetPower ± 15%
+export function calculateItemStats(
+    slot: SlotType,
+    level: number,
+    rarity: Rarity
+): { hp: number; damage: number; power: number } {
     const ratios = SLOT_STAT_RATIOS[slot];
+
+    // Target power от уровня и редкости
+    const targetPower = level * itemsConfig.basePowerPerLevel * RARITY_MULTIPLIERS[rarity];
+
+    // Вариация ±15%
+    const variance = 0.85 + Math.random() * 0.3;
+    const actualTarget = targetPower * variance;
+
+    // effectiveMultiplier = hpRatio + 4 * damageRatio (считается динамически)
+    const effectiveMultiplier = ratios.hpRatio + 4 * ratios.damageRatio;
+
+    // internalPower для расчёта статов
+    const internalPower = actualTarget / effectiveMultiplier;
+
+    const hp = Math.floor(internalPower * ratios.hpRatio);
+    const damage = Math.floor(internalPower * ratios.damageRatio);
+
+    // Фактический effectivePower (для отображения)
+    const power = hp + 4 * damage;
+
+    return { hp, damage, power };
+}
+
+// Миграция старых предметов (для обратной совместимости)
+// Используется когда у предмета есть power, но нет hp/damage
+export function migrateItemStats(slot: SlotType, power: number): { hp: number; damage: number } {
+    const ratios = SLOT_STAT_RATIOS[slot];
+    const effectiveMultiplier = ratios.hpRatio + 4 * ratios.damageRatio;
+    const internalPower = power / effectiveMultiplier;
     return {
-        hp: Math.floor(power * ratios.hpRatio),
-        damage: Math.floor(power * ratios.damageRatio)
+        hp: Math.floor(internalPower * ratios.hpRatio),
+        damage: Math.floor(internalPower * ratios.damageRatio)
     };
 }
 
