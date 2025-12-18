@@ -9,10 +9,11 @@ effectivePower = hp + 4 * damage
 
 ### Target Power (целевая сила предмета)
 ```
-targetPower = itemLevel * basePowerPerLevel * rarityMultiplier
+targetPower = basePowerPerLevel * 1.5^(itemLevel-1) * rarityMultiplier
 ```
 - `itemLevel` = `random(dungeonChapter - minLevelOffset, dungeonChapter)`, минимум 1
 - `basePowerPerLevel` = 20 (из items.json)
+- `1.5` = множитель роста за уровень (+50%)
 - `rarityMultiplier` = из rarities.json (1.0 ... 11.39)
 
 ### Генерация статов предмета

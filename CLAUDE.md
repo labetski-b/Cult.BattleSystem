@@ -38,10 +38,11 @@ git push
 
 ### Формула силы предмета:
 ```
-power = itemLevel * basePowerPerLevel * rarityMultiplier
+targetPower = basePowerPerLevel * 1.5^(itemLevel-1) * rarityMultiplier
 ```
 - `itemLevel` = `random(dungeonChapter - minLevelOffset, dungeonChapter)`
 - `basePowerPerLevel` = из items.json
+- `1.5` = множитель роста за уровень (+50%)
 - `rarityMultiplier` = из rarities.json
 
 ## Документация формул
