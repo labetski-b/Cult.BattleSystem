@@ -12,7 +12,7 @@ effectivePower = hp + 4 * damage
 targetPower = itemLevel * basePowerPerLevel * rarityMultiplier
 ```
 - `itemLevel` = `random(dungeonChapter - minLevelOffset, dungeonChapter)`, минимум 1
-- `basePowerPerLevel` = 10 (из items.json)
+- `basePowerPerLevel` = 20 (из items.json)
 - `rarityMultiplier` = из rarities.json (1.0 ... 11.39)
 
 ### Генерация статов предмета

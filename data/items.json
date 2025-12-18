@@ -1,5 +1,5 @@
 {
-    "basePowerPerLevel": 10,
+    "basePowerPerLevel": 20,
     "levelRange": {
         "minLevelOffset": 2
     },
