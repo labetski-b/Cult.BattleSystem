@@ -375,7 +375,7 @@ function finishBattle(): void {
     if (result.victory) {
         const xpText = xpResult ? `+${xpResult.xpGained} XP` : '';
         const levelText = xpResult && xpResult.levelsGained > 0 ? ` 🎉 LVL UP!` : '';
-        showBattleResult(true, `Победа! ${xpText}${levelText}`);
+        showBattleResult(true, `${xpText}${levelText}`);
     } else {
         showBattleResult(false, `Вы погибли! Враги были слишком сильны.`);
     }
