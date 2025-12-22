@@ -1,4 +1,5 @@
 import { Item, SlotType, SLOT_TYPES } from './Item';
+import experienceConfig from '../../data/experience.json';
 
 // Базовые статы героя (без экипировки)
 export const BASE_HERO_STATS = {
@@ -14,6 +15,8 @@ export interface Hero {
     equipment: Record<SlotType, Item | null>;
     gold: number;
     lamps: number;
+    level: number;       // Уровень героя
+    xp: number;          // Текущий опыт
 }
 
 // Расчёт суммарных статов героя от экипировки
@@ -62,7 +65,9 @@ export function createHero(): Hero {
         power: 0, // Сила от экипировки
         equipment,
         gold: 0,
-        lamps: 5 // Начальные лампы
+        lamps: 5, // Начальные лампы
+        level: 1,
+        xp: 0
     };
 }
 
@@ -109,4 +114,70 @@ export function equipItem(hero: Hero, item: Item): Item | null {
 // Восстановление HP
 export function healHero(hero: Hero): void {
     hero.hp = hero.maxHp;
+}
+
+// === Система опыта ===
+
+// Опыт, необходимый для достижения уровня
+export function xpRequiredForLevel(level: number): number {
+    if (level <= 1) return 0;
+    const { baseXpToLevel, xpScaling } = experienceConfig;
+    return Math.floor(baseXpToLevel * Math.pow(xpScaling, level - 2));
+}
+
+// Общий опыт от начала до указанного уровня
+export function totalXpForLevel(level: number): number {
+    let total = 0;
+    for (let i = 2; i <= level; i++) {
+        total += xpRequiredForLevel(i);
+    }
+    return total;
+}
+
+// Опыт за убийство врага
+export function xpFromEnemy(enemyPower: number): number {
+    return Math.floor(enemyPower * experienceConfig.xpPerEnemyPower);
+}
+
+// Результат добавления опыта
+export interface XpGainResult {
+    xpGained: number;
+    levelsGained: number;
+    newLevel: number;
+}
+
+// Добавить опыт герою
+export function addXp(hero: Hero, amount: number): XpGainResult {
+    const startLevel = hero.level;
+    hero.xp += amount;
+
+    // Проверяем повышение уровня
+    while (hero.level < experienceConfig.maxLevel) {
+        const xpNeeded = xpRequiredForLevel(hero.level + 1);
+        if (hero.xp >= xpNeeded) {
+            hero.xp -= xpNeeded;
+            hero.level++;
+        } else {
+            break;
+        }
+    }
+
+    // На максимальном уровне опыт не копится
+    if (hero.level >= experienceConfig.maxLevel) {
+        hero.xp = 0;
+    }
+
+    return {
+        xpGained: amount,
+        levelsGained: hero.level - startLevel,
+        newLevel: hero.level
+    };
+}
+
+// Прогресс до следующего уровня (0-1)
+export function xpProgress(hero: Hero): number {
+    if (hero.level >= experienceConfig.maxLevel) return 1;
+    const xpNeeded = xpRequiredForLevel(hero.level + 1);
+    if (xpNeeded <= 0) return 1;
+    return hero.xp / xpNeeded;
 }

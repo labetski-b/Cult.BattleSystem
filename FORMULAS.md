@@ -1,5 +1,26 @@
 # Формулы баланса
 
+## Опыт (Experience)
+
+Все настройки в `data/experience.json`
+
+### Опыт за врага
+```
+xpFromEnemy = floor(enemyPower * xpPerEnemyPower)
+```
+- `enemyPower` = maxHp + damage * 4
+- `xpPerEnemyPower` = из experience.json (0.5)
+
+### Опыт для уровня
+```
+xpRequiredForLevel(level) = floor(baseXpToLevel * xpScaling^(level-2))
+```
+- `baseXpToLevel` = из experience.json (100)
+- `xpScaling` = из experience.json (1.5)
+- `maxLevel` = из experience.json (100)
+
+---
+
 ## Предметы (Items)
 
 ### Effective Power (сила предмета для сравнения)
@@ -11,7 +32,7 @@ effectivePower = hp + 4 * damage
 ```
 targetPower = basePowerPerLevel * 1.5^(itemLevel-1) * rarityMultiplier
 ```
-- `itemLevel` = `random(dungeonChapter - minLevelOffset, dungeonChapter)`, минимум 1
+- `itemLevel` = `random(heroLevel - minLevelOffset, heroLevel)`, минимум 1
 - `basePowerPerLevel` = 20 (из items.json)
 - `1.5` = множитель роста за уровень (+50%)
 - `rarityMultiplier` = из rarities.json (1.0 ... 11.39)
@@ -91,4 +112,5 @@ damage = max(1, floor(power * damageRatio))
 | `data/rarities.json` | 7 редкостей с multiplier |
 | `data/lamp-levels.json` | 31 уровень лампы с весами редкостей |
 | `data/enemies.json` | прогрессия, волны, босс, статы врагов |
+| `data/experience.json` | xpPerEnemyPower, baseXpToLevel, xpScaling, maxLevel |
 | `data/balance.json` | combat, economy |

@@ -1,0 +1,6 @@
+{
+    "xpPerEnemyPower": 0.5,
+    "baseXpToLevel": 100,
+    "xpScaling": 1.5,
+    "maxLevel": 100
+}

@@ -21,6 +21,7 @@ import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity } from './models/Item';
 import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
 import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER } from './systems/DungeonSystem';
+import { addXp, xpFromEnemy, xpProgress, xpRequiredForLevel, XpGainResult } from './models/Hero';
 
 // DOM элементы
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
@@ -59,6 +60,23 @@ function calculateSellPrice(item: Item): number {
     return Math.floor(item.power * rarityMultiplier[item.rarity] * 0.5);
 }
 
+// Анимация Level Up
+function showLevelUpAnimation(newLevel: number): void {
+    const overlay = $('#level-up-overlay');
+    $('#level-up-level').textContent = `LVL ${newLevel}`;
+    overlay.classList.remove('hidden');
+
+    // Автоматически скрыть через 2 секунды
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+    }, 2000);
+
+    // Закрыть по клику
+    overlay.onclick = () => {
+        overlay.classList.add('hidden');
+    };
+}
+
 // Генерация точек прогресса
 function renderProgressDots(): void {
     const container = $('#progress-dots');
@@ -86,6 +104,13 @@ function renderProgressDots(): void {
 
 // Обновление UI
 function updateUI(): void {
+    // Уровень героя и XP
+    $('#hero-level').textContent = gameState.hero.level.toString();
+    const progress = xpProgress(gameState.hero);
+    const xpNeeded = xpRequiredForLevel(gameState.hero.level + 1);
+    $('#xp-fill').style.width = `${progress * 100}%`;
+    $('#xp-text').textContent = `${gameState.hero.xp} / ${xpNeeded}`;
+
     // Ресурсы
     $('#gold').textContent = gameState.hero.gold.toString();
     $('#lamps').textContent = gameState.hero.lamps.toString();
@@ -325,9 +350,31 @@ function finishBattle(): void {
 
     const result = applyBattleResult(gameState, currentBattle, currentEnemies);
 
+    // Начисляем опыт за убитых врагов
+    let xpResult: XpGainResult | null = null;
+    if (result.victory && currentBattle.enemies.length > 0) {
+        let totalXp = 0;
+        // Используем currentBattle.enemies (объекты Enemy), а не result.enemiesDefeated (строки)
+        for (const enemy of currentBattle.enemies.filter(e => e.hp <= 0)) {
+            // Сила врага = hp + damage * 4
+            const enemyPower = enemy.maxHp + enemy.damage * 4;
+            totalXp += xpFromEnemy(enemyPower);
+        }
+        xpResult = addXp(gameState.hero, totalXp);
+        saveGame(gameState);
+
+        // Показываем анимацию левел-апа если уровень повысился
+        if (xpResult.levelsGained > 0) {
+            showLevelUpAnimation(xpResult.newLevel);
+        }
+    }
+
     // Показать результат
     if (result.victory) {
-        showBattleResult(true, `Побеждено врагов: ${result.enemiesDefeated.length} | +${result.goldReward + getBalance().economy.goldPerStageClear}🪙`);
+        const goldTotal = result.goldReward + getBalance().economy.goldPerStageClear;
+        const xpText = xpResult ? ` | +${xpResult.xpGained} XP` : '';
+        const levelText = xpResult && xpResult.levelsGained > 0 ? ` | 🎉 LVL UP!` : '';
+        showBattleResult(true, `Побеждено: ${result.enemiesDefeated.length} | +${goldTotal}🪙${xpText}${levelText}`);
     } else {
         showBattleResult(false, `Вы погибли! Враги были слишком сильны.`);
     }

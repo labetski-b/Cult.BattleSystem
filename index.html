@@ -37,6 +37,18 @@
       </div>
     </section>
 
+    <!-- Уровень героя и XP -->
+    <section class="hero-level-section">
+      <div class="level-badge">
+        <span class="level-label">LVL</span>
+        <span class="level-value" id="hero-level">1</span>
+      </div>
+      <div class="xp-bar">
+        <div class="xp-fill" id="xp-fill"></div>
+        <span class="xp-text" id="xp-text">0 / 100</span>
+      </div>
+    </section>
+
     <!-- Сравнение силы: Герой vs Противник -->
     <section class="power-comparison">
       <div class="power-tab cult">
@@ -197,6 +209,15 @@
       <button id="add-lamps" class="btn btn-debug">+10 🏮</button>
       <button id="add-gold" class="btn btn-debug">+100 🪙</button>
     </section>
+
+    <!-- Анимация Level Up -->
+    <div id="level-up-overlay" class="level-up-overlay hidden">
+      <div class="level-up-content">
+        <div class="level-up-icon">🎉</div>
+        <div class="level-up-text">LEVEL UP!</div>
+        <div class="level-up-level" id="level-up-level">LVL 2</div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

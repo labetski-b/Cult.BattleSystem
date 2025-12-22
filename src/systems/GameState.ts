@@ -97,6 +97,14 @@ export function loadGame(): GameState | null {
                 state.lamp = createLamp(state.lamp.level || 1);
             }
 
+            // Миграция: добавляем level и xp если отсутствуют
+            if (state.hero.level === undefined) {
+                state.hero.level = 1;
+            }
+            if (state.hero.xp === undefined) {
+                state.hero.xp = 0;
+            }
+
             // Пересчитываем статы героя после миграции
             updateHeroStats(state.hero);
 
@@ -121,8 +129,8 @@ export function openLoot(state: GameState): Item | null {
 
     state.hero.lamps--;
 
-    // Передаём dungeon.chapter для определения уровня предмета
-    const item = generateItemFromLamp(state.lamp, state.dungeon.chapter);
+    // Передаём hero.level для определения уровня предмета
+    const item = generateItemFromLamp(state.lamp, state.hero.level);
 
     state.inventory.push(item);
     state.lastLootedItem = item;
