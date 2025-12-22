@@ -121,10 +121,11 @@ export function healHero(hero: Hero): void {
 // Таблица XP из конфига (индекс = уровень, значение = XP для перехода на следующий)
 const xpTable: number[] = experienceConfig.xpTable;
 
-// Опыт, необходимый для перехода на следующий уровень
+// Опыт, необходимый для перехода на указанный уровень
+// xpRequiredForLevel(2) = XP нужный чтобы перейти с 1 на 2 = xpTable[1]
 export function xpRequiredForLevel(level: number): number {
-    if (level < 1 || level >= xpTable.length) return 0;
-    return xpTable[level];
+    if (level < 2 || level > xpTable.length) return 0;
+    return xpTable[level - 1];
 }
 
 // Общий опыт от начала до указанного уровня
