@@ -1077,21 +1077,21 @@ body {
   background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
   border-radius: var(--radius);
   border: 1px solid rgba(59, 130, 246, 0.3);
-  padding: 16px;
+  padding: 12px;
   overflow: hidden;
 }
 
 .arena-header {
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .arena-header span {
   background: var(--bg-card);
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 2px 10px;
+  border-radius: 10px;
 }
 
 .arena-field {
@@ -1099,43 +1099,46 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 180px;
 }
 
 .arena-side {
-  flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .hero-side {
-  align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .enemies-side {
-  align-items: flex-end;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .arena-vs {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--accent-gold);
   text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  flex-shrink: 0;
+  padding: 0 4px;
 }
 
 /* === Battle Unit === */
 .battle-unit {
   background: var(--bg-card);
   border-radius: var(--radius-sm);
-  padding: 12px;
-  min-width: 120px;
+  padding: 8px;
+  min-width: 70px;
+  max-width: 90px;
   text-align: center;
   transition: all 0.3s;
 }
 
 .battle-unit.hero-unit {
   border: 2px solid var(--accent-blue);
+  min-width: 80px;
 }
 
 .battle-unit.enemy-unit {
@@ -1217,14 +1220,14 @@ body {
 }
 
 .unit-sprite {
-  font-size: 36px;
-  margin-bottom: 4px;
+  font-size: 24px;
+  margin-bottom: 2px;
 }
 
 .unit-name {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1233,10 +1236,10 @@ body {
 .unit-stats {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 10px;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .stat-damage {
@@ -1245,16 +1248,16 @@ body {
 
 .unit-hp-bar {
   position: relative;
-  height: 16px;
+  height: 12px;
   background: var(--bg-primary);
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
 .unit-hp-bar .hp-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent-green), #22c55e);
-  border-radius: 8px;
+  border-radius: 6px;
   transition: width 0.3s ease;
 }
 
@@ -1263,24 +1266,24 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 /* === Battle Log === */
 .battle-log {
-  max-height: 100px;
+  max-height: 60px;
   overflow-y: auto;
-  margin: 12px 0;
-  padding: 8px;
+  margin: 8px 0;
+  padding: 6px;
   background: var(--bg-primary);
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .log-entry {
-  padding: 4px 0;
+  padding: 2px 0;
   border-bottom: 1px solid var(--bg-card);
   color: var(--text-secondary);
 }
@@ -1305,7 +1308,12 @@ body {
 /* === Battle Controls === */
 .battle-controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+}
+
+.battle-controls .btn {
+  padding: 10px 12px;
+  font-size: 12px;
 }
 
 .btn-step {
