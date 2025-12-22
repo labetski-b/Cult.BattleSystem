@@ -791,6 +791,28 @@ body {
   border-color: var(--rarity-immortal);
 }
 
+/* Filled slot layout: icon+level on left, stats on right */
+.slot.filled {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+}
+
+.slot-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.slot-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
 .slot .slot-icon {
   font-size: 18px;
 }
@@ -804,15 +826,16 @@ body {
   font-weight: 600;
 }
 
-.slot .slot-stats {
+.slot .slot-stat {
   font-size: 9px;
   color: var(--text-secondary);
+  line-height: 1.2;
 }
 
-.slot .slot-power {
-  font-size: 10px;
-  color: var(--accent-gold);
-  font-weight: 600;
+.slot .slot-empty-label {
+  font-size: 8px;
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 
 /* === Inventory === */

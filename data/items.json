@@ -1,7 +1,7 @@
 {
     "basePowerPerLevel": 20,
     "levelRange": {
-        "minLevelOffset": 2,
+        "minLevelOffset": 5,
         "maxRarityLevelOffset": 0
     },
     "slotRatios": {

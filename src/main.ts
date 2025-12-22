@@ -191,18 +191,21 @@ function renderEquipment(): void {
         slot.className = `slot ${item ? `filled ${item.rarity}` : ''}`;
 
         if (item) {
-            const hpText = item.hp > 0 ? `${item.hp}❤️` : '';
-            const dmgText = item.damage > 0 ? `${item.damage}⚔️` : '';
             slot.innerHTML = `
-        <span class="slot-icon">${SLOT_ICONS[slotType]}</span>
-        <span class="slot-level">Lv${item.level}</span>
-        <span class="slot-stats">${hpText} ${dmgText}</span>
+        <div class="slot-left">
+          <span class="slot-icon">${SLOT_ICONS[slotType]}</span>
+          <span class="slot-level">Lv${item.level}</span>
+        </div>
+        <div class="slot-right">
+          <span class="slot-stat">${item.hp}❤️</span>
+          <span class="slot-stat">${item.damage}⚔️</span>
+        </div>
       `;
             slot.title = `${item.name} (Lvl ${item.level}) - HP: ${item.hp}, DMG: ${item.damage}`;
         } else {
             slot.innerHTML = `
         <span class="slot-icon" style="opacity: 0.3">${SLOT_ICONS[slotType]}</span>
-        <span style="font-size: 10px">${SLOT_NAMES[slotType].split(' ')[1]}</span>
+        <span class="slot-empty-label">${SLOT_NAMES[slotType].split(' ')[1]}</span>
       `;
         }
 
