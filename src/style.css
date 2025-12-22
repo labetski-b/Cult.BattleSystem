@@ -287,17 +287,13 @@ body {
   color: var(--text-secondary);
 }
 
-.stats-row {
-  font-size: 14px;
-  color: var(--text-secondary);
+/* Цветовая индикация статов в карточке предмета */
+.item-stats .stat-better {
+  color: var(--accent-green);
 }
 
-.stats-row .stat-hp {
+.item-stats .stat-worse {
   color: var(--accent-red);
-}
-
-.stats-row .stat-dmg {
-  color: var(--accent-gold);
 }
 
 .item-comparison {

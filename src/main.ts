@@ -456,10 +456,9 @@ function showLootPopup(newItem: Item): void {
     // Расчёт изменения силы культа (effectivePower = hp + damage * 4)
     const cultPowerDiff = hpDiff + dmgDiff * 4;
 
-    // Отображение изменения статов (объединённый блок)
+    // Отображение изменения силы культа
     const statsChangeEl = $('#stats-change');
     const cultPowerValueEl = $('#cult-power-value');
-    const statsDiffEl = $('#stats-diff');
     statsChangeEl.classList.remove('positive', 'negative', 'neutral');
 
     // Сила культа (главный акцент)
@@ -474,12 +473,6 @@ function showLootPopup(newItem: Item): void {
         cultPowerValueEl.textContent = '±0';
     }
 
-    // HP и DMG (вторая строка)
-    const hpStr = hpDiff !== 0 ? `<span class="stat-hp">${hpDiff > 0 ? '+' : ''}${hpDiff} ❤️</span>` : '';
-    const dmgStr = dmgDiff !== 0 ? `<span class="stat-dmg">${dmgDiff > 0 ? '+' : ''}${dmgDiff} ⚔️</span>` : '';
-    const separator = hpStr && dmgStr ? '  ' : '';
-    statsDiffEl.innerHTML = hpStr + separator + dmgStr || '<span style="opacity: 0.5">±0</span>';
-
     // Форматирование статов предмета (две строки)
     const formatStats = (item: Item | null) => {
         const hp = item?.hp || 0;
@@ -487,13 +480,22 @@ function showLootPopup(newItem: Item): void {
         return `<div>+${hp} ❤️</div><div>+${dmg} ⚔️</div>`;
     };
 
-    // Новый предмет
+    // Форматирование статов нового предмета с цветовой индикацией
+    const formatNewItemStats = () => {
+        const newHp = newItem.hp || 0;
+        const newDmg = newItem.damage || 0;
+        const hpClass = hpDiff > 0 ? 'stat-better' : hpDiff < 0 ? 'stat-worse' : '';
+        const dmgClass = dmgDiff > 0 ? 'stat-better' : dmgDiff < 0 ? 'stat-worse' : '';
+        return `<div class="${hpClass}">+${newHp} ❤️</div><div class="${dmgClass}">+${newDmg} ⚔️</div>`;
+    };
+
+    // Новый предмет (со статами с цветовой индикацией)
     const newCard = $('#new-item');
     newCard.className = `item-card new ${newItem.rarity}`;
     $('#new-item-slot').textContent = SLOT_ICONS[newItem.slot];
     $('#new-item-name').textContent = newItem.name;
     $('#new-item-name').style.color = RARITY_COLORS[newItem.rarity];
-    $('#new-item-power').innerHTML = formatStats(newItem);
+    $('#new-item-power').innerHTML = formatNewItemStats();
     $('#new-item-meta').textContent = `Lvl ${newItem.level} • ${newItem.rarity}`;
 
     // Экипированный предмет
