@@ -70,11 +70,8 @@ function updateUI(): void {
     lampsBadge.textContent = gameState.hero.lamps.toString();
     lampsBadge.dataset.count = gameState.hero.lamps.toString();
 
-    // Сила героя (пересчитываем из HP и damage по той же формуле что и враги)
-    // Враги: HP = power * 0.6, damage = power * 0.13
-    // Обратно: power = HP / 0.6 + damage / 0.13 (примерно)
-    // Упрощённо: power = maxHp + damage * 5
-    const heroPower = gameState.hero.maxHp + gameState.hero.damage * 5;
+    // Сила героя = effectivePower (та же формула что и для предметов)
+    const heroPower = gameState.hero.maxHp + gameState.hero.damage * 4;
     $('#hero-power').textContent = heroPower.toString();
 
     // Подземелье - теперь показываем только номер главы

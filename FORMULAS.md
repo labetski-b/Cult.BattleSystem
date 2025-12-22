@@ -43,7 +43,7 @@ power = hp + 4 * damage  // итоговый effectivePower
 
 ### Сила Культа (для отображения)
 ```
-heroPower = maxHp + damage * 5
+heroPower = maxHp + damage * 4
 ```
 
 ---
