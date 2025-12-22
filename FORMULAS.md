@@ -2,14 +2,11 @@
 
 ## Опыт (Experience)
 
-Все настройки в `data/experience.json`
-
-### Опыт за врага
+### Опыт за этап
+XP за прохождение этапа берётся из таблицы `stageTable` в `data/enemies.json`:
 ```
-xpFromEnemy = floor(enemyPower * xpPerEnemyPower)
+xpReward = stageTable[globalStage - 1].xp
 ```
-- `enemyPower` = maxHp + damage * 4
-- `xpPerEnemyPower` = из experience.json (0.5)
 
 ### Опыт для уровня
 ```
@@ -82,20 +79,28 @@ heroPower = maxHp + damage * 4
 
 Все настройки в `data/enemies.json`
 
-### Сила врага на этапе
+### Сила врага на этапе (из таблицы)
 ```
 globalStage = (chapter - 1) * stagesPerChapter + stage
-enemyPower = baseEnemyPower * (powerPerStage ^ (globalStage - 1))
+enemyPower = stageTable[globalStage - 1].power
 ```
-- `baseEnemyPower` = из enemies.json (50)
-- `powerPerStage` = из enemies.json (1.12, +12% за этап)
-- `stagesPerChapter` = из enemies.json (5)
+- `stageTable` = массив из enemies.json (100 записей с power и xp)
+- `stagesPerChapter` = из enemies.json (10)
+
+Примеры значений:
+| Dungeon | Power | XP |
+|---------|-------|-----|
+| 1-1 | 10 | 10 |
+| 1-10 | 100 | 15 |
+| 2-10 | 112 | 20 |
+| 5-10 | 263 | 35 |
+| 10-10 | 1798 | 55 |
 
 ### Босс
 ```
 bossPower = enemyPower * powerMultiplier
 ```
-- `powerMultiplier` = из enemies.json/boss
+- `powerMultiplier` = из enemies.json/boss (1.3)
 
 ### Статы врага
 ```
@@ -120,6 +125,6 @@ damage = max(1, floor(power * damageRatio))
 | `data/items.json` | basePowerPerLevel, levelRange, slotRatios |
 | `data/rarities.json` | 7 редкостей с multiplier |
 | `data/lamp-levels.json` | 31 уровень лампы с весами редкостей |
-| `data/enemies.json` | прогрессия, волны, босс, статы врагов |
-| `data/experience.json` | xpPerEnemyPower, maxLevel, xpTable[] |
+| `data/enemies.json` | stageTable[] (power, xp), волны, босс, статы |
+| `data/experience.json` | maxLevel, xpTable[] |
 | `data/balance.json` | combat, economy |

@@ -136,11 +136,6 @@ export function totalXpForLevel(level: number): number {
     return total;
 }
 
-// Опыт за убийство врага
-export function xpFromEnemy(enemyPower: number): number {
-    return Math.floor(enemyPower * experienceConfig.xpPerEnemyPower);
-}
-
 // Результат добавления опыта
 export interface XpGainResult {
     xpGained: number;

@@ -2,18 +2,17 @@ import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../model
 import { Item, migrateItemStats } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
 import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL } from '../models/Lamp';
-import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, DungeonConfig, BOSS_MULTIPLIER } from './DungeonSystem';
+import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
 import balanceData from '../../data/balance.json';
 import enemiesConfig from '../../data/enemies.json';
 
 // Re-export для использования в main.ts
 export type { BattleState, BattleResult };
-export { executeBattleRound };
+export { executeBattleRound, getStageXpReward };
 
 // Типы из баланса (только для combat, economy)
 interface BalanceData {
-    dungeonScaling: DungeonConfig; // Для обратной совместимости
     combat: CombatConfig;
     economy: {
         goldPerEnemy: number;
@@ -193,7 +192,7 @@ export function fight(state: GameState): BattleResult {
 
     if (result.victory) {
         state.hero.gold += result.goldReward + balance.economy.goldPerStageClear;
-        state.dungeon = advanceProgress(state.dungeon, balance.dungeonScaling);
+        state.dungeon = advanceProgress(state.dungeon);
         // После победы восстанавливаем HP
         healHero(state.hero);
     }
@@ -302,7 +301,7 @@ export function applyBattleResult(
 
     if (result.victory) {
         state.hero.gold += result.goldReward + balance.economy.goldPerStageClear;
-        state.dungeon = advanceProgress(state.dungeon, balance.dungeonScaling);
+        state.dungeon = advanceProgress(state.dungeon);
         healHero(state.hero);
     }
 

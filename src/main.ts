@@ -20,8 +20,8 @@ import {
 import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity } from './models/Item';
 import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
-import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER } from './systems/DungeonSystem';
-import { addXp, xpFromEnemy, xpProgress, xpRequiredForLevel, XpGainResult } from './models/Hero';
+import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward } from './systems/DungeonSystem';
+import { addXp, xpProgress, xpRequiredForLevel, XpGainResult } from './models/Hero';
 
 // DOM элементы
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
@@ -350,17 +350,20 @@ function finishBattle(): void {
 
     const result = applyBattleResult(gameState, currentBattle, currentEnemies);
 
-    // Начисляем опыт за убитых врагов
+    // Начисляем опыт за прохождение этапа (из таблицы)
     let xpResult: XpGainResult | null = null;
-    if (result.victory && currentBattle.enemies.length > 0) {
-        let totalXp = 0;
-        // Используем currentBattle.enemies (объекты Enemy), а не result.enemiesDefeated (строки)
-        for (const enemy of currentBattle.enemies.filter(e => e.hp <= 0)) {
-            // Сила врага = hp + damage * 4
-            const enemyPower = enemy.maxHp + enemy.damage * 4;
-            totalXp += xpFromEnemy(enemyPower);
-        }
-        xpResult = addXp(gameState.hero, totalXp);
+    if (result.victory) {
+        // XP берём из таблицы для ПРЕДЫДУЩЕГО этапа (который мы только что прошли)
+        // Т.к. dungeon уже продвинулся, нужно вычислить предыдущий этап
+        const prevChapter = gameState.dungeon.stage === 1
+            ? gameState.dungeon.chapter - 1
+            : gameState.dungeon.chapter;
+        const prevStage = gameState.dungeon.stage === 1
+            ? STAGES_PER_CHAPTER
+            : gameState.dungeon.stage - 1;
+
+        const stageXp = getStageXpReward(prevChapter, prevStage);
+        xpResult = addXp(gameState.hero, stageXp);
         saveGame(gameState);
 
         // Показываем анимацию левел-апа если уровень повысился

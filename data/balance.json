@@ -37,15 +37,6 @@
             "upgradeCost": 2000
         }
     ],
-    "dungeonScaling": {
-        "baseEnemyPower": 50,
-        "powerPerStage": 1.12,
-        "enemiesPerWave": {
-            "min": 1,
-            "max": 3
-        },
-        "bossMultiplier": 2.5
-    },
     "combat": {
         "baseDamage": 10,
         "hpPerPower": 2,
