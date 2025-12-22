@@ -795,7 +795,8 @@ body {
 .slot.filled {
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 8px;
   padding: 4px 6px;
 }
 
