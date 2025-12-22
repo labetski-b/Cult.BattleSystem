@@ -736,19 +736,19 @@ body {
 .equipment-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 4px;
 }
 
 .slot {
-  aspect-ratio: 1;
+  padding: 6px 4px;
   background: var(--bg-card);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 2px;
+  font-size: 10px;
   color: var(--text-secondary);
   border: 2px solid transparent;
   cursor: pointer;
@@ -792,20 +792,25 @@ body {
 }
 
 .slot .slot-icon {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .slot .slot-level {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-secondary);
   background: var(--bg-primary);
-  padding: 1px 4px;
-  border-radius: 4px;
+  padding: 1px 3px;
+  border-radius: 3px;
   font-weight: 600;
 }
 
+.slot .slot-stats {
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+
 .slot .slot-power {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--accent-gold);
   font-weight: 600;
 }
