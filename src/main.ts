@@ -20,7 +20,7 @@ import {
 import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity } from './models/Item';
 import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
-import { isBossStage, BOSS_MULTIPLIER } from './systems/DungeonSystem';
+import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER } from './systems/DungeonSystem';
 
 // DOM элементы
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
@@ -59,6 +59,31 @@ function calculateSellPrice(item: Item): number {
     return Math.floor(item.power * rarityMultiplier[item.rarity] * 0.5);
 }
 
+// Генерация точек прогресса
+function renderProgressDots(): void {
+    const container = $('#progress-dots');
+    container.innerHTML = '';
+
+    for (let i = 1; i <= STAGES_PER_CHAPTER; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.dataset.stage = i.toString();
+
+        if (i === STAGES_PER_CHAPTER) {
+            dot.classList.add('boss');
+            dot.textContent = '💀';
+        }
+
+        if (i < gameState.dungeon.stage) {
+            dot.classList.add('completed');
+        } else if (i === gameState.dungeon.stage) {
+            dot.classList.add('active');
+        }
+
+        container.appendChild(dot);
+    }
+}
+
 // Обновление UI
 function updateUI(): void {
     // Ресурсы
@@ -88,16 +113,8 @@ function updateUI(): void {
     $('#hero-hp-display').textContent = gameState.hero.maxHp.toString();
     $('#hero-damage-display').textContent = gameState.hero.damage.toString();
 
-    // Обновляем точки прогресса
-    document.querySelectorAll('.dot').forEach((dot, index) => {
-        const stage = index + 1;
-        dot.classList.remove('active', 'completed');
-        if (stage < gameState.dungeon.stage) {
-            dot.classList.add('completed');
-        } else if (stage === gameState.dungeon.stage) {
-            dot.classList.add('active');
-        }
-    });
+    // Обновляем точки прогресса (генерируем динамически)
+    renderProgressDots();
 
     // Экипировка
     renderEquipment();
