@@ -96,7 +96,6 @@
       <div class="battle-controls">
         <button id="battle-step-btn" class="btn btn-step">Следующий ход</button>
         <button id="battle-auto-btn" class="btn btn-auto">Авто</button>
-        <button id="battle-skip-btn" class="btn btn-skip">Пропустить</button>
       </div>
     </section>
 
@@ -114,13 +113,6 @@
       <div class="loot-popup-overlay"></div>
       <div class="loot-popup-content">
         <h3>Новый предмет!</h3>
-        <div class="stats-change" id="stats-change">
-          <div class="cult-power-row">
-            <span class="cult-power-label">⚡ Сила Культа</span>
-            <span class="cult-power-value" id="cult-power-value">+20</span>
-          </div>
-          <div class="stats-row" id="stats-diff"></div>
-        </div>
         <div class="item-comparison">
           <div class="item-card equipped" id="equipped-item">
             <div class="item-badge">НАДЕТО</div>
@@ -141,6 +133,12 @@
             </div>
             <div class="item-meta" id="new-item-meta">Lvl 10 • Epic</div>
           </div>
+        </div>
+        <div class="stats-change" id="stats-change">
+          <div class="cult-power-row">
+            <span class="cult-power-value" id="cult-power-value">+20</span>
+          </div>
+          <div class="stats-row" id="stats-diff"></div>
         </div>
         <div class="loot-actions">
           <button id="sell-btn" class="btn btn-sell">

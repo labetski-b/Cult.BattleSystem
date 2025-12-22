@@ -226,12 +226,16 @@ function showBattleResult(victory: boolean, details: string): void {
 function showBattleArena(): void {
     $('#battle-arena').classList.remove('hidden');
     $('#battle-result').classList.add('hidden');
+    // Скрыть экипировку во время боя
+    document.querySelector('.equipment')?.classList.add('hidden');
 }
 
 // Скрыть арену боя
 function hideBattleArena(): void {
     $('#battle-arena').classList.add('hidden');
     stopAutoMode();
+    // Показать экипировку после боя
+    document.querySelector('.equipment')?.classList.remove('hidden');
 }
 
 // Отрисовать врагов в арене
@@ -417,19 +421,6 @@ function stopAutoMode(): void {
         clearInterval(autoIntervalId);
         autoIntervalId = null;
     }
-}
-
-// Пропустить бой (выполнить до конца)
-function skipBattle(): void {
-    if (!currentBattle) return;
-    stopAutoMode();
-
-    while (!currentBattle.isComplete && currentBattle.currentTurn < 100) {
-        currentBattle = executeBattleRound(currentBattle);
-    }
-
-    updateBattleUI();
-    finishBattle();
 }
 
 // Начать новый бой
@@ -639,10 +630,6 @@ function setupEventListeners(): void {
         } else {
             startAutoMode();
         }
-    });
-
-    $('#battle-skip-btn').addEventListener('click', () => {
-        skipBattle();
     });
 
     // Закрыть результат боя
