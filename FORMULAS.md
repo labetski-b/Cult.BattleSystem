@@ -13,11 +13,20 @@ xpFromEnemy = floor(enemyPower * xpPerEnemyPower)
 
 ### Опыт для уровня
 ```
-xpRequiredForLevel(level) = floor(baseXpToLevel * xpScaling^(level-2))
+xpRequiredForLevel(level) = xpTable[level]
 ```
-- `baseXpToLevel` = из experience.json (100)
-- `xpScaling` = из experience.json (1.5)
+- `xpTable` = массив из experience.json (100 значений)
 - `maxLevel` = из experience.json (100)
+
+Примеры значений:
+| Lvl | XP |
+|-----|-----|
+| 1→2 | 80 |
+| 2→3 | 145 |
+| 3→4 | 195 |
+| 10→11 | 1050 |
+| 50→51 | 179880 |
+| 99→100 | 16145840 |
 
 ---
 
@@ -112,5 +121,5 @@ damage = max(1, floor(power * damageRatio))
 | `data/rarities.json` | 7 редкостей с multiplier |
 | `data/lamp-levels.json` | 31 уровень лампы с весами редкостей |
 | `data/enemies.json` | прогрессия, волны, босс, статы врагов |
-| `data/experience.json` | xpPerEnemyPower, baseXpToLevel, xpScaling, maxLevel |
+| `data/experience.json` | xpPerEnemyPower, maxLevel, xpTable[] |
 | `data/balance.json` | combat, economy |
