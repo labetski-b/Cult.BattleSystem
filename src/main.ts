@@ -627,6 +627,12 @@ function setupEventListeners(): void {
                 }
             }
         }
+        // W — начать бой
+        if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') {
+            if (!currentBattle && !pendingItem) {
+                startBattle();
+            }
+        }
     });
 
     // Дебаг
