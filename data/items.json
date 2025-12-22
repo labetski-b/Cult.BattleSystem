@@ -1,7 +1,8 @@
 {
     "basePowerPerLevel": 20,
     "levelRange": {
-        "minLevelOffset": 2
+        "minLevelOffset": 2,
+        "maxRarityLevelOffset": 0
     },
     "slotRatios": {
         "helmet": { "hpRatio": 0.8, "damageRatio": 0.2 },

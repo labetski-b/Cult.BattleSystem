@@ -75,8 +75,12 @@ export function generateItemId(): string {
 }
 
 // Генерация уровня предмета (от dungeonChapter - offset до dungeonChapter)
-export function rollItemLevel(dungeonChapter: number): number {
-    const minLevel = Math.max(1, dungeonChapter - itemsConfig.levelRange.minLevelOffset);
+// isMaxRarity — если true, используется maxRarityLevelOffset (меньший разброс для топовых вещей)
+export function rollItemLevel(dungeonChapter: number, isMaxRarity: boolean = false): number {
+    const offset = isMaxRarity
+        ? (itemsConfig.levelRange as { minLevelOffset: number; maxRarityLevelOffset: number }).maxRarityLevelOffset
+        : itemsConfig.levelRange.minLevelOffset;
+    const minLevel = Math.max(1, dungeonChapter - offset);
     return Math.floor(Math.random() * (dungeonChapter - minLevel + 1)) + minLevel;
 }
 

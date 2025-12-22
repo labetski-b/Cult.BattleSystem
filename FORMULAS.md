@@ -38,10 +38,20 @@ effectivePower = hp + 4 * damage
 ```
 targetPower = basePowerPerLevel * 1.5^(itemLevel-1) * rarityMultiplier
 ```
-- `itemLevel` = `random(heroLevel - minLevelOffset, heroLevel)`, минимум 1
 - `basePowerPerLevel` = 20 (из items.json)
 - `1.5` = множитель роста за уровень (+50%)
 - `rarityMultiplier` = из rarities.json (1.0 ... 11.39)
+
+### Уровень предмета
+```
+// Для обычных редкостей:
+itemLevel = random(dungeonChapter - minLevelOffset, dungeonChapter)
+
+// Для максимальной редкости лампы:
+itemLevel = random(dungeonChapter - maxRarityLevelOffset, dungeonChapter)
+```
+- `minLevelOffset` = 2 (из items.json)
+- `maxRarityLevelOffset` = 0 (из items.json) — топовые вещи всегда максимального уровня
 
 ### Генерация статов предмета
 ```

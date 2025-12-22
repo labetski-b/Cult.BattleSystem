@@ -72,6 +72,19 @@ export function rollRarity(weights: Partial<Record<Rarity, number>>): Rarity {
     return entries[0]?.[0] ?? 'common';
 }
 
+// Определить максимальную редкость из доступных в конфиге лампы
+function getMaxRarityFromWeights(weights: Partial<Record<Rarity, number>>): Rarity {
+    const rarityOrder: Rarity[] = ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal'];
+    const availableRarities = Object.keys(weights) as Rarity[];
+    let maxRarity: Rarity = 'common';
+    for (const r of rarityOrder) {
+        if (availableRarities.includes(r)) {
+            maxRarity = r;
+        }
+    }
+    return maxRarity;
+}
+
 // Генерация предмета из лампы
 // lamp — определяет редкость (веса)
 // dungeonChapter — определяет уровень предмета (базовые статы)
@@ -84,8 +97,13 @@ export function generateItemFromLamp(lamp: Lamp, dungeonChapter: number): Item {
     // Случайная редкость по весам текущего уровня лампы
     const rarity = rollRarity(config.weights);
 
+    // Проверяем, выпала ли максимальная доступная редкость
+    const maxRarity = getMaxRarityFromWeights(config.weights);
+    const isMaxRarity = rarity === maxRarity;
+
     // Уровень предмета = от dungeonChapter (с диапазоном из items.json)
-    const level = rollItemLevel(dungeonChapter);
+    // Для максимальной редкости используется меньший offset
+    const level = rollItemLevel(dungeonChapter, isMaxRarity);
 
     // Рассчитываем статы (hp, damage, power) с учётом effectivePower = hp + 4*dmg
     const stats = calculateItemStats(slot, level, rarity);
