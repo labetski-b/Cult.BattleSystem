@@ -20,7 +20,7 @@ import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity } from './models/Item';
 import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
 import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward } from './systems/DungeonSystem';
-import { addXp, xpProgress, xpRequiredForLevel, XpGainResult } from './models/Hero';
+import { addXp, xpProgress, XpGainResult } from './models/Hero';
 
 // DOM элементы
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
@@ -103,12 +103,13 @@ function renderProgressDots(): void {
 
 // Обновление UI
 function updateUI(): void {
-    // Уровень героя и XP
+    // Уровень героя и круговая диаграмма XP
     $('#hero-level').textContent = gameState.hero.level.toString();
     const progress = xpProgress(gameState.hero);
-    const xpNeeded = xpRequiredForLevel(gameState.hero.level + 1);
-    $('#xp-fill').style.width = `${progress * 100}%`;
-    $('#xp-text').textContent = `${gameState.hero.xp} / ${xpNeeded}`;
+    // Круговая диаграмма: stroke-dashoffset = circumference * (1 - progress)
+    const circumference = 113.1; // 2 * PI * 18
+    const offset = circumference * (1 - progress);
+    $('#level-progress-fill').style.strokeDashoffset = offset.toString();
 
     // Ресурсы
     $('#gold').textContent = gameState.hero.gold.toString();

@@ -12,8 +12,15 @@
 
 <body>
   <div id="app">
-    <!-- Header с ресурсами -->
+    <!-- Header с уровнем и ресурсами -->
     <header class="header">
+      <div class="level-circle" id="level-circle">
+        <svg class="level-progress-ring" viewBox="0 0 44 44">
+          <circle class="level-progress-bg" cx="22" cy="22" r="18" />
+          <circle class="level-progress-fill" id="level-progress-fill" cx="22" cy="22" r="18" />
+        </svg>
+        <span class="level-number" id="hero-level">1</span>
+      </div>
       <div class="resources">
         <div class="resource">
           <span class="icon">🪙</span>
@@ -34,18 +41,6 @@
         <div class="progress-dots" id="progress-dots">
           <!-- Генерируется динамически из STAGES_PER_CHAPTER -->
         </div>
-      </div>
-    </section>
-
-    <!-- Уровень героя и XP -->
-    <section class="hero-level-section">
-      <div class="level-badge">
-        <span class="level-label">LVL</span>
-        <span class="level-value" id="hero-level">1</span>
-      </div>
-      <div class="xp-bar">
-        <div class="xp-fill" id="xp-fill"></div>
-        <span class="xp-text" id="xp-text">0 / 100</span>
       </div>
     </section>
 

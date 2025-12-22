@@ -61,9 +61,51 @@ body {
   border-radius: var(--radius);
 }
 
+/* === Level Circle === */
+.level-circle {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.level-progress-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.level-progress-bg {
+  fill: none;
+  stroke: var(--bg-card);
+  stroke-width: 4;
+}
+
+.level-progress-fill {
+  fill: none;
+  stroke: var(--accent-purple);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 113.1; /* 2 * PI * 18 */
+  stroke-dashoffset: 113.1;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.level-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+}
+
 .resources {
   display: flex;
   gap: 20px;
+  flex: 1;
+  justify-content: center;
 }
 
 .resource {
