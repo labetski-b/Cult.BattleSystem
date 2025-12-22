@@ -465,21 +465,29 @@ function showLootPopup(newItem: Item): void {
     // Расчёт изменения силы культа (effectivePower = hp + damage * 4)
     const cultPowerDiff = hpDiff + dmgDiff * 4;
 
-    // Отображение изменения силы культа
-    const cultPowerEl = $('#cult-power-change');
+    // Отображение изменения статов (объединённый блок)
+    const statsChangeEl = $('#stats-change');
     const cultPowerValueEl = $('#cult-power-value');
-    cultPowerEl.classList.remove('positive', 'negative', 'neutral');
+    const statsDiffEl = $('#stats-diff');
+    statsChangeEl.classList.remove('positive', 'negative', 'neutral');
 
+    // Сила культа (главный акцент)
     if (cultPowerDiff > 0) {
-        cultPowerEl.classList.add('positive');
+        statsChangeEl.classList.add('positive');
         cultPowerValueEl.textContent = `+${cultPowerDiff}`;
     } else if (cultPowerDiff < 0) {
-        cultPowerEl.classList.add('negative');
+        statsChangeEl.classList.add('negative');
         cultPowerValueEl.textContent = `${cultPowerDiff}`;
     } else {
-        cultPowerEl.classList.add('neutral');
+        statsChangeEl.classList.add('neutral');
         cultPowerValueEl.textContent = '±0';
     }
+
+    // HP и DMG (вторая строка)
+    const hpStr = hpDiff !== 0 ? `<span class="stat-hp">${hpDiff > 0 ? '+' : ''}${hpDiff} ❤️</span>` : '';
+    const dmgStr = dmgDiff !== 0 ? `<span class="stat-dmg">${dmgDiff > 0 ? '+' : ''}${dmgDiff} ⚔️</span>` : '';
+    const separator = hpStr && dmgStr ? '  ' : '';
+    statsDiffEl.innerHTML = hpStr + separator + dmgStr || '<span style="opacity: 0.5">±0</span>';
 
     // Форматирование статов предмета (две строки)
     const formatStats = (item: Item | null) => {
@@ -514,23 +522,6 @@ function showLootPopup(newItem: Item): void {
         $('#equipped-item-power').innerHTML = formatStats(null);
         $('#equipped-item-meta').textContent = '—';
     }
-
-    // Разница в статах (для отображения)
-    const diffEl = $('#power-diff');
-    diffEl.classList.remove('positive', 'negative', 'neutral');
-
-    const diffParts = [];
-    if (hpDiff !== 0) diffParts.push(`${hpDiff > 0 ? '+' : ''}${hpDiff} ❤️`);
-    if (dmgDiff !== 0) diffParts.push(`${dmgDiff > 0 ? '+' : ''}${dmgDiff} ⚔️`);
-
-    if (hpDiff > 0 || dmgDiff > 0) {
-        diffEl.classList.add('positive');
-    } else if (hpDiff < 0 || dmgDiff < 0) {
-        diffEl.classList.add('negative');
-    } else {
-        diffEl.classList.add('neutral');
-    }
-    diffEl.textContent = diffParts.length > 0 ? diffParts.join('  ') : '±0';
 
     // Цена продажи
     const sellPrice = calculateSellPrice(newItem);

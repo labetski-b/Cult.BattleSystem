@@ -248,16 +248,21 @@ body {
   font-size: 20px;
 }
 
-/* Изменение силы культа */
-.cult-power-change {
+/* Изменение статов */
+.stats-change {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.cult-power-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  background: var(--bg-card);
-  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
 }
 
 .cult-power-label {
@@ -266,21 +271,34 @@ body {
 }
 
 .cult-power-value {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--accent-green);
 }
 
-.cult-power-change.positive .cult-power-value {
+.stats-change.positive .cult-power-value {
   color: var(--accent-green);
 }
 
-.cult-power-change.negative .cult-power-value {
+.stats-change.negative .cult-power-value {
   color: var(--accent-red);
 }
 
-.cult-power-change.neutral .cult-power-value {
+.stats-change.neutral .cult-power-value {
   color: var(--text-secondary);
+}
+
+.stats-row {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.stats-row .stat-hp {
+  color: var(--accent-red);
+}
+
+.stats-row .stat-dmg {
+  color: var(--accent-gold);
 }
 
 .item-comparison {
@@ -380,30 +398,6 @@ body {
   font-weight: 700;
   color: var(--text-secondary);
   min-width: 30px;
-}
-
-.power-diff {
-  text-align: center;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 16px;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.power-diff.positive {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--accent-green);
-}
-
-.power-diff.negative {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--accent-red);
-}
-
-.power-diff.neutral {
-  background: var(--bg-card);
-  color: var(--text-secondary);
 }
 
 .btn-sell {
