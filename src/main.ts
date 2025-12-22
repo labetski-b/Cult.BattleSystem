@@ -7,7 +7,6 @@ import {
     equipFromInventory,
     upgradeLamp,
     addLamps,
-    addGold,
     resetGame,
     saveGame,
     generateEnemiesForBattle,
@@ -34,6 +33,9 @@ let currentBattle: BattleState | null = null;
 let currentEnemies: Enemy[] = [];
 let isAutoMode: boolean = false;
 let autoIntervalId: number | null = null;
+
+// Счётчик сессии для дебага
+let sessionCounter: number = 1;
 
 // Иконки слотов
 const SLOT_ICONS: Record<SlotType, string> = {
@@ -684,14 +686,11 @@ function setupEventListeners(): void {
         }
     });
 
-    // Дебаг
+    // Дебаг: добавить лампы и увеличить счётчик сессии
     $('#add-lamps').addEventListener('click', () => {
-        addLamps(gameState, 10);
-        updateUI();
-    });
-
-    $('#add-gold').addEventListener('click', () => {
-        addGold(gameState, 100);
+        addLamps(gameState, 20);
+        sessionCounter++;
+        $('#session-counter').textContent = sessionCounter.toString();
         updateUI();
     });
 
