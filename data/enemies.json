@@ -2,7 +2,7 @@
     "progression": {
         "baseEnemyPower": 50,
         "powerPerStage": 1.12,
-        "stagesPerChapter": 5
+        "stagesPerChapter": 10
     },
     "waves": {
         "minEnemies": 1,
