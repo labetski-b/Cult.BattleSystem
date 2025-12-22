@@ -65,7 +65,7 @@ export function loadGame(): GameState | null {
 
             // Миграция: добавляем damage если отсутствует
             if (state.hero.damage === undefined) {
-                state.hero.damage = 10; // Базовый урон
+                state.hero.damage = 0; // Базовый урон (теперь 0)
             }
 
             // Миграция: добавляем hp/damage к предметам если отсутствует

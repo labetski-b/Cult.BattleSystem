@@ -2,8 +2,8 @@ import { Item, SlotType, SLOT_TYPES } from './Item';
 
 // Базовые статы героя (без экипировки)
 export const BASE_HERO_STATS = {
-    hp: 100,
-    damage: 10
+    hp: 0,
+    damage: 0
 };
 
 export interface Hero {
