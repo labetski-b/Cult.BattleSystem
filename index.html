@@ -158,22 +158,6 @@
       <div class="equipment-grid" id="equipment-grid"></div>
     </section>
 
-    <!-- Лампа -->
-    <section class="lamp-section">
-      <div class="lamp-info">
-        <span class="lamp-icon" id="lamp-icon-btn" style="cursor: pointer;">🏮</span>
-        <div class="lamp-stats">
-          <div>Лампа Lvl <span id="lamp-level">1</span></div>
-          <div class="lamp-details">
-            Макс. редкость: <span id="lamp-rarity">Common</span>
-          </div>
-        </div>
-        <button id="upgrade-lamp-btn" class="btn btn-small">
-          Улучшить (<span id="upgrade-cost">100</span>🪙)
-        </button>
-      </div>
-    </section>
-
     <!-- Попап вероятностей редкостей -->
     <section id="rarity-popup" class="rarity-popup hidden">
       <div class="rarity-popup-overlay"></div>
@@ -186,17 +170,35 @@
       </div>
     </section>
 
-    <!-- Главные кнопки -->
+    <!-- Нижняя панель с лампой и кнопками -->
     <footer class="action-bar">
-      <button id="loot-btn" class="btn btn-loot">
-        <span class="btn-icon">🏮</span>
-        <span>LOOT</span>
-        <span class="badge" id="lamps-badge">0</span>
-      </button>
-      <button id="fight-btn" class="btn btn-fight">
-        <span class="btn-icon">⚔️</span>
-        <span>FIGHT</span>
-      </button>
+      <!-- Лампа -->
+      <div class="lamp-section">
+        <div class="lamp-info">
+          <span class="lamp-icon" id="lamp-icon-btn" style="cursor: pointer;">🏮</span>
+          <div class="lamp-stats">
+            <div>Лампа Lvl <span id="lamp-level">1</span></div>
+            <div class="lamp-details">
+              Макс. редкость: <span id="lamp-rarity">Common</span>
+            </div>
+          </div>
+          <button id="upgrade-lamp-btn" class="btn btn-small">
+            Улучшить (<span id="upgrade-cost">100</span>🪙)
+          </button>
+        </div>
+      </div>
+      <!-- Главные кнопки -->
+      <div class="action-buttons">
+        <button id="loot-btn" class="btn btn-loot">
+          <span class="btn-icon">🏮</span>
+          <span>LOOT</span>
+          <span class="badge" id="lamps-badge">0</span>
+        </button>
+        <button id="fight-btn" class="btn btn-fight">
+          <span class="btn-icon">⚔️</span>
+          <span>FIGHT</span>
+        </button>
+      </div>
     </footer>
 
     <!-- Дебаг панель -->
