@@ -191,14 +191,14 @@ function renderEquipment(): void {
         slot.className = `slot ${item ? `filled ${item.rarity}` : ''}`;
 
         if (item) {
-            const hpText = item.hp > 0 ? `+${item.hp}❤️` : '';
-            const dmgText = item.damage > 0 ? `+${item.damage}⚔️` : '';
+            const hpText = item.hp > 0 ? `${item.hp}❤️` : '';
+            const dmgText = item.damage > 0 ? `${item.damage}⚔️` : '';
             slot.innerHTML = `
         <span class="slot-icon">${SLOT_ICONS[slotType]}</span>
         <span class="slot-level">Lv${item.level}</span>
         <span class="slot-stats">${hpText} ${dmgText}</span>
       `;
-            slot.title = `${item.name} (Lvl ${item.level}) - HP: +${item.hp}, DMG: +${item.damage}`;
+            slot.title = `${item.name} (Lvl ${item.level}) - HP: ${item.hp}, DMG: ${item.damage}`;
         } else {
             slot.innerHTML = `
         <span class="slot-icon" style="opacity: 0.3">${SLOT_ICONS[slotType]}</span>
@@ -481,7 +481,7 @@ function showLootPopup(newItem: Item): void {
     const formatStats = (item: Item | null) => {
         const hp = item?.hp || 0;
         const dmg = item?.damage || 0;
-        return `<div>+${hp} ❤️</div><div>+${dmg} ⚔️</div>`;
+        return `<div>${hp} ❤️</div><div>${dmg} ⚔️</div>`;
     };
 
     // Форматирование статов нового предмета с цветовой индикацией
@@ -490,7 +490,7 @@ function showLootPopup(newItem: Item): void {
         const newDmg = newItem.damage || 0;
         const hpClass = hpDiff > 0 ? 'stat-better' : hpDiff < 0 ? 'stat-worse' : '';
         const dmgClass = dmgDiff > 0 ? 'stat-better' : dmgDiff < 0 ? 'stat-worse' : '';
-        return `<div class="${hpClass}">+${newHp} ❤️</div><div class="${dmgClass}">+${newDmg} ⚔️</div>`;
+        return `<div class="${hpClass}">${newHp} ❤️</div><div class="${dmgClass}">${newDmg} ⚔️</div>`;
     };
 
     // Новый предмет (со статами с цветовой индикацией)
