@@ -34,8 +34,9 @@ let currentEnemies: Enemy[] = [];
 let isAutoMode: boolean = false;
 let autoIntervalId: number | null = null;
 
-// Счётчик сессии для дебага
-let sessionCounter: number = 1;
+// Счётчик сессии для дебага (сохраняется в localStorage)
+const STORAGE_SESSION_KEY = 'cult_session_counter';
+let sessionCounter: number = parseInt(localStorage.getItem(STORAGE_SESSION_KEY) || '1', 10);
 
 // Иконки слотов
 const SLOT_ICONS: Record<SlotType, string> = {
@@ -690,9 +691,13 @@ function setupEventListeners(): void {
     $('#add-lamps').addEventListener('click', () => {
         addLamps(gameState, 20);
         sessionCounter++;
+        localStorage.setItem(STORAGE_SESSION_KEY, sessionCounter.toString());
         $('#session-counter').textContent = sessionCounter.toString();
         updateUI();
     });
+
+    // Инициализация счётчика сессии в UI
+    $('#session-counter').textContent = sessionCounter.toString();
 
     // Сброс
     $('#reset-btn').addEventListener('click', () => {
