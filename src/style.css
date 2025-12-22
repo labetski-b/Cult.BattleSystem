@@ -244,8 +244,43 @@ body {
 
 .loot-popup-content h3 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   font-size: 20px;
+}
+
+/* Изменение силы культа */
+.cult-power-change {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+
+.cult-power-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.cult-power-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent-green);
+}
+
+.cult-power-change.positive .cult-power-value {
+  color: var(--accent-green);
+}
+
+.cult-power-change.negative .cult-power-value {
+  color: var(--accent-red);
+}
+
+.cult-power-change.neutral .cult-power-value {
+  color: var(--text-secondary);
 }
 
 .item-comparison {

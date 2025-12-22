@@ -462,6 +462,25 @@ function showLootPopup(newItem: Item): void {
     const hpDiff = (newItem.hp || 0) - (equippedItem?.hp || 0);
     const dmgDiff = (newItem.damage || 0) - (equippedItem?.damage || 0);
 
+    // Расчёт изменения силы культа (effectivePower = hp + damage * 4)
+    const cultPowerDiff = hpDiff + dmgDiff * 4;
+
+    // Отображение изменения силы культа
+    const cultPowerEl = $('#cult-power-change');
+    const cultPowerValueEl = $('#cult-power-value');
+    cultPowerEl.classList.remove('positive', 'negative', 'neutral');
+
+    if (cultPowerDiff > 0) {
+        cultPowerEl.classList.add('positive');
+        cultPowerValueEl.textContent = `+${cultPowerDiff}`;
+    } else if (cultPowerDiff < 0) {
+        cultPowerEl.classList.add('negative');
+        cultPowerValueEl.textContent = `${cultPowerDiff}`;
+    } else {
+        cultPowerEl.classList.add('neutral');
+        cultPowerValueEl.textContent = '±0';
+    }
+
     // Форматирование статов предмета (две строки)
     const formatStats = (item: Item | null) => {
         const hp = item?.hp || 0;
@@ -519,7 +538,7 @@ function showLootPopup(newItem: Item): void {
 
     // Кнопка надеть — подсветка если апгрейд
     const equipBtn = $('#equip-btn');
-    const isDowngrade = hpDiff < 0 && dmgDiff < 0;
+    const isDowngrade = cultPowerDiff < 0;
     equipBtn.classList.toggle('downgrade', isDowngrade);
 }
 
