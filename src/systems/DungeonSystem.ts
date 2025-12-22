@@ -1,3 +1,5 @@
+import enemiesConfig from '../../data/enemies.json';
+
 export interface DungeonProgress {
     chapter: number;
     stage: number;
@@ -11,17 +13,20 @@ export interface DungeonConfig {
     bossMultiplier: number;
 }
 
+// Количество стадий в главе (последняя — босс)
+export const STAGES_PER_CHAPTER = enemiesConfig.progression.stagesPerChapter;
+
+// Множитель силы босса
+export const BOSS_MULTIPLIER = enemiesConfig.boss.powerMultiplier;
+
 // Создание начального прогресса
 export function createDungeonProgress(): DungeonProgress {
     return {
         chapter: 1,
         stage: 1,
-        currentEnemyPower: 50
+        currentEnemyPower: enemiesConfig.progression.baseEnemyPower
     };
 }
-
-// Количество стадий в главе (5-я — босс)
-export const STAGES_PER_CHAPTER = 5;
 
 // Расчёт силы врагов на текущем этапе
 export function calculateStagePower(

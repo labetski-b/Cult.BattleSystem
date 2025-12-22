@@ -20,6 +20,7 @@ import {
 import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity } from './models/Item';
 import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
+import { isBossStage, BOSS_MULTIPLIER } from './systems/DungeonSystem';
 
 // DOM элементы
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
@@ -78,7 +79,13 @@ function updateUI(): void {
 
     // Подземелье - теперь показываем только номер главы
     $('#dungeon-title').textContent = `DUNGEON ${gameState.dungeon.chapter}`;
-    $('#enemy-power').textContent = gameState.dungeon.currentEnemyPower.toString();
+
+    // Показываем реальную силу врагов (с учётом множителя босса)
+    const isBoss = isBossStage(gameState.dungeon.stage);
+    const displayPower = isBoss
+        ? Math.floor(gameState.dungeon.currentEnemyPower * BOSS_MULTIPLIER)
+        : gameState.dungeon.currentEnemyPower;
+    $('#enemy-power').textContent = displayPower.toString();
 
     // Статы героя (над экипировкой) — только максимум HP
     $('#hero-hp-display').textContent = gameState.hero.maxHp.toString();

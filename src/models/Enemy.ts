@@ -1,3 +1,5 @@
+import enemiesConfig from '../../data/enemies.json';
+
 export interface Enemy {
     id: string;
     name: string;
@@ -27,10 +29,9 @@ export function generateEnemy(targetPower: number, isBoss: boolean = false): Ene
     const variance = 0.9 + Math.random() * 0.2;
     const power = Math.floor(targetPower * variance);
 
-    // HP и урон пропорциональны силе
-    // Соотношение: 60% силы в HP, 13% силы в урон
-    const hp = Math.floor(power * 0.6);
-    const damage = Math.max(1, Math.floor(power * 0.13));
+    // HP и урон пропорциональны силе (из enemies.json)
+    const hp = Math.floor(power * enemiesConfig.stats.hpRatio);
+    const damage = Math.max(1, Math.floor(power * enemiesConfig.stats.damageRatio));
 
     return {
         id: `enemy_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,

@@ -2,17 +2,18 @@ import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../model
 import { Item, migrateItemStats } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
 import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL } from '../models/Lamp';
-import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, DungeonConfig } from './DungeonSystem';
+import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, DungeonConfig, BOSS_MULTIPLIER } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
 import balanceData from '../../data/balance.json';
+import enemiesConfig from '../../data/enemies.json';
 
 // Re-export для использования в main.ts
 export type { BattleState, BattleResult };
 export { executeBattleRound };
 
-// Типы из баланса (только для dungeonScaling, combat, economy)
+// Типы из баланса (только для combat, economy)
 interface BalanceData {
-    dungeonScaling: DungeonConfig;
+    dungeonScaling: DungeonConfig; // Для обратной совместимости
     combat: CombatConfig;
     economy: {
         goldPerEnemy: number;
@@ -22,6 +23,13 @@ interface BalanceData {
 }
 
 const balance: BalanceData = balanceData as BalanceData;
+
+// Конфиг врагов из enemies.json
+const enemyConfig = {
+    minEnemies: enemiesConfig.waves.minEnemies,
+    maxEnemies: enemiesConfig.waves.maxEnemies,
+    bossMultiplier: BOSS_MULTIPLIER
+};
 
 export interface GameState {
     hero: Hero;
@@ -150,16 +158,16 @@ export function equipFromInventory(state: GameState, itemId: string): boolean {
 export function fight(state: GameState): BattleResult {
     const isBoss = isBossStage(state.dungeon.stage);
 
-    // Генерация врагов
+    // Генерация врагов (используем enemies.json)
     let targetPower = state.dungeon.currentEnemyPower;
     if (isBoss) {
-        targetPower *= balance.dungeonScaling.bossMultiplier;
+        targetPower *= enemyConfig.bossMultiplier;
     }
 
     const enemies = generateEnemyWave(
         targetPower,
-        balance.dungeonScaling.enemiesPerWave.min,
-        balance.dungeonScaling.enemiesPerWave.max,
+        enemyConfig.minEnemies,
+        enemyConfig.maxEnemies,
         isBoss
     );
 
@@ -243,15 +251,16 @@ export function getCurrentLampConfig(state: GameState) {
 export function generateEnemiesForBattle(state: GameState): Enemy[] {
     const isBoss = isBossStage(state.dungeon.stage);
 
+    // Используем enemies.json
     let targetPower = state.dungeon.currentEnemyPower;
     if (isBoss) {
-        targetPower *= balance.dungeonScaling.bossMultiplier;
+        targetPower *= enemyConfig.bossMultiplier;
     }
 
     return generateEnemyWave(
         targetPower,
-        balance.dungeonScaling.enemiesPerWave.min,
-        balance.dungeonScaling.enemiesPerWave.max,
+        enemyConfig.minEnemies,
+        enemyConfig.maxEnemies,
         isBoss
     );
 }

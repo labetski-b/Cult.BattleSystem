@@ -1,0 +1,18 @@
+{
+    "progression": {
+        "baseEnemyPower": 50,
+        "powerPerStage": 1.12,
+        "stagesPerChapter": 5
+    },
+    "waves": {
+        "minEnemies": 1,
+        "maxEnemies": 3
+    },
+    "boss": {
+        "powerMultiplier": 1.3
+    },
+    "stats": {
+        "hpRatio": 0.6,
+        "damageRatio": 0.13
+    }
+}

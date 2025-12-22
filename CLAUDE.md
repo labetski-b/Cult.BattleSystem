@@ -34,7 +34,8 @@ git push
 - `rarities.json` — 7 редкостей с цветами и множителями
 - `lamp-levels.json` — 31 уровень лампы с весами редкостей
 - `items.json` — basePowerPerLevel, levelRange, slotRatios
-- `balance.json` — dungeonScaling, combat, economy
+- `enemies.json` — прогрессия врагов, волны, босс, статы
+- `balance.json` — combat, economy
 
 ### Формула силы предмета:
 ```

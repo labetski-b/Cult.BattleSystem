@@ -50,43 +50,36 @@ heroPower = maxHp + damage * 5
 
 ## Враги (Enemies)
 
+Все настройки в `data/enemies.json`
+
 ### Сила врага на этапе
 ```
-globalStage = (chapter - 1) * 5 + stage
+globalStage = (chapter - 1) * stagesPerChapter + stage
 enemyPower = baseEnemyPower * (powerPerStage ^ (globalStage - 1))
 ```
-- `baseEnemyPower` = 50
-- `powerPerStage` = 1.12 (+12% за этап)
+- `baseEnemyPower` = из enemies.json (50)
+- `powerPerStage` = из enemies.json (1.12, +12% за этап)
+- `stagesPerChapter` = из enemies.json (5)
 
 ### Босс
 ```
-bossPower = enemyPower * bossMultiplier
+bossPower = enemyPower * powerMultiplier
 ```
-- `bossMultiplier` = 2.5
+- `powerMultiplier` = из enemies.json/boss
 
 ### Статы врага
 ```
 variance = 0.9 + random() * 0.2  // ±10%
 power = targetPower * variance
-hp = floor(power * 0.6)
-damage = max(1, floor(power * 0.13))
+hp = floor(power * hpRatio)
+damage = max(1, floor(power * damageRatio))
 ```
+- `hpRatio` = из enemies.json/stats (0.6)
+- `damageRatio` = из enemies.json/stats (0.13)
 
 ### Волны врагов
-- Обычный этап: 1-3 врага, сила делится поровну
+- Обычный этап: minEnemies-maxEnemies врагов, сила делится поровну
 - Босс: 1 враг с полной силой
-
----
-
-## Рост силы врагов (примеры)
-
-| Данж | Stage | Global | Power | Босс (×2.5) |
-|------|-------|--------|-------|-------------|
-| 1-1  | 1     | 1      | 50    | — |
-| 1-5  | 5     | 5      | 78    | 196 |
-| 2-1  | 1     | 6      | 88    | — |
-| 5-1  | 1     | 21     | 548   | — |
-| 10-1 | 1     | 46     | 8963  | — |
 
 ---
 
@@ -97,4 +90,5 @@ damage = max(1, floor(power * 0.13))
 | `data/items.json` | basePowerPerLevel, levelRange, slotRatios |
 | `data/rarities.json` | 7 редкостей с multiplier |
 | `data/lamp-levels.json` | 31 уровень лампы с весами редкостей |
-| `data/balance.json` | dungeonScaling, combat, economy |
+| `data/enemies.json` | прогрессия, волны, босс, статы врагов |
+| `data/balance.json` | combat, economy |
