@@ -226,16 +226,20 @@ function showBattleResult(victory: boolean, details: string): void {
 function showBattleArena(): void {
     $('#battle-arena').classList.remove('hidden');
     $('#battle-result').classList.add('hidden');
-    // Скрыть экипировку во время боя
+    // Скрыть экипировку и нижнюю панель во время боя
     document.querySelector('.equipment')?.classList.add('hidden');
+    document.querySelector('.debug-panel')?.classList.add('hidden');
+    document.querySelector('.lamp-section')?.classList.add('hidden');
 }
 
 // Скрыть арену боя
 function hideBattleArena(): void {
     $('#battle-arena').classList.add('hidden');
     stopAutoMode();
-    // Показать экипировку после боя
+    // Показать экипировку и нижнюю панель после боя
     document.querySelector('.equipment')?.classList.remove('hidden');
+    document.querySelector('.debug-panel')?.classList.remove('hidden');
+    document.querySelector('.lamp-section')?.classList.remove('hidden');
 }
 
 // Отрисовать врагов в арене
