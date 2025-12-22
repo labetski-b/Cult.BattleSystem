@@ -9,7 +9,6 @@ import {
     addLamps,
     addGold,
     resetGame,
-    getBalance,
     saveGame,
     generateEnemiesForBattle,
     startStepBattle,
@@ -374,10 +373,9 @@ function finishBattle(): void {
 
     // Показать результат
     if (result.victory) {
-        const goldTotal = result.goldReward + getBalance().economy.goldPerStageClear;
-        const xpText = xpResult ? ` | +${xpResult.xpGained} XP` : '';
-        const levelText = xpResult && xpResult.levelsGained > 0 ? ` | 🎉 LVL UP!` : '';
-        showBattleResult(true, `Побеждено: ${result.enemiesDefeated.length} | +${goldTotal}🪙${xpText}${levelText}`);
+        const xpText = xpResult ? `+${xpResult.xpGained} XP` : '';
+        const levelText = xpResult && xpResult.levelsGained > 0 ? ` 🎉 LVL UP!` : '';
+        showBattleResult(true, `Победа! ${xpText}${levelText}`);
     } else {
         showBattleResult(false, `Вы погибли! Враги были слишком сильны.`);
     }
