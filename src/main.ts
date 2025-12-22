@@ -615,6 +615,20 @@ function setupEventListeners(): void {
     $('#close-rarity-popup').addEventListener('click', closeRarityPopup);
     $('.rarity-popup-overlay').addEventListener('click', closeRarityPopup);
 
+    // Горячие клавиши
+    document.addEventListener('keydown', (e) => {
+        // Q — открыть лут
+        if (e.key === 'q' || e.key === 'Q' || e.key === 'й' || e.key === 'Й') {
+            if (gameState.hero.lamps > 0 && !pendingItem) {
+                const item = openLoot(gameState);
+                if (item) {
+                    showLootPopup(item);
+                    updateUI();
+                }
+            }
+        }
+    });
+
     // Дебаг
     $('#add-lamps').addEventListener('click', () => {
         addLamps(gameState, 10);
