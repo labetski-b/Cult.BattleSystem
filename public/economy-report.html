@@ -124,6 +124,8 @@
             <canvas id="power-chart" width="1100" height="400"></canvas>
             <h2 style="margin-top: 30px;">Lamp & Gold</h2>
             <canvas id="economy-chart" width="1100" height="300"></canvas>
+            <h2 style="margin-top: 30px;">Hero Level</h2>
+            <canvas id="hero-level-chart" width="1100" height="250"></canvas>
             <h2 style="margin-top: 30px;">Loots per Stage</h2>
             <canvas id="loots-chart" width="1100" height="300"></canvas>
         </div>
@@ -402,17 +404,14 @@
 
             // Данные
             const lampLevels = data.map(d => d.lamp_level || 1);
-            const heroLevels = data.map(d => d.hero_level || 1);
             const goldValues = data.map(d => d.gold || 0);
 
             const maxLamp = Math.max(...lampLevels, 5);
-            const maxHeroLevel = Math.max(...heroLevels, 5);
-            const maxLevel = Math.max(maxLamp, maxHeroLevel);
             const maxGold = Math.max(...goldValues) * 1.1 || 1000;
 
             // Функция преобразования координат
             const xScale = (i) => padding.left + (i / (data.length - 1)) * width;
-            const yScaleLevel = (v) => padding.top + height - ((v - 1) / (maxLevel - 1)) * height;
+            const yScaleLamp = (v) => padding.top + height - ((v - 1) / (maxLamp - 1)) * height;
             const yScaleGold = (v) => padding.top + height - (v / maxGold) * height;
 
             // Сетка
@@ -455,29 +454,12 @@
             ctx.beginPath();
             for (let i = 0; i < data.length; i++) {
                 const x = xScale(i);
-                const y = yScaleLevel(lampLevels[i]);
+                const y = yScaleLamp(lampLevels[i]);
                 if (i === 0) {
                     ctx.moveTo(x, y);
                 } else {
                     // Ступенчатая линия
-                    ctx.lineTo(x, yScaleLevel(lampLevels[i - 1]));
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.stroke();
-
-            // Линия Hero Level (зелёная, ступенчатая)
-            ctx.strokeStyle = '#6bff6b';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            for (let i = 0; i < data.length; i++) {
-                const x = xScale(i);
-                const y = yScaleLevel(heroLevels[i]);
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    // Ступенчатая линия
-                    ctx.lineTo(x, yScaleLevel(heroLevels[i - 1]));
+                    ctx.lineTo(x, yScaleLamp(lampLevels[i - 1]));
                     ctx.lineTo(x, y);
                 }
             }
@@ -501,12 +483,12 @@
                 }
             }
 
-            // Метки Y слева (Levels)
-            ctx.fillStyle = '#888';
+            // Метки Y слева (Lamp Level)
+            ctx.fillStyle = '#6bb5ff';
             ctx.font = '12px Courier New';
             ctx.textAlign = 'right';
-            for (let lvl = 1; lvl <= maxLevel; lvl++) {
-                const y = yScaleLevel(lvl);
+            for (let lvl = 1; lvl <= maxLamp; lvl++) {
+                const y = yScaleLamp(lvl);
                 if (y >= padding.top && y <= padding.top + height) {
                     ctx.fillText(`Lv${lvl}`, padding.left - 10, y + 4);
                 }
@@ -527,13 +509,96 @@
             ctx.fillRect(padding.left + 10, padding.top + 10, 12, 12);
             ctx.fillText('Lamp Level', padding.left + 30, padding.top + 20);
 
-            ctx.fillStyle = '#6bff6b';
-            ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
-            ctx.fillText('Hero Level', padding.left + 30, padding.top + 40);
-
             ctx.fillStyle = '#ffd700';
-            ctx.fillRect(padding.left + 10, padding.top + 50, 12, 12);
-            ctx.fillText('Gold', padding.left + 30, padding.top + 60);
+            ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
+            ctx.fillText('Gold', padding.left + 30, padding.top + 40);
+        }
+
+        function renderHeroLevelChart(csv) {
+            if (!csv) return;
+
+            const canvas = document.getElementById('hero-level-chart');
+            const ctx = canvas.getContext('2d');
+            const data = csv.data;
+
+            const padding = { top: 40, right: 80, bottom: 60, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            // Очистка
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Данные
+            const heroLevels = data.map(d => d.hero_level || 1);
+            const maxLevel = Math.max(...heroLevels, 5);
+
+            // Функция преобразования координат
+            const xScale = (i) => padding.left + (i / (data.length - 1)) * width;
+            const yScale = (v) => padding.top + height - ((v - 1) / (maxLevel - 1)) * height;
+
+            // Сетка
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (height / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+            }
+
+            // Линия Hero Level (зелёная, ступенчатая)
+            ctx.strokeStyle = '#6bff6b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < data.length; i++) {
+                const x = xScale(i);
+                const y = yScale(heroLevels[i]);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    // Ступенчатая линия
+                    ctx.lineTo(x, yScale(heroLevels[i - 1]));
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Метки боссов
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].stage === 10) {
+                    const x = xScale(i);
+                    ctx.strokeStyle = '#ffd70044';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding.top);
+                    ctx.lineTo(x, padding.top + height);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = '11px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Ch${data[i].chapter}`, x, padding.top + height + 20);
+                }
+            }
+
+            // Метки Y слева (Hero Level)
+            ctx.fillStyle = '#6bff6b';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'right';
+            for (let lvl = 1; lvl <= maxLevel; lvl++) {
+                const y = yScale(lvl);
+                if (y >= padding.top && y <= padding.top + height) {
+                    ctx.fillText(`Lv${lvl}`, padding.left - 10, y + 4);
+                }
+            }
+
+            // Легенда
+            ctx.font = '14px Courier New';
+            ctx.fillStyle = '#6bff6b';
+            ctx.fillRect(padding.left + 10, padding.top + 10, 12, 12);
+            ctx.fillText('Hero Level', padding.left + 30, padding.top + 20);
         }
 
         function renderLootsChart(csv) {
@@ -650,6 +715,7 @@
             document.getElementById('stages-table').innerHTML = renderStagesTable(stages);
             renderChart(stages);
             renderEconomyChart(stages);
+            renderHeroLevelChart(stages);
             renderLootsChart(stages);
         }
 

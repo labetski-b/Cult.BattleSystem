@@ -63,6 +63,9 @@ export class EconomyTester {
     // Общий счётчик итераций (safety)
     private totalIterations = 0;
 
+    // Флаг поражения в прошлом бою
+    private lastBattleLost = false;
+
     constructor(config: Partial<TesterConfig> = {}) {
         this.config = { ...DEFAULT_CONFIG, ...config };
         this.state = createCleanGameState();
@@ -116,29 +119,40 @@ export class EconomyTester {
         return this.buildSummary();
     }
 
+    // Лут одного предмета
+    private lootOneItem(): void {
+        const item = generateItemFromLamp(this.state.lamp, this.state.hero.level);
+
+        this.chapterLoots++;
+        this.stageLoots++;
+
+        // Проверяем, лучше ли предмет текущего
+        const currentItem = this.state.hero.equipment[item.slot];
+        const currentPower = currentItem?.power || 0;
+
+        if (item.power > currentPower) {
+            equipItem(this.state.hero, item);
+            updateHeroStats(this.state.hero);
+        }
+
+        this.totalIterations++;
+    }
+
     // Фаза лута: лутаем пока сила героя < силы врагов
+    // Если прошлый бой проигран — сначала обязательно 1 лут
     private lootPhase(): void {
         const enemyPower = this.state.dungeon.currentEnemyPower;
 
+        // После поражения — сначала минимум 1 лут
+        if (this.lastBattleLost) {
+            this.lootOneItem();
+            this.lastBattleLost = false;
+            if (this.totalIterations > this.config.maxIterations) return;
+        }
+
+        // Затем лутаем пока сила < силы врагов
         while (getHeroPower(this.state.hero) < enemyPower) {
-            // Генерируем предмет напрямую (без траты ламп)
-            // Уровень предмета зависит от уровня героя
-            const item = generateItemFromLamp(this.state.lamp, this.state.hero.level);
-
-            this.chapterLoots++;
-            this.stageLoots++;
-
-            // Проверяем, лучше ли предмет текущего
-            const currentItem = this.state.hero.equipment[item.slot];
-            const currentPower = currentItem?.power || 0;
-
-            if (item.power > currentPower) {
-                equipItem(this.state.hero, item);
-                updateHeroStats(this.state.hero);
-            }
-
-            // Safety check
-            this.totalIterations++;
+            this.lootOneItem();
             if (this.totalIterations > this.config.maxIterations) break;
         }
     }
@@ -213,6 +227,7 @@ export class EconomyTester {
         } else {
             this.chapterDefeats++;
             this.stageDefeats++;
+            this.lastBattleLost = true;
             // После поражения тоже лечим для продолжения
             healHero(this.state.hero);
             return false;
