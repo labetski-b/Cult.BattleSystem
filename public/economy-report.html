@@ -124,6 +124,8 @@
             <canvas id="power-chart" width="1100" height="400"></canvas>
             <h2 style="margin-top: 30px;">Lamp & Gold</h2>
             <canvas id="economy-chart" width="1100" height="300"></canvas>
+            <h2 style="margin-top: 30px;">Loots per Stage</h2>
+            <canvas id="loots-chart" width="1100" height="300"></canvas>
         </div>
 
         <div id="summary" class="summary" style="display:none;"></div>
@@ -510,6 +512,110 @@
             ctx.fillText('Gold', padding.left + 30, padding.top + 40);
         }
 
+        function renderLootsChart(csv) {
+            if (!csv) return;
+
+            const canvas = document.getElementById('loots-chart');
+            const ctx = canvas.getContext('2d');
+            const data = csv.data;
+
+            const padding = { top: 40, right: 80, bottom: 60, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            // Очистка
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Данные
+            const loots = data.map(d => d.loots || 0);
+            const maxLoots = Math.max(...loots, 10) * 1.1;
+
+            // Функция преобразования координат
+            const xScale = (i) => padding.left + (i / (data.length - 1)) * width;
+            const yScale = (v) => padding.top + height - (v / maxLoots) * height;
+            const barWidth = Math.max(2, width / data.length - 1);
+
+            // Сетка
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (height / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+
+                // Метки Y
+                const value = Math.round((maxLoots / 4) * (4 - i));
+                ctx.fillStyle = '#888';
+                ctx.font = '12px Courier New';
+                ctx.textAlign = 'right';
+                ctx.fillText(value.toString(), padding.left - 10, y + 4);
+            }
+
+            // Столбцы лутов (оранжевые)
+            for (let i = 0; i < data.length; i++) {
+                const x = xScale(i) - barWidth / 2;
+                const barHeight = (loots[i] / maxLoots) * height;
+                const y = padding.top + height - barHeight;
+
+                // Цвет зависит от количества лутов
+                if (loots[i] > 10) {
+                    ctx.fillStyle = '#ff6b6b'; // красный - много лутов
+                } else if (loots[i] > 5) {
+                    ctx.fillStyle = '#ffaa6b'; // оранжевый
+                } else if (loots[i] > 0) {
+                    ctx.fillStyle = '#6bff6b'; // зелёный - мало лутов
+                } else {
+                    ctx.fillStyle = '#444'; // серый - нет лутов
+                }
+
+                ctx.fillRect(x, y, barWidth, barHeight);
+            }
+
+            // Метки боссов
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].stage === 10) {
+                    const x = xScale(i);
+                    ctx.strokeStyle = '#ffd70044';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding.top);
+                    ctx.lineTo(x, padding.top + height);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = '11px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Ch${data[i].chapter}`, x, padding.top + height + 20);
+                }
+            }
+
+            // Легенда
+            ctx.font = '14px Courier New';
+            ctx.fillStyle = '#6bff6b';
+            ctx.fillRect(padding.left + 10, padding.top + 10, 12, 12);
+            ctx.fillText('1-5 loots', padding.left + 30, padding.top + 20);
+
+            ctx.fillStyle = '#ffaa6b';
+            ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
+            ctx.fillText('6-10 loots', padding.left + 30, padding.top + 40);
+
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(padding.left + 10, padding.top + 50, 12, 12);
+            ctx.fillText('>10 loots', padding.left + 30, padding.top + 60);
+
+            // Заголовок оси Y
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.save();
+            ctx.translate(15, padding.top + height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Loots', 0, 0);
+            ctx.restore();
+        }
+
         async function init() {
             const [chapters, stages] = await Promise.all([
                 loadCSV('economy_chapters.csv'),
@@ -520,6 +626,7 @@
             document.getElementById('stages-table').innerHTML = renderStagesTable(stages);
             renderChart(stages);
             renderEconomyChart(stages);
+            renderLootsChart(stages);
         }
 
         init();
