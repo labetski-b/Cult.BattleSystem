@@ -94,7 +94,8 @@ export function calculateItemStats(
     const ratios = SLOT_STAT_RATIOS[slot];
 
     // Target power от уровня и редкости (экспоненциальный рост)
-    const targetPower = itemsConfig.basePowerPerLevel * Math.pow(1.5, level - 1) * RARITY_MULTIPLIERS[rarity];
+    const growthRate = itemsConfig.powerGrowthPerLevel;
+    const targetPower = itemsConfig.basePowerPerLevel * Math.pow(growthRate, level - 1) * RARITY_MULTIPLIERS[rarity];
 
     // Вариация ±15%
     const variance = 0.85 + Math.random() * 0.3;

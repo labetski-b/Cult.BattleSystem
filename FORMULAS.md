@@ -36,10 +36,10 @@ effectivePower = hp + 4 * damage
 
 ### Target Power (целевая сила предмета)
 ```
-targetPower = basePowerPerLevel * 1.5^(itemLevel-1) * rarityMultiplier
+targetPower = basePowerPerLevel * powerGrowthPerLevel^(itemLevel-1) * rarityMultiplier
 ```
 - `basePowerPerLevel` = 20 (из items.json)
-- `1.5` = множитель роста за уровень (+50%)
+- `powerGrowthPerLevel` = 1.2 (из items.json) — множитель роста за уровень (+20%)
 - `rarityMultiplier` = из rarities.json (1.0 ... 11.39)
 
 ### Уровень предмета
@@ -132,7 +132,7 @@ damage = max(1, floor(power * damageRatio))
 
 | Файл | Содержимое |
 |------|------------|
-| `data/items.json` | basePowerPerLevel, levelRange, slotRatios |
+| `data/items.json` | basePowerPerLevel, powerGrowthPerLevel, levelRange, slotRatios |
 | `data/rarities.json` | 7 редкостей с multiplier |
 | `data/lamp-levels.json` | 31 уровень лампы с весами редкостей |
 | `data/enemies.json` | stageTable[] (power, xp), волны, босс, статы |

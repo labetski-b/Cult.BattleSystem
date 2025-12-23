@@ -1,5 +1,6 @@
 {
     "basePowerPerLevel": 20,
+    "powerGrowthPerLevel": 1.2,
     "levelRange": {
         "minLevelOffset": 5,
         "maxRarityLevelOffset": 0
