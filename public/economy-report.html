@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economy Test Report</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            margin: 0;
+        }
+        h1, h2 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 8px 12px;
+            text-align: right;
+        }
+        th {
+            background: #2a2a4e;
+            color: #ffd700;
+        }
+        tr:nth-child(even) {
+            background: #222244;
+        }
+        tr:hover {
+            background: #333366;
+        }
+        .chapter-row {
+            background: #2a4a2a !important;
+            font-weight: bold;
+        }
+        .defeat-high {
+            color: #ff6b6b;
+        }
+        .power-ahead {
+            color: #6bff6b;
+        }
+        .power-behind {
+            color: #ff6b6b;
+        }
+        .summary {
+            background: #2a2a4e;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #2a2a4e;
+            border: none;
+            color: #eee;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .tab.active {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+        .table-container {
+            display: none;
+        }
+        .table-container.active {
+            display: block;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        .error {
+            color: #ff6b6b;
+            padding: 20px;
+            background: #442222;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Economy Test Report</h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('chapters')">Chapters</button>
+            <button class="tab" onclick="showTab('stages')">Stages</button>
+        </div>
+
+        <div id="chapters-container" class="table-container active">
+            <h2>Chapters Summary</h2>
+            <div id="chapters-table" class="loading">Loading...</div>
+        </div>
+
+        <div id="stages-container" class="table-container">
+            <h2>Detailed Stages</h2>
+            <div id="stages-table" class="loading">Loading...</div>
+        </div>
+
+        <div id="summary" class="summary" style="display:none;"></div>
+    </div>
+
+    <script>
+        const BASE_URL = '';
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.table-container').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`${tab}-container`).classList.add('active');
+        }
+
+        async function loadCSV(filename) {
+            try {
+                const response = await fetch(`${BASE_URL}${filename}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const text = await response.text();
+                return parseCSV(text);
+            } catch (e) {
+                console.error(`Failed to load ${filename}:`, e);
+                return null;
+            }
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                const row = {};
+                headers.forEach((h, j) => {
+                    row[h] = isNaN(values[j]) ? values[j] : Number(values[j]);
+                });
+                data.push(row);
+            }
+
+            return { headers, data };
+        }
+
+        function renderChaptersTable(csv) {
+            if (!csv) {
+                return '<div class="error">Failed to load chapters data</div>';
+            }
+
+            let html = `<table>
+                <tr>
+                    <th>Ch</th>
+                    <th>Loots</th>
+                    <th>Battles</th>
+                    <th>Defeats</th>
+                    <th>Lamp</th>
+                    <th>HeroLvl</th>
+                    <th>Power</th>
+                    <th>Enemy</th>
+                    <th>Gold Net</th>
+                </tr>`;
+
+            let totalLoots = 0, totalBattles = 0, totalDefeats = 0, totalGold = 0;
+
+            for (const row of csv.data) {
+                const powerClass = row.hero_power > row.max_enemy_power ? 'power-ahead' : 'power-behind';
+                const defeatClass = row.defeats > 5 ? 'defeat-high' : '';
+
+                totalLoots += row.loots;
+                totalBattles += row.battles;
+                totalDefeats += row.defeats;
+                totalGold += row.gold_net;
+
+                html += `<tr>
+                    <td>${row.chapter}</td>
+                    <td>${row.loots}</td>
+                    <td>${row.battles}</td>
+                    <td class="${defeatClass}">${row.defeats}</td>
+                    <td>${row.lamp_level}</td>
+                    <td>${row.hero_level}</td>
+                    <td class="${powerClass}">${row.hero_power}</td>
+                    <td>${row.max_enemy_power}</td>
+                    <td>${row.gold_net >= 0 ? '+' : ''}${row.gold_net}</td>
+                </tr>`;
+            }
+
+            html += '</table>';
+
+            // Summary
+            const last = csv.data[csv.data.length - 1];
+            document.getElementById('summary').innerHTML = `
+                <strong>Total:</strong> ${totalLoots} loots, ${totalBattles} battles, ${totalDefeats} defeats<br>
+                <strong>Final:</strong> Lamp Lvl ${last?.lamp_level || '?'}, Power ${last?.hero_power || '?'}, Hero Lvl ${last?.hero_level || '?'}<br>
+                <strong>Gold:</strong> net ${totalGold >= 0 ? '+' : ''}${totalGold}
+            `;
+            document.getElementById('summary').style.display = 'block';
+
+            return html;
+        }
+
+        function renderStagesTable(csv) {
+            if (!csv) {
+                return '<div class="error">Failed to load stages data</div>';
+            }
+
+            let html = `<table>
+                <tr>
+                    <th>Ch.St</th>
+                    <th>Loots</th>
+                    <th>Battles</th>
+                    <th>Defeats</th>
+                    <th>HLvl</th>
+                    <th>Hero</th>
+                    <th>Enemy</th>
+                </tr>`;
+
+            for (const row of csv.data) {
+                const isBoss = row.stage === 10;
+                const powerClass = row.hero_power > row.enemy_power ? 'power-ahead' : 'power-behind';
+                const defeatClass = row.defeats > 3 ? 'defeat-high' : '';
+                const rowClass = isBoss ? 'chapter-row' : '';
+
+                html += `<tr class="${rowClass}">
+                    <td>${row.chapter}.${row.stage}</td>
+                    <td>${row.loots}</td>
+                    <td>${row.battles}</td>
+                    <td class="${defeatClass}">${row.defeats}</td>
+                    <td>${row.hero_level}</td>
+                    <td class="${powerClass}">${row.hero_power}</td>
+                    <td>${row.enemy_power}</td>
+                </tr>`;
+            }
+
+            html += '</table>';
+            return html;
+        }
+
+        async function init() {
+            const [chapters, stages] = await Promise.all([
+                loadCSV('economy_chapters.csv'),
+                loadCSV('economy_stages.csv')
+            ]);
+
+            document.getElementById('chapters-table').innerHTML = renderChaptersTable(chapters);
+            document.getElementById('stages-table').innerHTML = renderStagesTable(stages);
+        }
+
+        init();
+    </script>
+</body>
+</html>

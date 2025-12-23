@@ -129,10 +129,18 @@ function main(): void {
     // Вывод сводной таблицы по главам
     printChaptersTable(summary);
 
-    // Сохранение CSV
+    // Сохранение CSV в output/ и public/ (для GitHub Pages)
     const outputDir = path.join(process.cwd(), 'output');
+    const publicDir = path.join(process.cwd(), 'public');
+
     saveStagesCSV(summary, path.join(outputDir, 'economy_stages.csv'));
     saveChaptersCSV(summary, path.join(outputDir, 'economy_chapters.csv'));
+
+    // Копируем в public для веб-отчёта
+    saveStagesCSV(summary, path.join(publicDir, 'economy_stages.csv'));
+    saveChaptersCSV(summary, path.join(publicDir, 'economy_chapters.csv'));
+
+    console.log(`\nWeb report: https://labetski-b.github.io/Cult.BattleSystem/economy-report.html`);
 }
 
 main();
