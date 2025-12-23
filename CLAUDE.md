@@ -61,10 +61,35 @@ targetPower = basePowerPerLevel * 1.5^(itemLevel-1) * rarityMultiplier
 ## Команды
 
 ```bash
-npm run dev      # Запуск dev сервера
-npm run build    # Сборка для продакшена
-git push         # Деплой на GitHub Pages
+npm run dev           # Запуск dev сервера
+npm run build         # Сборка для продакшена
+npm run test:economy  # Тест экономики (CLI)
+git push              # Деплой на GitHub Pages
 ```
+
+## Тестирование экономики
+
+**Запуск:** `npm run test:economy`
+
+Тестер симулирует прохождение игры:
+1. Лутает пока `heroPower < enemyPower`
+2. Апгрейдит лампу когда есть золото
+3. Бьётся, при поражении возвращается к луту
+4. Записывает метрики по главам
+
+**Результат:**
+- Таблица в консоли (Loots, Battles, Defeats, Power vs Enemy)
+- CSV в `output/economy_test.csv` для графиков
+
+**Файлы тестера:**
+- `src/testing/EconomyTester.ts` — основная логика
+- `src/testing/TestMetrics.ts` — интерфейсы
+- `src/testing/runTest.ts` — CLI скрипт
+
+**При изменении баланса** — прогнать `npm run test:economy` и проверить:
+- Сколько лутов нужно на главу
+- Соотношение Power vs Enemy
+- Количество поражений
 
 ## Тестовое окружение
 

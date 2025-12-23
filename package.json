@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc && vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "test:economy": "npx tsx src/testing/runTest.ts"
   },
   "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.0",
     "vite": "^5.0.0"
   }

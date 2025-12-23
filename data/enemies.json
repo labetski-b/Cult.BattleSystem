@@ -6,7 +6,7 @@
     },
     "boss": {
         "powerMultiplier": 1
-    },
+    },  
     "stats": {
         "hpRatio": 0.6,
         "damageRatio": 0.13
