@@ -36,6 +36,6 @@ export interface TesterConfig {
 // Значения по умолчанию
 export const DEFAULT_CONFIG: TesterConfig = {
     maxChapters: 10,
-    maxIterations: 10000,
+    maxIterations: 50000,
     verbose: false
 };

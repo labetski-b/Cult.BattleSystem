@@ -8,8 +8,8 @@ function printTable(summary: TestSummary): void {
     console.log('\n=== ECONOMY TEST RESULTS ===\n');
 
     // Заголовок таблицы
-    const header = 'Ch | Loots | Battles | Defeats | Lamp | Power   | Enemy   | Gold Net';
-    const separator = '---|-------|---------|---------|------|---------|---------|----------';
+    const header = 'Ch | Loots | Battles | Defeats | Lamp | HeroLvl | Power   | Enemy   | Gold Net';
+    const separator = '---|-------|---------|---------|------|---------|---------|---------|----------';
 
     console.log(header);
     console.log(separator);
@@ -25,6 +25,7 @@ function printTable(summary: TestSummary): void {
             `${ch.battles.toString().padStart(7)} | ` +
             `${ch.defeats.toString().padStart(7)} | ` +
             `${ch.lampLevel.toString().padStart(4)} | ` +
+            `${ch.heroLevel.toString().padStart(7)} | ` +
             `${ch.heroPower.toString().padStart(7)} | ` +
             `${ch.maxEnemyPower.toString().padStart(7)} | ` +
             `${goldStr.padStart(8)}`

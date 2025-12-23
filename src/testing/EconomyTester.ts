@@ -1,10 +1,10 @@
 import { ChapterMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
-import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
+import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
-import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, calculateStagePower, STAGES_PER_CHAPTER } from '../systems/DungeonSystem';
+import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, calculateStagePower, STAGES_PER_CHAPTER, getStageXpReward } from '../systems/DungeonSystem';
 import enemiesConfig from '../../data/enemies.json';
 
 // Конфиг врагов
@@ -108,6 +108,7 @@ export class EconomyTester {
 
         while (getHeroPower(this.state.hero) < enemyPower) {
             // Генерируем предмет напрямую (без траты ламп)
+            // Уровень предмета зависит от уровня героя
             const item = generateItemFromLamp(this.state.lamp, this.state.hero.level);
 
             this.chapterLoots++;
@@ -175,9 +176,15 @@ export class EconomyTester {
         if (this.state.hero.hp < 0) this.state.hero.hp = 0;
 
         if (result.victory) {
+            // Золото
             const goldReward = result.goldReward + this.balance.economy.goldPerStageClear;
             this.state.hero.gold += goldReward;
             this.chapterGoldEarned += goldReward;
+
+            // XP за этап (до advanceProgress!)
+            const xpReward = getStageXpReward(this.state.dungeon.chapter, this.state.dungeon.stage);
+            addXp(this.state.hero, xpReward);
+
             this.state.dungeon = advanceProgress(this.state.dungeon);
             healHero(this.state.hero);
             return true;
