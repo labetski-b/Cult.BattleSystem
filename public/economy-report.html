@@ -106,6 +106,7 @@
         <div class="tabs">
             <button class="tab active" onclick="showTab('chapters')">Chapters</button>
             <button class="tab" onclick="showTab('stages')">Stages</button>
+            <button class="tab" onclick="showTab('chart')">Chart</button>
         </div>
 
         <div id="chapters-container" class="table-container active">
@@ -116,6 +117,11 @@
         <div id="stages-container" class="table-container">
             <h2>Detailed Stages</h2>
             <div id="stages-table" class="loading">Loading...</div>
+        </div>
+
+        <div id="chart-container" class="table-container">
+            <h2>Power Progression</h2>
+            <canvas id="power-chart" width="1100" height="400"></canvas>
         </div>
 
         <div id="summary" class="summary" style="display:none;"></div>
@@ -260,6 +266,121 @@
             return html;
         }
 
+        function renderChart(csv) {
+            if (!csv) return;
+
+            const canvas = document.getElementById('power-chart');
+            const ctx = canvas.getContext('2d');
+            const data = csv.data;
+
+            // Размеры
+            const padding = { top: 40, right: 80, bottom: 60, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            // Очистка
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Данные
+            const heroPowers = data.map(d => d.hero_power);
+            const enemyPowers = data.map(d => d.enemy_power);
+            const labels = data.map(d => `${d.chapter}.${d.stage}`);
+
+            const maxPower = Math.max(...heroPowers, ...enemyPowers) * 1.1;
+            const minPower = 0;
+
+            // Сетка
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            const gridLines = 5;
+            for (let i = 0; i <= gridLines; i++) {
+                const y = padding.top + (height / gridLines) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+
+                // Метки Y
+                const value = Math.round(maxPower - (maxPower - minPower) * (i / gridLines));
+                ctx.fillStyle = '#888';
+                ctx.font = '12px Courier New';
+                ctx.textAlign = 'right';
+                ctx.fillText(value.toString(), padding.left - 10, y + 4);
+            }
+
+            // Функция преобразования координат
+            const xScale = (i) => padding.left + (i / (data.length - 1)) * width;
+            const yScale = (v) => padding.top + height - ((v - minPower) / (maxPower - minPower)) * height;
+
+            // Линия Enemy Power (красная)
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < data.length; i++) {
+                const x = xScale(i);
+                const y = yScale(enemyPowers[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Линия Hero Power (зелёная)
+            ctx.strokeStyle = '#6bff6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < data.length; i++) {
+                const x = xScale(i);
+                const y = yScale(heroPowers[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Точки боссов (stage 10)
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].stage === 10) {
+                    const x = xScale(i);
+
+                    // Вертикальная линия босса
+                    ctx.strokeStyle = '#ffd70044';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding.top);
+                    ctx.lineTo(x, padding.top + height);
+                    ctx.stroke();
+
+                    // Метка главы
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = '11px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Ch${data[i].chapter}`, x, padding.top + height + 20);
+                }
+            }
+
+            // Легенда
+            ctx.font = '14px Courier New';
+            ctx.fillStyle = '#6bff6b';
+            ctx.fillRect(padding.left + width - 120, padding.top + 10, 12, 12);
+            ctx.fillText('Cult Power', padding.left + width - 100, padding.top + 20);
+
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(padding.left + width - 120, padding.top + 30, 12, 12);
+            ctx.fillText('Enemy Power', padding.left + width - 100, padding.top + 40);
+
+            // Заголовки осей
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('Stage', padding.left + width / 2, canvas.height - 10);
+
+            ctx.save();
+            ctx.translate(15, padding.top + height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Power', 0, 0);
+            ctx.restore();
+        }
+
         async function init() {
             const [chapters, stages] = await Promise.all([
                 loadCSV('economy_chapters.csv'),
@@ -268,6 +389,7 @@
 
             document.getElementById('chapters-table').innerHTML = renderChaptersTable(chapters);
             document.getElementById('stages-table').innerHTML = renderStagesTable(stages);
+            renderChart(stages);
         }
 
         init();
