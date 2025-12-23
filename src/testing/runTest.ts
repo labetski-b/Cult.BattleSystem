@@ -7,8 +7,8 @@ import * as path from 'path';
 function printStagesTable(summary: TestSummary): void {
     console.log('\n=== DETAILED STAGES ===\n');
 
-    const header = 'Ch.St | Loots | Battles | Defeats | Hero    | Enemy';
-    const separator = '------|-------|---------|---------|---------|--------';
+    const header = 'Ch.St | Loots | Battles | Defeats | HLvl | Hero    | Enemy';
+    const separator = '------|-------|---------|---------|------|---------|--------';
 
     console.log(header);
     console.log(separator);
@@ -19,6 +19,7 @@ function printStagesTable(summary: TestSummary): void {
             `${st.loots.toString().padStart(5)} | ` +
             `${st.battles.toString().padStart(7)} | ` +
             `${st.defeats.toString().padStart(7)} | ` +
+            `${st.heroLevel.toString().padStart(4)} | ` +
             `${st.heroPower.toString().padStart(7)} | ` +
             `${st.enemyPower.toString().padStart(6)}`
         );
@@ -64,9 +65,9 @@ function printChaptersTable(summary: TestSummary): void {
 
 // Сохранение этапов в CSV
 function saveStagesCSV(summary: TestSummary, filePath: string): void {
-    const headers = 'chapter,stage,loots,battles,defeats,hero_power,enemy_power';
+    const headers = 'chapter,stage,loots,battles,defeats,hero_level,hero_power,enemy_power';
     const rows = summary.stages.map((st: StageMetrics) =>
-        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroPower},${st.enemyPower}`
+        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroLevel},${st.heroPower},${st.enemyPower}`
     );
 
     const csv = [headers, ...rows].join('\n');

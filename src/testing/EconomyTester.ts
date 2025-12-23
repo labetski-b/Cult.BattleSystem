@@ -72,7 +72,9 @@ export class EconomyTester {
         while (this.state.dungeon.chapter <= this.config.maxChapters) {
             this.totalIterations++;
             if (this.totalIterations > this.config.maxIterations) {
-                console.warn(`Reached max iterations (${this.config.maxIterations}), stopping`);
+                console.warn(`\nReached max iterations (${this.config.maxIterations}), stopping at Ch ${this.state.dungeon.chapter}.${this.state.dungeon.stage}`);
+                console.warn(`Hero: Lvl ${this.state.hero.level}, Power ${getHeroPower(this.state.hero)}, Gold ${this.state.hero.gold}`);
+                console.warn(`Enemy Power: ${this.state.dungeon.currentEnemyPower}, Lamp Lvl: ${this.state.lamp.level}`);
                 break;
             }
 
@@ -219,6 +221,7 @@ export class EconomyTester {
             loots: this.stageLoots,
             battles: this.stageBattles,
             defeats: this.stageDefeats,
+            heroLevel: this.state.hero.level,
             heroPower: getHeroPower(this.state.hero),
             enemyPower: Math.floor(enemyPower)
         });

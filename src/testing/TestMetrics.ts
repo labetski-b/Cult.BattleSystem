@@ -5,6 +5,7 @@ export interface StageMetrics {
     loots: number;           // Сколько лутов перед этим этапом
     battles: number;         // Сколько попыток боя (включая поражения)
     defeats: number;         // Количество поражений
+    heroLevel: number;       // Уровень героя
     heroPower: number;       // Сила героя перед боем
     enemyPower: number;      // Сила врага
 }
