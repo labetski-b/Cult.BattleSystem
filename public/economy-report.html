@@ -402,14 +402,17 @@
 
             // Данные
             const lampLevels = data.map(d => d.lamp_level || 1);
+            const heroLevels = data.map(d => d.hero_level || 1);
             const goldValues = data.map(d => d.gold || 0);
 
             const maxLamp = Math.max(...lampLevels, 5);
+            const maxHeroLevel = Math.max(...heroLevels, 5);
+            const maxLevel = Math.max(maxLamp, maxHeroLevel);
             const maxGold = Math.max(...goldValues) * 1.1 || 1000;
 
             // Функция преобразования координат
             const xScale = (i) => padding.left + (i / (data.length - 1)) * width;
-            const yScaleLamp = (v) => padding.top + height - ((v - 1) / (maxLamp - 1)) * height;
+            const yScaleLevel = (v) => padding.top + height - ((v - 1) / (maxLevel - 1)) * height;
             const yScaleGold = (v) => padding.top + height - (v / maxGold) * height;
 
             // Сетка
@@ -452,12 +455,29 @@
             ctx.beginPath();
             for (let i = 0; i < data.length; i++) {
                 const x = xScale(i);
-                const y = yScaleLamp(lampLevels[i]);
+                const y = yScaleLevel(lampLevels[i]);
                 if (i === 0) {
                     ctx.moveTo(x, y);
                 } else {
                     // Ступенчатая линия
-                    ctx.lineTo(x, yScaleLamp(lampLevels[i - 1]));
+                    ctx.lineTo(x, yScaleLevel(lampLevels[i - 1]));
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Линия Hero Level (зелёная, ступенчатая)
+            ctx.strokeStyle = '#6bff6b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < data.length; i++) {
+                const x = xScale(i);
+                const y = yScaleLevel(heroLevels[i]);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    // Ступенчатая линия
+                    ctx.lineTo(x, yScaleLevel(heroLevels[i - 1]));
                     ctx.lineTo(x, y);
                 }
             }
@@ -481,12 +501,12 @@
                 }
             }
 
-            // Метки Y слева (Lamp Level)
-            ctx.fillStyle = '#6bb5ff';
+            // Метки Y слева (Levels)
+            ctx.fillStyle = '#888';
             ctx.font = '12px Courier New';
             ctx.textAlign = 'right';
-            for (let lvl = 1; lvl <= maxLamp; lvl++) {
-                const y = yScaleLamp(lvl);
+            for (let lvl = 1; lvl <= maxLevel; lvl++) {
+                const y = yScaleLevel(lvl);
                 if (y >= padding.top && y <= padding.top + height) {
                     ctx.fillText(`Lv${lvl}`, padding.left - 10, y + 4);
                 }
@@ -507,9 +527,13 @@
             ctx.fillRect(padding.left + 10, padding.top + 10, 12, 12);
             ctx.fillText('Lamp Level', padding.left + 30, padding.top + 20);
 
-            ctx.fillStyle = '#ffd700';
+            ctx.fillStyle = '#6bff6b';
             ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
-            ctx.fillText('Gold', padding.left + 30, padding.top + 40);
+            ctx.fillText('Hero Level', padding.left + 30, padding.top + 40);
+
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(padding.left + 10, padding.top + 50, 12, 12);
+            ctx.fillText('Gold', padding.left + 30, padding.top + 60);
         }
 
         function renderLootsChart(csv) {
