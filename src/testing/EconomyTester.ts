@@ -1,6 +1,7 @@
 import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
+import { SLOT_TYPES } from '../models/Item';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
@@ -17,6 +18,11 @@ const enemyConfig = {
 // Расчёт силы культа (effectivePower = maxHp + damage * 4)
 function getHeroPower(hero: Hero): number {
     return hero.maxHp + hero.damage * 4;
+}
+
+// Подсчёт заполненных слотов
+function getFilledSlots(hero: Hero): number {
+    return SLOT_TYPES.filter(slot => hero.equipment[slot] !== null).length;
 }
 
 // Создание чистого GameState (без localStorage)
@@ -223,6 +229,9 @@ export class EconomyTester {
             defeats: this.stageDefeats,
             heroLevel: this.state.hero.level,
             heroPower: getHeroPower(this.state.hero),
+            heroHp: this.state.hero.maxHp,
+            heroDamage: this.state.hero.damage,
+            slots: getFilledSlots(this.state.hero),
             enemyPower: Math.floor(enemyPower)
         });
     }

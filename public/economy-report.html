@@ -229,7 +229,10 @@
                     <th>Battles</th>
                     <th>Defeats</th>
                     <th>HLvl</th>
-                    <th>Hero</th>
+                    <th>Slots</th>
+                    <th>HP</th>
+                    <th>Dmg</th>
+                    <th>Power</th>
                     <th>Enemy</th>
                 </tr>`;
 
@@ -245,6 +248,9 @@
                     <td>${row.battles}</td>
                     <td class="${defeatClass}">${row.defeats}</td>
                     <td>${row.hero_level}</td>
+                    <td>${row.slots}/6</td>
+                    <td>${row.hero_hp}</td>
+                    <td>${row.hero_damage}</td>
                     <td class="${powerClass}">${row.hero_power}</td>
                     <td>${row.enemy_power}</td>
                 </tr>`;

@@ -7,6 +7,9 @@ export interface StageMetrics {
     defeats: number;         // Количество поражений
     heroLevel: number;       // Уровень героя
     heroPower: number;       // Сила героя перед боем
+    heroHp: number;          // HP героя
+    heroDamage: number;      // Урон героя
+    slots: number;           // Заполненных слотов (0-6)
     enemyPower: number;      // Сила врага
 }
 
@@ -49,6 +52,6 @@ export interface TesterConfig {
 // Значения по умолчанию
 export const DEFAULT_CONFIG: TesterConfig = {
     maxChapters: 10,
-    maxIterations: 50000,
+    maxIterations: 100000,
     verbose: false
 };
