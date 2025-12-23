@@ -1,6 +1,6 @@
 [
     { "level": 1, "price": 0, "time": 0, "weights": { "common": 100 } },
-    { "level": 2, "price": 100, "time": 10, "weights": { "common": 95, "good": 5 } },
+    { "level": 2, "price": 100000, "time": 10, "weights": { "common": 95, "good": 5 } },
     { "level": 3, "price": 170, "time": 30, "weights": { "common": 90, "good": 10 } },
     { "level": 4, "price": 240, "time": 60, "weights": { "common": 87, "good": 12, "rare": 1 } },
     { "level": 5, "price": 310, "time": 180, "weights": { "common": 83, "good": 14, "rare": 3 } },

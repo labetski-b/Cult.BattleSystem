@@ -1,4 +1,4 @@
-import { ChapterMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
+import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL } from '../models/Lamp';
@@ -39,6 +39,7 @@ export class EconomyTester {
     private config: TesterConfig;
     private state: GameState;
     private chapters: ChapterMetrics[] = [];
+    private stages: StageMetrics[] = [];
     private balance = getBalance();
 
     // Счётчики текущей главы
@@ -47,6 +48,11 @@ export class EconomyTester {
     private chapterDefeats = 0;
     private chapterGoldEarned = 0;
     private chapterGoldSpent = 0;
+
+    // Счётчики текущего этапа
+    private stageLoots = 0;
+    private stageBattles = 0;
+    private stageDefeats = 0;
 
     // Общий счётчик итераций (safety)
     private totalIterations = 0;
@@ -112,6 +118,7 @@ export class EconomyTester {
             const item = generateItemFromLamp(this.state.lamp, this.state.hero.level);
 
             this.chapterLoots++;
+            this.stageLoots++;
 
             // Проверяем, лучше ли предмет текущего
             const currentItem = this.state.hero.equipment[item.slot];
@@ -147,6 +154,8 @@ export class EconomyTester {
     // Фаза боя
     private battlePhase(): boolean {
         const isBoss = isBossStage(this.state.dungeon.stage);
+        const currentChapter = this.state.dungeon.chapter;
+        const currentStage = this.state.dungeon.stage;
 
         // Генерация врагов
         let targetPower = this.state.dungeon.currentEnemyPower;
@@ -170,12 +179,17 @@ export class EconomyTester {
         );
 
         this.chapterBattles++;
+        this.stageBattles++;
 
         // Применяем урон
         this.state.hero.hp -= result.heroDamage;
         if (this.state.hero.hp < 0) this.state.hero.hp = 0;
 
         if (result.victory) {
+            // Записываем метрики этапа перед переходом
+            this.recordStageMetrics(currentChapter, currentStage, targetPower);
+            this.resetStageCounters();
+
             // Золото
             const goldReward = result.goldReward + this.balance.economy.goldPerStageClear;
             this.state.hero.gold += goldReward;
@@ -190,10 +204,31 @@ export class EconomyTester {
             return true;
         } else {
             this.chapterDefeats++;
+            this.stageDefeats++;
             // После поражения тоже лечим для продолжения
             healHero(this.state.hero);
             return false;
         }
+    }
+
+    // Записать метрики этапа
+    private recordStageMetrics(chapter: number, stage: number, enemyPower: number): void {
+        this.stages.push({
+            chapter,
+            stage,
+            loots: this.stageLoots,
+            battles: this.stageBattles,
+            defeats: this.stageDefeats,
+            heroPower: getHeroPower(this.state.hero),
+            enemyPower: Math.floor(enemyPower)
+        });
+    }
+
+    // Сбросить счётчики этапа
+    private resetStageCounters(): void {
+        this.stageLoots = 0;
+        this.stageBattles = 0;
+        this.stageDefeats = 0;
     }
 
     // Записать метрики главы
@@ -244,7 +279,8 @@ export class EconomyTester {
             finalLampLevel: lastChapter?.lampLevel || 1,
             finalHeroPower: lastChapter?.heroPower || 0,
             finalHeroLevel: lastChapter?.heroLevel || 1,
-            chapters: this.chapters
+            chapters: this.chapters,
+            stages: this.stages
         };
     }
 }

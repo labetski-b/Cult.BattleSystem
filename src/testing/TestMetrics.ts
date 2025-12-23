@@ -1,3 +1,14 @@
+// Метрики по этапу (противнику)
+export interface StageMetrics {
+    chapter: number;
+    stage: number;
+    loots: number;           // Сколько лутов перед этим этапом
+    battles: number;         // Сколько попыток боя (включая поражения)
+    defeats: number;         // Количество поражений
+    heroPower: number;       // Сила героя перед боем
+    enemyPower: number;      // Сила врага
+}
+
 // Метрики по главе
 export interface ChapterMetrics {
     chapter: number;
@@ -24,6 +35,7 @@ export interface TestSummary {
     finalHeroPower: number;
     finalHeroLevel: number;
     chapters: ChapterMetrics[];
+    stages: StageMetrics[];      // Детальная статистика по этапам
 }
 
 // Конфигурация тестера

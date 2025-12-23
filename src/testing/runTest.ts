@@ -1,20 +1,42 @@
 import { EconomyTester } from './EconomyTester';
-import { TestSummary, ChapterMetrics } from './TestMetrics';
+import { TestSummary, ChapterMetrics, StageMetrics } from './TestMetrics';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Форматирование таблицы для консоли
-function printTable(summary: TestSummary): void {
-    console.log('\n=== ECONOMY TEST RESULTS ===\n');
+// Форматирование детальной таблицы по этапам
+function printStagesTable(summary: TestSummary): void {
+    console.log('\n=== DETAILED STAGES ===\n');
 
-    // Заголовок таблицы
+    const header = 'Ch.St | Loots | Battles | Defeats | Hero    | Enemy';
+    const separator = '------|-------|---------|---------|---------|--------';
+
+    console.log(header);
+    console.log(separator);
+
+    for (const st of summary.stages) {
+        console.log(
+            `${st.chapter.toString().padStart(2)}.${st.stage.toString().padStart(2)} | ` +
+            `${st.loots.toString().padStart(5)} | ` +
+            `${st.battles.toString().padStart(7)} | ` +
+            `${st.defeats.toString().padStart(7)} | ` +
+            `${st.heroPower.toString().padStart(7)} | ` +
+            `${st.enemyPower.toString().padStart(6)}`
+        );
+    }
+
+    console.log(separator);
+}
+
+// Форматирование сводной таблицы по главам
+function printChaptersTable(summary: TestSummary): void {
+    console.log('\n=== CHAPTERS SUMMARY ===\n');
+
     const header = 'Ch | Loots | Battles | Defeats | Lamp | HeroLvl | Power   | Enemy   | Gold Net';
     const separator = '---|-------|---------|---------|------|---------|---------|---------|----------';
 
     console.log(header);
     console.log(separator);
 
-    // Строки таблицы
     for (const ch of summary.chapters) {
         const goldNet = ch.goldEarned - ch.goldSpent;
         const goldStr = goldNet >= 0 ? `+${goldNet}` : `${goldNet}`;
@@ -40,8 +62,26 @@ function printTable(summary: TestSummary): void {
     console.log(`Gold: +${summary.totalGoldEarned} earned, -${summary.totalGoldSpent} spent, net ${summary.totalGoldEarned - summary.totalGoldSpent}`);
 }
 
-// Сохранение в CSV
-function saveCSV(summary: TestSummary, filePath: string): void {
+// Сохранение этапов в CSV
+function saveStagesCSV(summary: TestSummary, filePath: string): void {
+    const headers = 'chapter,stage,loots,battles,defeats,hero_power,enemy_power';
+    const rows = summary.stages.map((st: StageMetrics) =>
+        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroPower},${st.enemyPower}`
+    );
+
+    const csv = [headers, ...rows].join('\n');
+
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(filePath, csv);
+    console.log(`Stages CSV saved to: ${filePath}`);
+}
+
+// Сохранение глав в CSV
+function saveChaptersCSV(summary: TestSummary, filePath: string): void {
     const headers = 'chapter,loots,battles,defeats,lamp_level,hero_power,max_enemy_power,hero_level,gold_earned,gold_spent,gold_net';
     const rows = summary.chapters.map((ch: ChapterMetrics) =>
         `${ch.chapter},${ch.loots},${ch.battles},${ch.defeats},${ch.lampLevel},${ch.heroPower},${ch.maxEnemyPower},${ch.heroLevel},${ch.goldEarned},${ch.goldSpent},${ch.goldEarned - ch.goldSpent}`
@@ -49,19 +89,17 @@ function saveCSV(summary: TestSummary, filePath: string): void {
 
     const csv = [headers, ...rows].join('\n');
 
-    // Создаём директорию если не существует
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 
     fs.writeFileSync(filePath, csv);
-    console.log(`\nCSV saved to: ${filePath}`);
+    console.log(`Chapters CSV saved to: ${filePath}`);
 }
 
 // Основной запуск
 function main(): void {
-    // Парсинг аргументов командной строки
     const args = process.argv.slice(2);
     let maxChapters = 10;
     let verbose = false;
@@ -84,12 +122,16 @@ function main(): void {
 
     const summary = tester.run();
 
-    // Вывод таблицы
-    printTable(summary);
+    // Вывод детальной таблицы по этапам
+    printStagesTable(summary);
+
+    // Вывод сводной таблицы по главам
+    printChaptersTable(summary);
 
     // Сохранение CSV
-    const csvPath = path.join(process.cwd(), 'output', 'economy_test.csv');
-    saveCSV(summary, csvPath);
+    const outputDir = path.join(process.cwd(), 'output');
+    saveStagesCSV(summary, path.join(outputDir, 'economy_stages.csv'));
+    saveChaptersCSV(summary, path.join(outputDir, 'economy_chapters.csv'));
 }
 
 main();
