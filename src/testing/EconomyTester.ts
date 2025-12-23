@@ -232,7 +232,9 @@ export class EconomyTester {
             heroHp: this.state.hero.maxHp,
             heroDamage: this.state.hero.damage,
             slots: getFilledSlots(this.state.hero),
-            enemyPower: Math.floor(enemyPower)
+            enemyPower: Math.floor(enemyPower),
+            lampLevel: this.state.lamp.level,
+            gold: this.state.hero.gold
         });
     }
 

@@ -11,6 +11,8 @@ export interface StageMetrics {
     heroDamage: number;      // Урон героя
     slots: number;           // Заполненных слотов (0-6)
     enemyPower: number;      // Сила врага
+    lampLevel: number;       // Уровень лампы
+    gold: number;            // Золото у игрока
 }
 
 // Метрики по главе

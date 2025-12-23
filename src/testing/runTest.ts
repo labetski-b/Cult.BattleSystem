@@ -68,9 +68,9 @@ function printChaptersTable(summary: TestSummary): void {
 
 // Сохранение этапов в CSV
 function saveStagesCSV(summary: TestSummary, filePath: string): void {
-    const headers = 'chapter,stage,loots,battles,defeats,hero_level,slots,hero_hp,hero_damage,hero_power,enemy_power';
+    const headers = 'chapter,stage,loots,battles,defeats,hero_level,slots,hero_hp,hero_damage,hero_power,enemy_power,lamp_level,gold';
     const rows = summary.stages.map((st: StageMetrics) =>
-        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroLevel},${st.slots},${st.heroHp},${st.heroDamage},${st.heroPower},${st.enemyPower}`
+        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroLevel},${st.slots},${st.heroHp},${st.heroDamage},${st.heroPower},${st.enemyPower},${st.lampLevel},${st.gold}`
     );
 
     const csv = [headers, ...rows].join('\n');
