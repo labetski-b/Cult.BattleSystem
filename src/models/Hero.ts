@@ -65,7 +65,7 @@ export function createHero(): Hero {
         power: 0, // Сила от экипировки
         equipment,
         gold: 0,
-        lamps: 5, // Начальные лампы
+        lamps: 20, // Начальные лампы
         level: 1,
         xp: 0
     };
