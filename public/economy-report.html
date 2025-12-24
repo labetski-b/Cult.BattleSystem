@@ -248,6 +248,7 @@
                     <th>Dmg</th>
                     <th>Power</th>
                     <th>Enemy</th>
+                    <th>RarMult</th>
                 </tr>`;
 
             for (const row of csv.data) {
@@ -255,6 +256,7 @@
                 const powerClass = row.hero_power > row.enemy_power ? 'power-ahead' : 'power-behind';
                 const defeatClass = row.defeats > 3 ? 'defeat-high' : '';
                 const rowClass = isBoss ? 'chapter-row' : '';
+                const rarMult = row.rarity_multiplier ? row.rarity_multiplier.toFixed(2) : '1.00';
 
                 html += `<tr class="${rowClass}">
                     <td>${row.chapter}.${row.stage}</td>
@@ -267,6 +269,7 @@
                     <td>${row.hero_damage}</td>
                     <td class="${powerClass}">${row.hero_power}</td>
                     <td>${row.enemy_power}</td>
+                    <td>${rarMult}</td>
                 </tr>`;
             }
 
