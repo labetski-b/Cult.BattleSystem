@@ -2,7 +2,7 @@ import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { SLOT_TYPES } from '../models/Item';
-import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL } from '../models/Lamp';
+import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
 import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, calculateStagePower, STAGES_PER_CHAPTER, getStageXpReward } from '../systems/DungeonSystem';
@@ -221,7 +221,7 @@ export class EconomyTester {
             const xpReward = getStageXpReward(this.state.dungeon.chapter, this.state.dungeon.stage);
             addXp(this.state.hero, xpReward);
 
-            this.state.dungeon = advanceProgress(this.state.dungeon);
+            this.state.dungeon = advanceProgress(this.state.dungeon, this.state.lamp.level);
             healHero(this.state.hero);
             return true;
         } else {
@@ -236,6 +236,7 @@ export class EconomyTester {
 
     // Записать метрики этапа
     private recordStageMetrics(chapter: number, stage: number, enemyPower: number): void {
+        const rarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
         this.stages.push({
             chapter,
             stage,
@@ -248,6 +249,7 @@ export class EconomyTester {
             heroDamage: this.state.hero.damage,
             slots: getFilledSlots(this.state.hero),
             enemyPower: Math.floor(enemyPower),
+            rarityMultiplier: Math.round(rarityMultiplier * 100) / 100,
             lampLevel: this.state.lamp.level,
             gold: this.state.hero.gold
         });
@@ -263,7 +265,7 @@ export class EconomyTester {
     // Записать метрики главы
     private recordChapterMetrics(chapter: number): void {
         // Макс. сила врагов = сила босса (этап 10)
-        const bossPower = calculateStagePower(chapter, STAGES_PER_CHAPTER) * BOSS_MULTIPLIER;
+        const bossPower = calculateStagePower(chapter, STAGES_PER_CHAPTER, this.state.lamp.level) * BOSS_MULTIPLIER;
 
         this.chapters.push({
             chapter,

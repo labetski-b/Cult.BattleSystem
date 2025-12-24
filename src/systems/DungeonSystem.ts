@@ -1,4 +1,5 @@
 import enemiesConfig from '../../data/enemies.json';
+import { calculateExpectedRarityMultiplier } from '../models/Lamp';
 
 export interface DungeonProgress {
     chapter: number;
@@ -46,7 +47,16 @@ export function createDungeonProgress(): DungeonProgress {
 }
 
 // Расчёт силы врагов на текущем этапе (из таблицы)
-export function calculateStagePower(chapter: number, stage: number): number {
+// lampLevel — уровень лампы игрока для масштабирования по редкости
+export function calculateStagePower(chapter: number, stage: number, lampLevel: number = 1): number {
+    const globalStage = getGlobalStage(chapter, stage);
+    const basePower = getStageData(globalStage).power;
+    const rarityMultiplier = calculateExpectedRarityMultiplier(lampLevel);
+    return Math.round(basePower * rarityMultiplier);
+}
+
+// Получить базовую силу врагов (без множителя редкости)
+export function getBaseStagePower(chapter: number, stage: number): number {
     const globalStage = getGlobalStage(chapter, stage);
     return getStageData(globalStage).power;
 }
@@ -63,7 +73,8 @@ export function isBossStage(stage: number): boolean {
 }
 
 // Переход на следующий этап
-export function advanceProgress(progress: DungeonProgress): DungeonProgress {
+// lampLevel — уровень лампы для масштабирования силы врагов
+export function advanceProgress(progress: DungeonProgress, lampLevel: number = 1): DungeonProgress {
     let newStage = progress.stage + 1;
     let newChapter = progress.chapter;
 
@@ -75,7 +86,7 @@ export function advanceProgress(progress: DungeonProgress): DungeonProgress {
     return {
         chapter: newChapter,
         stage: newStage,
-        currentEnemyPower: calculateStagePower(newChapter, newStage)
+        currentEnemyPower: calculateStagePower(newChapter, newStage, lampLevel)
     };
 }
 

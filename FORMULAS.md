@@ -39,19 +39,19 @@ effectivePower = hp + 4 * damage
 targetPower = basePowerPerLevel * powerGrowthPerLevel^(itemLevel-1) * rarityMultiplier
 ```
 - `basePowerPerLevel` = 20 (из items.json)
-- `powerGrowthPerLevel` = 1.2 (из items.json) — множитель роста за уровень (+20%)
+- `powerGrowthPerLevel` = 1.5 (из items.json) — множитель роста за уровень (+50%)
 - `rarityMultiplier` = из rarities.json (1.0 ... 11.39)
 
 ### Уровень предмета
 ```
 // Для обычных редкостей:
-itemLevel = random(dungeonChapter - minLevelOffset, dungeonChapter)
+itemLevel = random(heroLevel - minLevelOffset, heroLevel)
 
 // Для максимальной редкости лампы:
-itemLevel = random(dungeonChapter - maxRarityLevelOffset, dungeonChapter)
+itemLevel = random(heroLevel - maxRarityLevelOffset, heroLevel)
 ```
-- `minLevelOffset` = 2 (из items.json)
-- `maxRarityLevelOffset` = 0 (из items.json) — топовые вещи всегда максимального уровня
+- `minLevelOffset` = 3 (из items.json)
+- `maxRarityLevelOffset` = 1 (из items.json)
 
 ### Генерация статов предмета
 ```
@@ -89,13 +89,26 @@ heroPower = maxHp + damage * 4
 
 Все настройки в `data/enemies.json`
 
-### Сила врага на этапе (из таблицы)
+### Сила врага на этапе (из таблицы + множитель редкости)
 ```
 globalStage = (chapter - 1) * stagesPerChapter + stage
-enemyPower = stageTable[globalStage - 1].power
+basePower = stageTable[globalStage - 1].power
+rarityMultiplier = calculateExpectedRarityMultiplier(lampLevel)
+enemyPower = basePower * rarityMultiplier
 ```
 - `stageTable` = массив из enemies.json (100 записей с power и xp)
 - `stagesPerChapter` = из enemies.json (10)
+- `rarityMultiplier` = средневзвешенный множитель редкости для текущего уровня лампы
+
+### Ожидаемый множитель редкости
+```
+expectedMultiplier = Σ(weight[rarity] * multiplier[rarity]) / totalWeight
+```
+Пример для лампы 6 уровня (weights: common=79, good=16, rare=5):
+- common: 79 × 1.0 = 79
+- good: 16 × 1.5 = 24
+- rare: 5 × 2.25 = 11.25
+- expectedMultiplier = 114.25 / 100 = **1.14**
 
 Примеры значений:
 | Dungeon | Power | XP |
@@ -110,7 +123,7 @@ enemyPower = stageTable[globalStage - 1].power
 ```
 bossPower = enemyPower * powerMultiplier
 ```
-- `powerMultiplier` = из enemies.json/boss (1.3)
+- `powerMultiplier` = из enemies.json/boss (1.1)
 
 ### Статы врага
 ```

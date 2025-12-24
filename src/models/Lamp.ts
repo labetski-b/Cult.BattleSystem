@@ -85,6 +85,35 @@ function getMaxRarityFromWeights(weights: Partial<Record<Rarity, number>>): Rari
     return maxRarity;
 }
 
+// Рассчитать ожидаемый средний множитель редкости для уровня лампы
+// Используется для масштабирования силы врагов
+export function calculateExpectedRarityMultiplier(lampLevel: number): number {
+    const config = getLampLevelConfig(lampLevel);
+    const weights = config.weights;
+
+    let totalWeight = 0;
+    let weightedSum = 0;
+
+    // Импортируем множители редкости из Item.ts
+    const RARITY_MULTIPLIERS: Record<Rarity, number> = {
+        common: 1.0,
+        good: 1.5,
+        rare: 2.25,
+        epic: 3.375,
+        mythic: 5.0625,
+        legendary: 7.59375,
+        immortal: 11.39
+    };
+
+    for (const [rarity, weight] of Object.entries(weights)) {
+        const multiplier = RARITY_MULTIPLIERS[rarity as Rarity] || 1.0;
+        weightedSum += weight * multiplier;
+        totalWeight += weight;
+    }
+
+    return totalWeight > 0 ? weightedSum / totalWeight : 1.0;
+}
+
 // Генерация предмета из лампы
 // lamp — определяет редкость (веса)
 // heroLevel — определяет уровень предмета (базовые статы)

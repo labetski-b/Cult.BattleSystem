@@ -10,7 +10,8 @@ export interface StageMetrics {
     heroHp: number;          // HP героя
     heroDamage: number;      // Урон героя
     slots: number;           // Заполненных слотов (0-6)
-    enemyPower: number;      // Сила врага
+    enemyPower: number;      // Сила врага (после множителя редкости)
+    rarityMultiplier: number; // Ожидаемый множитель редкости лампы
     lampLevel: number;       // Уровень лампы
     gold: number;            // Золото у игрока
 }
