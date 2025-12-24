@@ -18,34 +18,34 @@
         "name": "Rare",
         "nameRu": "Редкий",
         "color": "#3b82f6",
-        "multiplier": 2.25
+        "multiplier": 6.25
     },
     {
         "id": "epic",
         "name": "Epic",
         "nameRu": "Эпический",
         "color": "#a855f7",
-        "multiplier": 3.375
+        "multiplier": 15.625
     },
     {
         "id": "mythic",
         "name": "Mythic",
         "nameRu": "Мифический",
         "color": "#f43f5e",
-        "multiplier": 5.0625
+        "multiplier": 39.0625
     },
     {
         "id": "legendary",
         "name": "Legendary",
         "nameRu": "Легендарный",
         "color": "#f59e0b",
-        "multiplier": 7.59375
+        "multiplier": 97.65625
     },
     {
         "id": "immortal",
         "name": "Immortal",
         "nameRu": "Бессмертный",
         "color": "#fbbf24",
-        "multiplier": 11.39
+        "multiplier": 244.14
     }
 ]
