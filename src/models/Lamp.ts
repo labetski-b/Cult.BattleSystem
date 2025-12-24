@@ -1,4 +1,4 @@
-import { Rarity, Item, SlotType, SLOT_TYPES, generateItemId, generateItemName, calculateItemStats, rollItemLevel } from './Item';
+import { Rarity, Item, SlotType, SLOT_TYPES, generateItemId, generateItemName, calculateItemStats, rollItemLevel, RARITY_MULTIPLIERS } from './Item';
 import lampLevelsData from '../../data/lamp-levels.json';
 
 // Типы для конфигурации уровней лампы
@@ -94,17 +94,7 @@ export function calculateExpectedRarityMultiplier(lampLevel: number): number {
     let totalWeight = 0;
     let weightedSum = 0;
 
-    // Импортируем множители редкости из Item.ts
-    const RARITY_MULTIPLIERS: Record<Rarity, number> = {
-        common: 1.0,
-        good: 1.5,
-        rare: 2.25,
-        epic: 3.375,
-        mythic: 5.0625,
-        legendary: 7.59375,
-        immortal: 11.39
-    };
-
+    // Используем RARITY_MULTIPLIERS из Item.ts (читается из rarities.json)
     for (const [rarity, weight] of Object.entries(weights)) {
         const multiplier = RARITY_MULTIPLIERS[rarity as Rarity] || 1.0;
         weightedSum += weight * multiplier;
