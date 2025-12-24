@@ -11,7 +11,7 @@
         "name": "Good",
         "nameRu": "Хороший",
         "color": "#22c55e",
-        "multiplier": 1.5
+        "multiplier": 2.5
     },
     {
         "id": "rare",
