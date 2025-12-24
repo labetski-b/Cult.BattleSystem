@@ -120,7 +120,7 @@
         </div>
 
         <div id="chart-container" class="table-container">
-            <h2>Power Progression</h2>
+            <h2>Power Progression (log scale)</h2>
             <canvas id="power-chart" width="1100" height="400"></canvas>
             <h2 style="margin-top: 30px;">Lamp & Gold</h2>
             <canvas id="economy-chart" width="1100" height="300"></canvas>
@@ -128,6 +128,8 @@
             <canvas id="hero-level-chart" width="1100" height="250"></canvas>
             <h2 style="margin-top: 30px;">Loots per Stage</h2>
             <canvas id="loots-chart" width="1100" height="300"></canvas>
+            <h2 style="margin-top: 30px;">Loots per Chapter</h2>
+            <canvas id="loots-chapter-chart" width="1100" height="300"></canvas>
         </div>
 
         <div id="summary" class="summary" style="display:none;"></div>
@@ -293,13 +295,28 @@
             const enemyPowers = data.map(d => d.enemy_power);
             const labels = data.map(d => `${d.chapter}.${d.stage}`);
 
-            const maxPower = Math.max(...heroPowers, ...enemyPowers) * 1.1;
-            const minPower = 0;
+            // Логарифмическая шкала
+            const allPowers = [...heroPowers, ...enemyPowers].filter(p => p > 0);
+            const minPower = Math.max(1, Math.min(...allPowers));
+            const maxPower = Math.max(...allPowers) * 1.1;
+            const logMin = Math.log10(minPower);
+            const logMax = Math.log10(maxPower);
 
-            // Сетка
+            // Функция форматирования больших чисел
+            function formatPower(value) {
+                if (value >= 1e18) return (value / 1e18).toFixed(1) + 'E';
+                if (value >= 1e15) return (value / 1e15).toFixed(1) + 'P';
+                if (value >= 1e12) return (value / 1e12).toFixed(1) + 'T';
+                if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                if (value >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+                return Math.round(value).toString();
+            }
+
+            // Сетка (логарифмическая)
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 1;
-            const gridLines = 5;
+            const gridLines = 6;
             for (let i = 0; i <= gridLines; i++) {
                 const y = padding.top + (height / gridLines) * i;
                 ctx.beginPath();
@@ -307,17 +324,22 @@
                 ctx.lineTo(padding.left + width, y);
                 ctx.stroke();
 
-                // Метки Y
-                const value = Math.round(maxPower - (maxPower - minPower) * (i / gridLines));
+                // Метки Y (логарифмические)
+                const logValue = logMax - (logMax - logMin) * (i / gridLines);
+                const value = Math.pow(10, logValue);
                 ctx.fillStyle = '#888';
                 ctx.font = '12px Courier New';
                 ctx.textAlign = 'right';
-                ctx.fillText(value.toString(), padding.left - 10, y + 4);
+                ctx.fillText(formatPower(value), padding.left - 10, y + 4);
             }
 
-            // Функция преобразования координат
+            // Функция преобразования координат (логарифмическая)
             const xScale = (i) => padding.left + (i / (data.length - 1)) * width;
-            const yScale = (v) => padding.top + height - ((v - minPower) / (maxPower - minPower)) * height;
+            const yScale = (v) => {
+                if (v <= 0) return padding.top + height;
+                const logV = Math.log10(v);
+                return padding.top + height - ((logV - logMin) / (logMax - logMin)) * height;
+            };
 
             // Линия Enemy Power (красная)
             ctx.strokeStyle = '#ff6b6b';
@@ -705,6 +727,101 @@
             ctx.restore();
         }
 
+        function renderLootsChapterChart(chaptersCSV) {
+            if (!chaptersCSV) return;
+
+            const canvas = document.getElementById('loots-chapter-chart');
+            const ctx = canvas.getContext('2d');
+            const data = chaptersCSV.data;
+
+            const padding = { top: 40, right: 80, bottom: 60, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            // Очистка
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Данные
+            const loots = data.map(d => d.loots || 0);
+            const maxLoots = Math.max(...loots, 10) * 1.1;
+
+            // Функция преобразования координат
+            const barWidth = Math.max(8, (width / data.length) - 4);
+            const xScale = (i) => padding.left + (i + 0.5) * (width / data.length);
+            const yScale = (v) => padding.top + height - (v / maxLoots) * height;
+
+            // Сетка
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (height / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+
+                // Метки Y
+                const value = Math.round((maxLoots / 4) * (4 - i));
+                ctx.fillStyle = '#888';
+                ctx.font = '12px Courier New';
+                ctx.textAlign = 'right';
+                ctx.fillText(value.toString(), padding.left - 10, y + 4);
+            }
+
+            // Столбцы лутов по главам
+            for (let i = 0; i < data.length; i++) {
+                const x = xScale(i) - barWidth / 2;
+                const barHeight = (loots[i] / maxLoots) * height;
+                const y = padding.top + height - barHeight;
+
+                // Цвет зависит от количества лутов
+                if (loots[i] > 30) {
+                    ctx.fillStyle = '#ff6b6b'; // красный - много лутов
+                } else if (loots[i] > 20) {
+                    ctx.fillStyle = '#ffaa6b'; // оранжевый
+                } else {
+                    ctx.fillStyle = '#6bff6b'; // зелёный - мало лутов
+                }
+
+                ctx.fillRect(x, y, barWidth, barHeight);
+
+                // Метка главы
+                if (data.length <= 50 || i % 5 === 0) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = '10px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${data[i].chapter}`, xScale(i), padding.top + height + 15);
+                }
+            }
+
+            // Легенда
+            ctx.font = '14px Courier New';
+            ctx.fillStyle = '#6bff6b';
+            ctx.fillRect(padding.left + 10, padding.top + 10, 12, 12);
+            ctx.fillText('≤20 loots', padding.left + 30, padding.top + 20);
+
+            ctx.fillStyle = '#ffaa6b';
+            ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
+            ctx.fillText('21-30 loots', padding.left + 30, padding.top + 40);
+
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(padding.left + 10, padding.top + 50, 12, 12);
+            ctx.fillText('>30 loots', padding.left + 30, padding.top + 60);
+
+            // Заголовки осей
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('Chapter', padding.left + width / 2, canvas.height - 10);
+
+            ctx.save();
+            ctx.translate(15, padding.top + height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Loots', 0, 0);
+            ctx.restore();
+        }
+
         async function init() {
             const [chapters, stages] = await Promise.all([
                 loadCSV('economy_chapters.csv'),
@@ -717,6 +834,7 @@
             renderEconomyChart(stages);
             renderHeroLevelChart(stages);
             renderLootsChart(stages);
+            renderLootsChapterChart(chapters);
         }
 
         init();
