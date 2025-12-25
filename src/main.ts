@@ -16,7 +16,7 @@ import {
     BattleState
 } from './systems/GameState';
 import { Enemy } from './models/Enemy';
-import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity } from './models/Item';
+import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity, getSlotUnlockStage } from './models/Item';
 import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
 import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward } from './systems/DungeonSystem';
 import { addXp, xpProgress, XpGainResult } from './models/Hero';
@@ -191,12 +191,25 @@ function renderEquipment(): void {
     const grid = $('#equipment-grid');
     grid.innerHTML = '';
 
+    // Текущая стадия для проверки разблокировки
+    const currentStage = (gameState.dungeon.chapter - 1) * STAGES_PER_CHAPTER + gameState.dungeon.stage;
+
     for (const slotType of SLOT_TYPES) {
         const item = gameState.hero.equipment[slotType];
-        const slot = document.createElement('div');
-        slot.className = `slot ${item ? `filled ${item.rarity}` : ''}`;
+        const unlockStage = getSlotUnlockStage(slotType);
+        const isLocked = currentStage < unlockStage;
 
-        if (item) {
+        const slot = document.createElement('div');
+        slot.className = `slot ${item ? `filled ${item.rarity}` : ''} ${isLocked ? 'locked' : ''}`;
+
+        if (isLocked) {
+            // Залоченный слот
+            slot.innerHTML = `
+        <span class="slot-icon" style="opacity: 0.2">🔒</span>
+        <span class="slot-locked-label">Stage ${unlockStage}</span>
+      `;
+            slot.title = `${SLOT_NAMES[slotType]} — откроется на стадии ${unlockStage}`;
+        } else if (item) {
             slot.innerHTML = `
         <div class="slot-left">
           <span class="slot-icon">${SLOT_ICONS[slotType]}</span>

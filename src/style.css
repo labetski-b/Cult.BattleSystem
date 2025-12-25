@@ -839,6 +839,19 @@ body {
   opacity: 0.5;
 }
 
+/* Залоченные слоты */
+.slot.locked {
+  background: var(--bg-primary);
+  border: 1px dashed var(--text-secondary);
+  opacity: 0.5;
+}
+
+.slot .slot-locked-label {
+  font-size: 8px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
 /* === Inventory === */
 .inventory-grid {
   display: grid;
