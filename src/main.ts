@@ -40,12 +40,18 @@ let sessionCounter: number = parseInt(localStorage.getItem(STORAGE_SESSION_KEY) 
 
 // Иконки слотов
 const SLOT_ICONS: Record<SlotType, string> = {
+    weapon: '⚔️',
     helmet: '🪖',
     armor: '🛡️',
-    weapon: '⚔️',
-    shield: '🔰',
-    boots: '👢',
-    accessory: '💍'
+    gloves: '🧤',
+    shoes: '👢',
+    magic: '🔮',
+    ring: '💍',
+    amulet: '📿',
+    pants: '👖',
+    cloak: '🧥',
+    artefact: '🏺',
+    belt: '🎗️'
 };
 
 // Цена продажи предмета

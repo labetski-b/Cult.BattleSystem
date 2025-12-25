@@ -50,12 +50,18 @@ export function calculateHeroStats(hero: Hero): HeroStats {
 // Создание нового героя
 export function createHero(): Hero {
     const equipment: Record<SlotType, Item | null> = {
+        weapon: null,
         helmet: null,
         armor: null,
-        weapon: null,
-        shield: null,
-        boots: null,
-        accessory: null
+        gloves: null,
+        shoes: null,
+        magic: null,
+        ring: null,
+        amulet: null,
+        pants: null,
+        cloak: null,
+        artefact: null,
+        belt: null
     };
 
     return {

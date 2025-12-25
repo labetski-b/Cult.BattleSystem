@@ -2,7 +2,7 @@ import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../model
 import { Item, migrateItemStats } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
 import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL } from '../models/Lamp';
-import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward } from './DungeonSystem';
+import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward, STAGES_PER_CHAPTER } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
 import balanceData from '../../data/balance.json';
 import enemiesConfig from '../../data/enemies.json';
@@ -128,8 +128,11 @@ export function openLoot(state: GameState): Item | null {
 
     state.hero.lamps--;
 
-    // Передаём hero.level для определения уровня предмета
-    const item = generateItemFromLamp(state.lamp, state.hero.level);
+    // Вычисляем общий номер стадии для разблокировки слотов
+    const currentStage = (state.dungeon.chapter - 1) * STAGES_PER_CHAPTER + state.dungeon.stage;
+
+    // Передаём hero.level для определения уровня предмета и currentStage для разблокировки слотов
+    const item = generateItemFromLamp(state.lamp, state.hero.level, currentStage);
 
     state.inventory.push(item);
     state.lastLootedItem = item;

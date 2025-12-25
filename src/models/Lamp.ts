@@ -1,4 +1,4 @@
-import { Rarity, Item, SlotType, SLOT_TYPES, generateItemId, generateItemName, calculateItemStats, rollItemLevel, RARITY_MULTIPLIERS } from './Item';
+import { Rarity, Item, SlotType, generateItemId, generateItemName, calculateItemStats, rollItemLevel, RARITY_MULTIPLIERS, getUnlockedSlots } from './Item';
 import lampLevelsData from '../../data/lamp-levels.json';
 
 // Типы для конфигурации уровней лампы
@@ -107,11 +107,16 @@ export function calculateExpectedRarityMultiplier(lampLevel: number): number {
 // Генерация предмета из лампы
 // lamp — определяет редкость (веса)
 // heroLevel — определяет уровень предмета (базовые статы)
-export function generateItemFromLamp(lamp: Lamp, heroLevel: number): Item {
+// currentStage — определяет какие слоты разблокированы (по умолчанию = heroLevel для обратной совместимости)
+export function generateItemFromLamp(lamp: Lamp, heroLevel: number, currentStage?: number): Item {
     const config = getLampLevelConfig(lamp.level);
 
-    // Случайный слот
-    const slot: SlotType = SLOT_TYPES[Math.floor(Math.random() * SLOT_TYPES.length)];
+    // Получаем разблокированные слоты для текущей стадии
+    const stage = currentStage ?? heroLevel;
+    const unlockedSlots = getUnlockedSlots(stage);
+
+    // Случайный слот из разблокированных
+    const slot: SlotType = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
 
     // Случайная редкость по весам текущего уровня лампы
     const rarity = rollRarity(config.weights);

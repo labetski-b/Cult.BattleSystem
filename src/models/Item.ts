@@ -5,17 +5,43 @@ import itemsConfig from '../../data/items.json';
 export type Rarity = 'common' | 'good' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'immortal';
 
 // Слоты экипировки
-export type SlotType = 'helmet' | 'armor' | 'weapon' | 'shield' | 'boots' | 'accessory';
+export type SlotType = 'weapon' | 'helmet' | 'armor' | 'gloves' | 'shoes' | 'magic' | 'ring' | 'amulet' | 'pants' | 'cloak' | 'artefact' | 'belt';
 
-export const SLOT_TYPES: SlotType[] = ['helmet', 'armor', 'weapon', 'shield', 'boots', 'accessory'];
+// Конфигурация слотов из JSON
+interface SlotConfig {
+    unlockStage: number;
+    hpRatio: number;
+    damageRatio: number;
+}
+
+const slotsConfig = itemsConfig.slots as Record<SlotType, SlotConfig>;
+
+// Все слоты в порядке разблокировки
+export const SLOT_TYPES: SlotType[] = Object.keys(slotsConfig) as SlotType[];
+
+// Получить разблокированные слоты для данной стадии
+export function getUnlockedSlots(currentStage: number): SlotType[] {
+    return SLOT_TYPES.filter(slot => slotsConfig[slot].unlockStage <= currentStage);
+}
+
+// Получить unlockStage для слота
+export function getSlotUnlockStage(slot: SlotType): number {
+    return slotsConfig[slot].unlockStage;
+}
 
 export const SLOT_NAMES: Record<SlotType, string> = {
+    weapon: '⚔️ Оружие',
     helmet: '🪖 Шлем',
     armor: '🛡️ Броня',
-    weapon: '⚔️ Оружие',
-    shield: '🔰 Щит',
-    boots: '👢 Сапоги',
-    accessory: '💍 Аксессуар'
+    gloves: '🧤 Перчатки',
+    shoes: '👢 Обувь',
+    magic: '🔮 Магия',
+    ring: '💍 Кольцо',
+    amulet: '📿 Амулет',
+    pants: '👖 Штаны',
+    cloak: '🧥 Плащ',
+    artefact: '🏺 Артефакт',
+    belt: '🎗️ Пояс'
 };
 
 // Загружаем редкости из JSON
@@ -64,10 +90,9 @@ export interface Item {
 }
 
 // Какие слоты дают какие статы (в процентах от power) - из items.json
-// helmet, armor, shield, boots - больше HP
-// weapon - больше урона
-// accessory - 50/50
-export const SLOT_STAT_RATIOS = itemsConfig.slotRatios as Record<SlotType, { hpRatio: number; damageRatio: number }>;
+export const SLOT_STAT_RATIOS: Record<SlotType, { hpRatio: number; damageRatio: number }> = Object.fromEntries(
+    SLOT_TYPES.map(slot => [slot, { hpRatio: slotsConfig[slot].hpRatio, damageRatio: slotsConfig[slot].damageRatio }])
+) as Record<SlotType, { hpRatio: number; damageRatio: number }>;
 
 // Генерация ID
 export function generateItemId(): string {
@@ -140,12 +165,18 @@ const ITEM_PREFIXES: Record<Rarity, string[]> = {
 };
 
 const ITEM_TYPES: Record<SlotType, string[]> = {
+    weapon: ['Меч', 'Топор', 'Клинок'],
     helmet: ['Шлем', 'Каска', 'Корона'],
     armor: ['Доспех', 'Кираса', 'Броня'],
-    weapon: ['Меч', 'Топор', 'Клинок'],
-    shield: ['Щит', 'Барьер', 'Защита'],
-    boots: ['Сапоги', 'Ботинки', 'Поножи'],
-    accessory: ['Кольцо', 'Амулет', 'Талисман']
+    gloves: ['Перчатки', 'Рукавицы', 'Наручи'],
+    shoes: ['Сапоги', 'Ботинки', 'Поножи'],
+    magic: ['Посох', 'Жезл', 'Орб'],
+    ring: ['Кольцо', 'Перстень', 'Печатка'],
+    amulet: ['Амулет', 'Ожерелье', 'Кулон'],
+    pants: ['Штаны', 'Поножи', 'Набедренники'],
+    cloak: ['Плащ', 'Накидка', 'Мантия'],
+    artefact: ['Артефакт', 'Реликвия', 'Талисман'],
+    belt: ['Пояс', 'Ремень', 'Кушак']
 };
 
 export function generateItemName(slot: SlotType, rarity: Rarity): string {

@@ -119,9 +119,15 @@ export class EconomyTester {
         return this.buildSummary();
     }
 
+    // Получить общий номер стадии (для разблокировки слотов)
+    private getCurrentStageNumber(): number {
+        return (this.state.dungeon.chapter - 1) * STAGES_PER_CHAPTER + this.state.dungeon.stage;
+    }
+
     // Лут одного предмета
     private lootOneItem(): void {
-        const item = generateItemFromLamp(this.state.lamp, this.state.hero.level);
+        const currentStage = this.getCurrentStageNumber();
+        const item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
 
         this.chapterLoots++;
         this.stageLoots++;
