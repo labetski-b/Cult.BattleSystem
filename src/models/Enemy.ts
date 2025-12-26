@@ -21,7 +21,8 @@ const BOSS_NAMES = [
 ];
 
 // Генерация врага из целевой силы
-export function generateEnemy(targetPower: number, isBoss: boolean = false): Enemy {
+// customK — опциональный hpToDamageRatio (для волн из 2-3 врагов используется k героя)
+export function generateEnemy(targetPower: number, isBoss: boolean = false, customK?: number): Enemy {
     const names = isBoss ? BOSS_NAMES : ENEMY_NAMES;
     const name = names[Math.floor(Math.random() * names.length)];
 
@@ -34,7 +35,7 @@ export function generateEnemy(targetPower: number, isBoss: boolean = false): Ene
     // HP и урон рассчитываются по формуле: power = hp + 4*damage
     // k = hpToDamageRatio (соотношение hp/damage)
     // damage = power / (4 + k); hp = damage * k
-    const k = enemiesConfig.stats.hpToDamageRatio;
+    const k = customK ?? enemiesConfig.stats.hpToDamageRatio;
     const damage = Math.max(1, Math.floor(power / (4 + k)));
     const hp = Math.floor(damage * k);
 
@@ -50,22 +51,28 @@ export function generateEnemy(targetPower: number, isBoss: boolean = false): Ene
 }
 
 // Генерация волны врагов
+// heroK — опциональное соотношение hp/damage героя (используется для волн из 2+ врагов)
 export function generateEnemyWave(
     targetPower: number,
     minEnemies: number,
     maxEnemies: number,
-    isBossWave: boolean = false
+    isBossWave: boolean = false,
+    heroK?: number
 ): Enemy[] {
     if (isBossWave) {
+        // Босс всегда один, использует стандартный k из конфига
         return [generateEnemy(targetPower, true)];
     }
 
     const count = Math.floor(Math.random() * (maxEnemies - minEnemies + 1)) + minEnemies;
     const powerPerEnemy = targetPower / count;
 
+    // Для волн из 2+ врагов используем k героя (если передан)
+    const useHeroK = count >= 2 ? heroK : undefined;
+
     const enemies: Enemy[] = [];
     for (let i = 0; i < count; i++) {
-        enemies.push(generateEnemy(powerPerEnemy));
+        enemies.push(generateEnemy(powerPerEnemy, false, useHeroK));
     }
 
     return enemies;

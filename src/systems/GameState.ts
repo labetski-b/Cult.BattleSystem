@@ -174,11 +174,17 @@ export function fight(state: GameState): BattleResult {
         targetPower *= enemyConfig.bossMultiplier;
     }
 
+    // Рассчитываем k героя (hp / damage) для волн из 2+ врагов
+    const heroK = state.hero.damage > 0
+        ? state.hero.maxHp / state.hero.damage
+        : 4.0;
+
     const enemies = generateEnemyWave(
         targetPower,
         enemyConfig.minEnemies,
         enemyConfig.maxEnemies,
-        isBoss
+        isBoss,
+        heroK
     );
 
     // Симуляция боя
@@ -267,11 +273,17 @@ export function generateEnemiesForBattle(state: GameState): Enemy[] {
         targetPower *= enemyConfig.bossMultiplier;
     }
 
+    // Рассчитываем k героя (hp / damage) для волн из 2+ врагов
+    const heroK = state.hero.damage > 0
+        ? state.hero.maxHp / state.hero.damage
+        : 4.0;
+
     return generateEnemyWave(
         targetPower,
         enemyConfig.minEnemies,
         enemyConfig.maxEnemies,
-        isBoss
+        isBoss,
+        heroK
     );
 }
 
