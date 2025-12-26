@@ -145,17 +145,20 @@ export class EconomyTester {
         this.totalIterations++;
     }
 
-    // Фаза лута: лутаем пока сила героя < силы врагов
-    // Если прошлый бой проигран — сначала обязательно 1 лут
+    // Фаза лута: лутаем только после поражения
+    // После поражения — минимум 1 лут, затем пока power < enemyPower
     private lootPhase(): void {
+        // Лутаем только если был проигрыш
+        if (!this.lastBattleLost) {
+            return;
+        }
+
         const enemyPower = this.state.dungeon.currentEnemyPower;
 
         // После поражения — сначала минимум 1 лут
-        if (this.lastBattleLost) {
-            this.lootOneItem();
-            this.lastBattleLost = false;
-            if (this.totalIterations > this.config.maxIterations) return;
-        }
+        this.lootOneItem();
+        this.lastBattleLost = false;
+        if (this.totalIterations > this.config.maxIterations) return;
 
         // Затем лутаем пока сила < силы врагов
         while (getHeroPower(this.state.hero) < enemyPower) {
