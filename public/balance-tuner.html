@@ -306,7 +306,7 @@
             </div>
 
             <div id="charts-content" class="tab-content active">
-                <h2>Power Progression (log scale)</h2>
+                <h2>Power Progression by Chapter (log scale)</h2>
                 <canvas id="power-chart" width="1100" height="350"></canvas>
 
                 <h2 style="margin-top: 30px;">Difficulty Modifier %</h2>
@@ -455,7 +455,7 @@
             renderStagesTable(summary.stages);
 
             // Charts
-            renderPowerChart(summary.stages);
+            renderPowerChart(summary.chapters);
             renderDifficultyChart(summary.stages);
             renderLootsChart(summary.stages);
         }
@@ -509,7 +509,7 @@
             document.getElementById('stages-table').innerHTML = html;
         }
 
-        function renderPowerChart(stages) {
+        function renderPowerChart(chapters) {
             const canvas = document.getElementById('power-chart');
             const ctx = canvas.getContext('2d');
 
@@ -520,23 +520,34 @@
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const heroPowers = stages.map(s => s.heroPower);
-            const enemyPowers = stages.map(s => s.enemyPower);
+            if (chapters.length === 0) return;
+
+            const heroPowers = chapters.map(c => c.heroPower);
+            const enemyPowers = chapters.map(c => c.maxEnemyPower);
             const maxPower = Math.max(...heroPowers, ...enemyPowers);
             const minPower = Math.min(...heroPowers.filter(p => p > 0), ...enemyPowers.filter(p => p > 0));
 
             const logMin = Math.log10(Math.max(1, minPower));
             const logMax = Math.log10(maxPower);
 
-            const xScale = (i) => padding.left + (i / (stages.length - 1)) * width;
+            const xScale = (i) => padding.left + (i / Math.max(1, chapters.length - 1)) * width;
             const yScale = (v) => {
                 const logV = Math.log10(Math.max(1, v));
                 return padding.top + height - ((logV - logMin) / (logMax - logMin)) * height;
             };
 
-            // Grid
+            // Vertical grid (chapter lines)
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 1;
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScale(i);
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + height);
+                ctx.stroke();
+            }
+
+            // Horizontal grid (power levels)
             for (let p = Math.ceil(logMin); p <= Math.floor(logMax); p++) {
                 const y = yScale(Math.pow(10, p));
                 ctx.beginPath();
@@ -552,9 +563,9 @@
 
             // Hero power line
             ctx.strokeStyle = '#6bff6b';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
+            for (let i = 0; i < chapters.length; i++) {
                 const x = xScale(i);
                 const y = yScale(heroPowers[i]);
                 if (i === 0) ctx.moveTo(x, y);
@@ -562,11 +573,21 @@
             }
             ctx.stroke();
 
+            // Hero power points
+            ctx.fillStyle = '#6bff6b';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScale(i);
+                const y = yScale(heroPowers[i]);
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
             // Enemy power line
             ctx.strokeStyle = '#ff6b6b';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
+            for (let i = 0; i < chapters.length; i++) {
                 const x = xScale(i);
                 const y = yScale(enemyPowers[i]);
                 if (i === 0) ctx.moveTo(x, y);
@@ -574,28 +595,41 @@
             }
             ctx.stroke();
 
-            // Boss markers
-            for (let i = 0; i < stages.length; i++) {
-                if (stages[i].stage === 10) {
-                    const x = xScale(i);
-                    ctx.strokeStyle = '#ffd70044';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(x, padding.top);
-                    ctx.lineTo(x, padding.top + height);
-                    ctx.stroke();
+            // Enemy power points
+            ctx.fillStyle = '#ff6b6b';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScale(i);
+                const y = yScale(enemyPowers[i]);
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Chapter labels on X axis
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScale(i);
+                // Show every Nth label to avoid overlap
+                if (chapters.length <= 20 || i % Math.ceil(chapters.length / 20) === 0) {
+                    ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
                 }
             }
 
+            // X axis label
+            ctx.fillText('Chapter', padding.left + width / 2, canvas.height - 10);
+
             // Legend
             ctx.font = '14px Courier New';
+            ctx.textAlign = 'left';
             ctx.fillStyle = '#6bff6b';
             ctx.fillRect(padding.left + 10, padding.top + 10, 12, 12);
             ctx.fillText('Hero Power', padding.left + 30, padding.top + 20);
 
             ctx.fillStyle = '#ff6b6b';
             ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
-            ctx.fillText('Enemy Power', padding.left + 30, padding.top + 40);
+            ctx.fillText('Enemy Power (Boss)', padding.left + 30, padding.top + 40);
         }
 
         function renderDifficultyChart(stages) {
