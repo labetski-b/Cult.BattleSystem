@@ -36,8 +36,8 @@ function printStagesTable(summary: TestSummary): void {
 function printChaptersTable(summary: TestSummary): void {
     console.log('\n=== CHAPTERS SUMMARY ===\n');
 
-    const header = 'Ch | Loots | Battles | Defeats | Lamp | HeroLvl | Power   | Enemy   | Gold Net';
-    const separator = '---|-------|---------|---------|------|---------|---------|---------|----------';
+    const header = 'Ch | Loots | Battles | Defeats | Unfair | Lamp | HeroLvl | Power   | Enemy   | Gold Net';
+    const separator = '---|-------|---------|---------|--------|------|---------|---------|---------|----------';
 
     console.log(header);
     console.log(separator);
@@ -51,6 +51,7 @@ function printChaptersTable(summary: TestSummary): void {
             `${ch.loots.toString().padStart(5)} | ` +
             `${ch.battles.toString().padStart(7)} | ` +
             `${ch.defeats.toString().padStart(7)} | ` +
+            `${ch.unfairDefeats.toString().padStart(6)} | ` +
             `${ch.lampLevel.toString().padStart(4)} | ` +
             `${ch.heroLevel.toString().padStart(7)} | ` +
             `${ch.heroPower.toString().padStart(7)} | ` +
@@ -62,7 +63,7 @@ function printChaptersTable(summary: TestSummary): void {
     console.log(separator);
 
     // Итого
-    console.log(`\nTotal: ${summary.totalLoots} loots, ${summary.totalBattles} battles, ${summary.totalDefeats} defeats`);
+    console.log(`\nTotal: ${summary.totalLoots} loots, ${summary.totalBattles} battles, ${summary.totalDefeats} defeats (${summary.totalUnfairDefeats} unfair)`);
     console.log(`Final: Lamp Lvl ${summary.finalLampLevel}, Power ${summary.finalHeroPower}, Hero Lvl ${summary.finalHeroLevel}`);
     console.log(`Gold: +${summary.totalGoldEarned} earned, -${summary.totalGoldSpent} spent, net ${summary.totalGoldEarned - summary.totalGoldSpent}`);
 }
@@ -87,9 +88,9 @@ function saveStagesCSV(summary: TestSummary, filePath: string): void {
 
 // Сохранение глав в CSV
 function saveChaptersCSV(summary: TestSummary, filePath: string): void {
-    const headers = 'chapter,loots,battles,defeats,lamp_level,hero_power,max_enemy_power,hero_level,gold_earned,gold_spent,gold_net';
+    const headers = 'chapter,loots,battles,defeats,unfair_defeats,lamp_level,hero_power,max_enemy_power,hero_level,gold_earned,gold_spent,gold_net';
     const rows = summary.chapters.map((ch: ChapterMetrics) =>
-        `${ch.chapter},${ch.loots},${ch.battles},${ch.defeats},${ch.lampLevel},${ch.heroPower},${ch.maxEnemyPower},${ch.heroLevel},${ch.goldEarned},${ch.goldSpent},${ch.goldEarned - ch.goldSpent}`
+        `${ch.chapter},${ch.loots},${ch.battles},${ch.defeats},${ch.unfairDefeats},${ch.lampLevel},${ch.heroPower},${ch.maxEnemyPower},${ch.heroLevel},${ch.goldEarned},${ch.goldSpent},${ch.goldEarned - ch.goldSpent}`
     );
 
     const csv = [headers, ...rows].join('\n');

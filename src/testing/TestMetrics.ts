@@ -22,6 +22,7 @@ export interface ChapterMetrics {
     loots: number;           // Сколько лутов потребовалось на главу
     battles: number;         // Сколько боёв (включая поражения)
     defeats: number;         // Количество поражений
+    unfairDefeats: number;   // Поражения при heroPower > enemyPower
     lampLevel: number;       // Уровень лампы на выходе из главы
     heroPower: number;       // Сила культа на выходе (maxHp + damage*4)
     heroLevel: number;       // Уровень героя
@@ -36,6 +37,7 @@ export interface TestSummary {
     totalLoots: number;
     totalBattles: number;
     totalDefeats: number;
+    totalUnfairDefeats: number;  // Всего "несправедливых" поражений
     totalGoldEarned: number;
     totalGoldSpent: number;
     finalLampLevel: number;

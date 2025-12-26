@@ -52,6 +52,7 @@ export class EconomyTester {
     private chapterLoots = 0;
     private chapterBattles = 0;
     private chapterDefeats = 0;
+    private chapterUnfairDefeats = 0;  // Поражения при heroPower > enemyPower
     private chapterGoldEarned = 0;
     private chapterGoldSpent = 0;
 
@@ -233,6 +234,11 @@ export class EconomyTester {
         } else {
             this.chapterDefeats++;
             this.stageDefeats++;
+            // Проверяем "несправедливое" поражение (герой сильнее, но проиграл)
+            const heroPower = getHeroPower(this.state.hero);
+            if (heroPower > targetPower) {
+                this.chapterUnfairDefeats++;
+            }
             this.lastBattleLost = true;
             // После поражения тоже лечим для продолжения
             healHero(this.state.hero);
@@ -278,6 +284,7 @@ export class EconomyTester {
             loots: this.chapterLoots,
             battles: this.chapterBattles,
             defeats: this.chapterDefeats,
+            unfairDefeats: this.chapterUnfairDefeats,
             lampLevel: this.state.lamp.level,
             heroPower: getHeroPower(this.state.hero),
             heroLevel: this.state.hero.level,
@@ -292,6 +299,7 @@ export class EconomyTester {
         this.chapterLoots = 0;
         this.chapterBattles = 0;
         this.chapterDefeats = 0;
+        this.chapterUnfairDefeats = 0;
         this.chapterGoldEarned = 0;
         this.chapterGoldSpent = 0;
     }
@@ -301,6 +309,7 @@ export class EconomyTester {
         const totalLoots = this.chapters.reduce((sum, c) => sum + c.loots, 0);
         const totalBattles = this.chapters.reduce((sum, c) => sum + c.battles, 0);
         const totalDefeats = this.chapters.reduce((sum, c) => sum + c.defeats, 0);
+        const totalUnfairDefeats = this.chapters.reduce((sum, c) => sum + c.unfairDefeats, 0);
         const totalGoldEarned = this.chapters.reduce((sum, c) => sum + c.goldEarned, 0);
         const totalGoldSpent = this.chapters.reduce((sum, c) => sum + c.goldSpent, 0);
 
@@ -311,6 +320,7 @@ export class EconomyTester {
             totalLoots,
             totalBattles,
             totalDefeats,
+            totalUnfairDefeats,
             totalGoldEarned,
             totalGoldSpent,
             finalLampLevel: lastChapter?.lampLevel || 1,
