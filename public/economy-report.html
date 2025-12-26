@@ -255,6 +255,7 @@
                     <th>Power</th>
                     <th>Enemy</th>
                     <th>RarMult</th>
+                    <th>Diff%</th>
                 </tr>`;
 
             for (const row of csv.data) {
@@ -263,6 +264,9 @@
                 const defeatClass = row.defeats > 3 ? 'defeat-high' : '';
                 const rowClass = isBoss ? 'chapter-row' : '';
                 const rarMult = row.rarity_multiplier ? row.rarity_multiplier.toFixed(2) : '1.00';
+                const diffMod = row.difficulty_modifier !== undefined ? row.difficulty_modifier : 0;
+                const diffStr = diffMod >= 0 ? `+${diffMod}` : `${diffMod}`;
+                const diffClass = diffMod > 0 ? 'power-behind' : (diffMod < 0 ? 'power-ahead' : '');
 
                 html += `<tr class="${rowClass}">
                     <td>${row.chapter}.${row.stage}</td>
@@ -276,6 +280,7 @@
                     <td class="${powerClass}">${row.hero_power}</td>
                     <td>${row.enemy_power}</td>
                     <td>${rarMult}</td>
+                    <td class="${diffClass}">${diffStr}</td>
                 </tr>`;
             }
 

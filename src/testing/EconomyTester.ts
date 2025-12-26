@@ -5,7 +5,7 @@ import { SLOT_TYPES } from '../models/Item';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
-import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, calculateStagePower, STAGES_PER_CHAPTER, getStageXpReward } from '../systems/DungeonSystem';
+import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, calculateStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
 import enemiesConfig from '../../data/enemies.json';
 
 // Конфиг врагов
@@ -146,14 +146,14 @@ export class EconomyTester {
     }
 
     // Фаза лута: лутаем только после поражения
-    // После поражения — минимум 1 лут, затем пока power < enemyPower
+    // После поражения — минимум 1 лут, затем пока power < enemyPower (с учётом difficultyModifier)
     private lootPhase(): void {
         // Лутаем только если был проигрыш
         if (!this.lastBattleLost) {
             return;
         }
 
-        const enemyPower = this.state.dungeon.currentEnemyPower;
+        const enemyPower = getAdjustedEnemyPower(this.state.dungeon);
 
         // После поражения — сначала минимум 1 лут
         this.lootOneItem();
@@ -189,8 +189,8 @@ export class EconomyTester {
         const currentChapter = this.state.dungeon.chapter;
         const currentStage = this.state.dungeon.stage;
 
-        // Генерация врагов
-        let targetPower = this.state.dungeon.currentEnemyPower;
+        // Генерация врагов (с учётом difficultyModifier)
+        let targetPower = getAdjustedEnemyPower(this.state.dungeon);
         if (isBoss) {
             targetPower *= enemyConfig.bossMultiplier;
         }
@@ -231,6 +231,9 @@ export class EconomyTester {
             const xpReward = getStageXpReward(this.state.dungeon.chapter, this.state.dungeon.stage);
             addXp(this.state.hero, xpReward);
 
+            // Увеличиваем сложность при победе (+1%)
+            adjustDifficultyOnVictory(this.state.dungeon);
+
             this.state.dungeon = advanceProgress(this.state.dungeon, this.state.lamp.level);
             healHero(this.state.hero);
             return true;
@@ -242,6 +245,8 @@ export class EconomyTester {
             if (heroPower > targetPower) {
                 this.chapterUnfairDefeats++;
             }
+            // Уменьшаем сложность при поражении (-2%, только 1 раз за stage)
+            adjustDifficultyOnDefeat(this.state.dungeon);
             this.lastBattleLost = true;
             // После поражения тоже лечим для продолжения
             healHero(this.state.hero);
@@ -265,6 +270,7 @@ export class EconomyTester {
             slots: getFilledSlots(this.state.hero),
             enemyPower: Math.floor(enemyPower),
             rarityMultiplier: Math.round(rarityMultiplier * 100) / 100,
+            difficultyModifier: Math.round(this.state.dungeon.difficultyModifier * 100),  // в процентах
             lampLevel: this.state.lamp.level,
             gold: this.state.hero.gold
         });

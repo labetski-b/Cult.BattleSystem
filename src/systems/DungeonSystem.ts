@@ -5,6 +5,8 @@ export interface DungeonProgress {
     chapter: number;
     stage: number;
     currentEnemyPower: number;
+    difficultyModifier: number;  // от -0.20 до +0.20
+    lastDefeatStage: number;     // для защиты от повторных -2%
 }
 
 export interface StageData {
@@ -42,7 +44,9 @@ export function createDungeonProgress(): DungeonProgress {
     return {
         chapter: 1,
         stage: 1,
-        currentEnemyPower: data.power
+        currentEnemyPower: data.power,
+        difficultyModifier: 0,
+        lastDefeatStage: 0
     };
 }
 
@@ -86,8 +90,30 @@ export function advanceProgress(progress: DungeonProgress, lampLevel: number = 1
     return {
         chapter: newChapter,
         stage: newStage,
-        currentEnemyPower: calculateStagePower(newChapter, newStage, lampLevel)
+        currentEnemyPower: calculateStagePower(newChapter, newStage, lampLevel),
+        difficultyModifier: progress.difficultyModifier,
+        lastDefeatStage: progress.lastDefeatStage
     };
+}
+
+// Изменение множителя сложности при победе (+1%, макс +20%)
+export function adjustDifficultyOnVictory(dungeon: DungeonProgress): void {
+    dungeon.difficultyModifier = Math.min(0.20, dungeon.difficultyModifier + 0.01);
+}
+
+// Изменение множителя сложности при поражении (-2%, мин -20%)
+// Только 1 раз за stage (повторные поражения не уменьшают)
+export function adjustDifficultyOnDefeat(dungeon: DungeonProgress): void {
+    const stageId = dungeon.chapter * 100 + dungeon.stage;
+    if (dungeon.lastDefeatStage !== stageId) {
+        dungeon.difficultyModifier = Math.max(-0.20, dungeon.difficultyModifier - 0.02);
+        dungeon.lastDefeatStage = stageId;
+    }
+}
+
+// Получить силу врагов с учётом множителя сложности
+export function getAdjustedEnemyPower(dungeon: DungeonProgress): number {
+    return Math.round(dungeon.currentEnemyPower * (1 + dungeon.difficultyModifier));
 }
 
 // Форматирование для отображения

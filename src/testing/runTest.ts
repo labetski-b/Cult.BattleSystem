@@ -7,13 +7,14 @@ import * as path from 'path';
 function printStagesTable(summary: TestSummary): void {
     console.log('\n=== DETAILED STAGES ===\n');
 
-    const header = 'Ch.St | Loots | Battles | Defeats | HLvl | Slots | HP     | Dmg   | Power   | Enemy  | RarMult';
-    const separator = '------|-------|---------|---------|------|-------|--------|-------|---------|--------|--------';
+    const header = 'Ch.St | Loots | Battles | Defeats | HLvl | Slots | HP     | Dmg   | Power   | Enemy  | RarMult | Diff%';
+    const separator = '------|-------|---------|---------|------|-------|--------|-------|---------|--------|---------|------';
 
     console.log(header);
     console.log(separator);
 
     for (const st of summary.stages) {
+        const diffStr = st.difficultyModifier >= 0 ? `+${st.difficultyModifier}` : `${st.difficultyModifier}`;
         console.log(
             `${st.chapter.toString().padStart(2)}.${st.stage.toString().padStart(2)} | ` +
             `${st.loots.toString().padStart(5)} | ` +
@@ -25,7 +26,8 @@ function printStagesTable(summary: TestSummary): void {
             `${st.heroDamage.toString().padStart(5)} | ` +
             `${st.heroPower.toString().padStart(7)} | ` +
             `${st.enemyPower.toString().padStart(6)} | ` +
-            `${st.rarityMultiplier.toFixed(2).padStart(6)}`
+            `${st.rarityMultiplier.toFixed(2).padStart(7)} | ` +
+            `${diffStr.padStart(5)}`
         );
     }
 
@@ -70,9 +72,9 @@ function printChaptersTable(summary: TestSummary): void {
 
 // Сохранение этапов в CSV
 function saveStagesCSV(summary: TestSummary, filePath: string): void {
-    const headers = 'chapter,stage,loots,battles,defeats,hero_level,slots,hero_hp,hero_damage,hero_power,enemy_power,rarity_multiplier,lamp_level,gold';
+    const headers = 'chapter,stage,loots,battles,defeats,hero_level,slots,hero_hp,hero_damage,hero_power,enemy_power,rarity_multiplier,difficulty_modifier,lamp_level,gold';
     const rows = summary.stages.map((st: StageMetrics) =>
-        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroLevel},${st.slots},${st.heroHp},${st.heroDamage},${st.heroPower},${st.enemyPower},${st.rarityMultiplier},${st.lampLevel},${st.gold}`
+        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroLevel},${st.slots},${st.heroHp},${st.heroDamage},${st.heroPower},${st.enemyPower},${st.rarityMultiplier},${st.difficultyModifier},${st.lampLevel},${st.gold}`
     );
 
     const csv = [headers, ...rows].join('\n');

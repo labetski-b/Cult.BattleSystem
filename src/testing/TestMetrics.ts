@@ -12,6 +12,7 @@ export interface StageMetrics {
     slots: number;           // Заполненных слотов (0-12)
     enemyPower: number;      // Сила врага (после множителя редкости)
     rarityMultiplier: number; // Ожидаемый множитель редкости лампы
+    difficultyModifier: number; // Множитель адаптивной сложности (-20% до +20%)
     lampLevel: number;       // Уровень лампы
     gold: number;            // Золото у игрока
 }
