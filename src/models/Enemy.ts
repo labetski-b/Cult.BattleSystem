@@ -71,10 +71,11 @@ export function generateEnemyWave(
 
     // Для 2-3 врагов — специальная формула:
     // totalHP = targetPower * 0.5, делится поровну
-    // damage = targetPower * 0.0625 — одинаковый для каждого
+    // damage: 2 врага = targetPower * 0.083, 3 врага = targetPower * 0.0625
     const totalHp = Math.floor(targetPower * 0.5);
     const hpPerEnemy = Math.max(1, Math.floor(totalHp / count));
-    const damage = Math.max(1, Math.floor(targetPower * 0.0625));
+    const damageMultiplier = count === 2 ? 0.083 : 0.0625;
+    const damage = Math.max(1, Math.floor(targetPower * damageMultiplier));
 
     const enemies: Enemy[] = [];
     for (let i = 0; i < count; i++) {
