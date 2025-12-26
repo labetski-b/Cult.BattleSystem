@@ -1,0 +1,100 @@
+import itemsConfig from '../../data/items.json';
+import raritiesData from '../../data/rarities.json';
+import enemiesConfig from '../../data/enemies.json';
+
+// Типы редкости (синхронизировать с Item.ts)
+type Rarity = 'common' | 'good' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'immortal';
+
+// Интерфейс для переопределяемых параметров баланса
+export interface BalanceOverrides {
+    // items.json
+    basePowerPerLevel?: number;
+    powerGrowthPerLevel?: number;
+    powerVariance?: number;           // ±10% вариация силы предмета
+    minLevelOffset?: number;          // диапазон уровня предмета (heroLevel - offset)
+    maxRarityLevelOffset?: number;    // диапазон для макс. редкости
+
+    // rarities.json (множители по id)
+    rarityMultipliers?: Partial<Record<Rarity, number>>;
+
+    // DungeonSystem.ts (hardcoded values)
+    difficultyOnVictory?: number;  // default: 0.01
+    difficultyOnDefeat?: number;   // default: -0.02
+
+    // enemies.json
+    bossPowerMultiplier?: number;
+}
+
+// Полный конфиг с дефолтными значениями
+export interface BalanceConfig {
+    basePowerPerLevel: number;
+    powerGrowthPerLevel: number;
+    powerVariance: number;
+    minLevelOffset: number;
+    maxRarityLevelOffset: number;
+    rarityMultipliers: Record<Rarity, number>;
+    difficultyOnVictory: number;
+    difficultyOnDefeat: number;
+    bossPowerMultiplier: number;
+}
+
+// Загружаем дефолтные множители редкостей из JSON
+const defaultRarityMultipliers: Record<Rarity, number> = Object.fromEntries(
+    (raritiesData as { id: string; multiplier: number }[]).map(r => [r.id, r.multiplier])
+) as Record<Rarity, number>;
+
+// Дефолтные значения (читаются из JSON при инициализации)
+const defaults: BalanceConfig = {
+    basePowerPerLevel: itemsConfig.basePowerPerLevel,
+    powerGrowthPerLevel: itemsConfig.powerGrowthPerLevel,
+    powerVariance: itemsConfig.powerVariance ?? 0.1,
+    minLevelOffset: itemsConfig.levelRange.minLevelOffset,
+    maxRarityLevelOffset: (itemsConfig.levelRange as { minLevelOffset: number; maxRarityLevelOffset: number }).maxRarityLevelOffset,
+    rarityMultipliers: defaultRarityMultipliers,
+    difficultyOnVictory: 0.01,
+    difficultyOnDefeat: -0.02,
+    bossPowerMultiplier: enemiesConfig.boss.powerMultiplier,
+};
+
+// Текущие переопределения
+let currentOverrides: BalanceOverrides = {};
+
+// Установить переопределения
+export function setOverrides(overrides: BalanceOverrides): void {
+    currentOverrides = { ...overrides };
+}
+
+// Получить текущий конфиг (дефолты + переопределения)
+export function getConfig(): BalanceConfig {
+    const mergedRarityMultipliers = {
+        ...defaults.rarityMultipliers,
+        ...(currentOverrides.rarityMultipliers || {})
+    };
+
+    return {
+        basePowerPerLevel: currentOverrides.basePowerPerLevel ?? defaults.basePowerPerLevel,
+        powerGrowthPerLevel: currentOverrides.powerGrowthPerLevel ?? defaults.powerGrowthPerLevel,
+        powerVariance: currentOverrides.powerVariance ?? defaults.powerVariance,
+        minLevelOffset: currentOverrides.minLevelOffset ?? defaults.minLevelOffset,
+        maxRarityLevelOffset: currentOverrides.maxRarityLevelOffset ?? defaults.maxRarityLevelOffset,
+        rarityMultipliers: mergedRarityMultipliers,
+        difficultyOnVictory: currentOverrides.difficultyOnVictory ?? defaults.difficultyOnVictory,
+        difficultyOnDefeat: currentOverrides.difficultyOnDefeat ?? defaults.difficultyOnDefeat,
+        bossPowerMultiplier: currentOverrides.bossPowerMultiplier ?? defaults.bossPowerMultiplier,
+    };
+}
+
+// Сбросить к дефолтам
+export function resetToDefaults(): void {
+    currentOverrides = {};
+}
+
+// Получить дефолтные значения (для UI)
+export function getDefaults(): BalanceConfig {
+    return { ...defaults };
+}
+
+// Получить текущие переопределения
+export function getOverrides(): BalanceOverrides {
+    return { ...currentOverrides };
+}

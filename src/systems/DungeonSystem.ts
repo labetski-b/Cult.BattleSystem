@@ -1,5 +1,6 @@
 import enemiesConfig from '../../data/enemies.json';
 import { calculateExpectedRarityMultiplier } from '../models/Lamp';
+import { getConfig } from '../config/ConfigStore';
 
 export interface DungeonProgress {
     chapter: number;
@@ -17,8 +18,13 @@ export interface StageData {
 // Количество стадий в главе (последняя — босс)
 export const STAGES_PER_CHAPTER = enemiesConfig.stagesPerChapter;
 
-// Множитель силы босса
+// Множитель силы босса (дефолт из JSON, может быть переопределён)
 export const BOSS_MULTIPLIER = enemiesConfig.boss.powerMultiplier;
+
+// Получить множитель босса из ConfigStore
+export function getBossMultiplier(): number {
+    return getConfig().bossPowerMultiplier;
+}
 
 // Таблица данных по этапам
 const stageTable: StageData[] = enemiesConfig.stageTable;
@@ -87,17 +93,19 @@ export function advanceProgress(progress: DungeonProgress): DungeonProgress {
     };
 }
 
-// Изменение множителя сложности при победе (+1%, без лимита)
+// Изменение множителя сложности при победе (из ConfigStore, без лимита)
 export function adjustDifficultyOnVictory(dungeon: DungeonProgress): void {
-    dungeon.difficultyModifier += 0.01;
+    const config = getConfig();
+    dungeon.difficultyModifier += config.difficultyOnVictory;
 }
 
-// Изменение множителя сложности при поражении (-2%, без лимита)
+// Изменение множителя сложности при поражении (из ConfigStore, без лимита)
 // Только 1 раз за stage (повторные поражения не уменьшают)
 export function adjustDifficultyOnDefeat(dungeon: DungeonProgress): void {
+    const config = getConfig();
     const stageId = dungeon.chapter * 100 + dungeon.stage;
     if (dungeon.lastDefeatStage !== stageId) {
-        dungeon.difficultyModifier -= 0.02;
+        dungeon.difficultyModifier += config.difficultyOnDefeat; // отрицательное значение
         dungeon.lastDefeatStage = stageId;
     }
 }

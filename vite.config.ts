@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
     // Base path для GitHub Pages - название репозитория
@@ -8,6 +9,12 @@ export default defineConfig({
         port: 5173
     },
     build: {
-        outDir: 'dist'
+        outDir: 'dist',
+        rollupOptions: {
+            input: {
+                main: resolve(__dirname, 'index.html'),
+                balanceTuner: resolve(__dirname, 'public/balance-tuner.html')
+            }
+        }
     }
 });

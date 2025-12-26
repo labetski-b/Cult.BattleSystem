@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Tuner</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            margin: 0;
+        }
+        h1, h2, h3 { color: #ffd700; margin-bottom: 10px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* Controls Panel */
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            background: #2a2a4e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            background: #1a1a2e;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .control-group h3 {
+            margin-top: 0;
+            font-size: 14px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+        .control-row label {
+            flex: 1;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .control-row input[type="range"] {
+            width: 100px;
+        }
+        .control-row input[type="number"] {
+            width: 70px;
+            background: #333;
+            border: 1px solid #555;
+            color: #eee;
+            padding: 4px;
+            border-radius: 4px;
+            text-align: right;
+        }
+        .value-display {
+            width: 60px;
+            text-align: right;
+            font-size: 12px;
+            color: #ffd700;
+        }
+
+        /* Buttons */
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #ffd700;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        .btn-primary:hover { background: #ffed4a; }
+        .btn-primary:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #444;
+            color: #eee;
+        }
+        .btn-secondary:hover { background: #555; }
+
+        /* Status */
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-running { background: #444422; color: #ffd700; }
+        .status-done { background: #224422; color: #6bff6b; }
+        .status-error { background: #442222; color: #ff6b6b; }
+
+        /* Results */
+        .results { display: none; }
+        .results.visible { display: block; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #2a2a4e;
+            border: none;
+            color: #eee;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .tab.active {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 6px 10px;
+            text-align: right;
+        }
+        th {
+            background: #2a2a4e;
+            color: #ffd700;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) { background: #222244; }
+        tr:hover { background: #333366; }
+        .table-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Summary */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .summary-item {
+            background: #2a2a4e;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 24px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .summary-label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* Charts */
+        canvas {
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Balance Tuner</h1>
+
+        <!-- Controls -->
+        <div class="controls-panel">
+            <div class="control-group">
+                <h3>Item Power</h3>
+                <div class="control-row">
+                    <label>basePowerPerLevel</label>
+                    <input type="range" id="basePowerPerLevel" min="5" max="50" step="1" value="20">
+                    <span class="value-display" id="basePowerPerLevel-val">20</span>
+                </div>
+                <div class="control-row">
+                    <label>powerGrowthPerLevel</label>
+                    <input type="range" id="powerGrowthPerLevel" min="1.1" max="2.0" step="0.05" value="1.5">
+                    <span class="value-display" id="powerGrowthPerLevel-val">1.50</span>
+                </div>
+                <div class="control-row">
+                    <label>powerVariance (±%)</label>
+                    <input type="range" id="powerVariance" min="0" max="0.3" step="0.01" value="0.1">
+                    <span class="value-display" id="powerVariance-val">10%</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Level Range</h3>
+                <div class="control-row">
+                    <label>minLevelOffset</label>
+                    <input type="range" id="minLevelOffset" min="0" max="5" step="1" value="2">
+                    <span class="value-display" id="minLevelOffset-val">2</span>
+                </div>
+                <div class="control-row">
+                    <label>maxRarityLevelOffset</label>
+                    <input type="range" id="maxRarityLevelOffset" min="0" max="3" step="1" value="1">
+                    <span class="value-display" id="maxRarityLevelOffset-val">1</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Difficulty</h3>
+                <div class="control-row">
+                    <label>On Victory (%)</label>
+                    <input type="range" id="difficultyOnVictory" min="0" max="0.05" step="0.005" value="0.01">
+                    <span class="value-display" id="difficultyOnVictory-val">+1%</span>
+                </div>
+                <div class="control-row">
+                    <label>On Defeat (%)</label>
+                    <input type="range" id="difficultyOnDefeat" min="-0.1" max="0" step="0.005" value="-0.02">
+                    <span class="value-display" id="difficultyOnDefeat-val">-2%</span>
+                </div>
+                <div class="control-row">
+                    <label>Boss Multiplier</label>
+                    <input type="range" id="bossPowerMultiplier" min="1.0" max="2.0" step="0.05" value="1.1">
+                    <span class="value-display" id="bossPowerMultiplier-val">1.10</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Rarity Multipliers</h3>
+                <div class="control-row">
+                    <label style="color:#9ca3af">Common</label>
+                    <input type="number" id="rarity-common" value="1.0" step="0.1" min="0.1">
+                </div>
+                <div class="control-row">
+                    <label style="color:#22c55e">Good</label>
+                    <input type="number" id="rarity-good" value="2.5" step="0.1" min="0.1">
+                </div>
+                <div class="control-row">
+                    <label style="color:#3b82f6">Rare</label>
+                    <input type="number" id="rarity-rare" value="6.25" step="0.25" min="0.1">
+                </div>
+                <div class="control-row">
+                    <label style="color:#a855f7">Epic</label>
+                    <input type="number" id="rarity-epic" value="15.625" step="0.5" min="0.1">
+                </div>
+                <div class="control-row">
+                    <label style="color:#f43f5e">Mythic</label>
+                    <input type="number" id="rarity-mythic" value="39.0625" step="1" min="0.1">
+                </div>
+                <div class="control-row">
+                    <label style="color:#f59e0b">Legendary</label>
+                    <input type="number" id="rarity-legendary" value="97.65625" step="5" min="0.1">
+                </div>
+                <div class="control-row">
+                    <label style="color:#fbbf24">Immortal</label>
+                    <input type="number" id="rarity-immortal" value="244.14" step="10" min="0.1">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Simulation</h3>
+                <div class="control-row">
+                    <label>Chapters</label>
+                    <input type="number" id="maxChapters" value="20" min="1" max="100">
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-primary" id="runBtn" onclick="runSimulation()">Run Simulation</button>
+            <button class="btn-secondary" onclick="resetDefaults()">Reset to Defaults</button>
+        </div>
+
+        <div id="status"></div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="summary-grid" id="summary-grid"></div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('charts')">Charts</button>
+                <button class="tab" onclick="showTab('chapters')">Chapters</button>
+                <button class="tab" onclick="showTab('stages')">Stages</button>
+            </div>
+
+            <div id="charts-content" class="tab-content active">
+                <h2>Power Progression (log scale)</h2>
+                <canvas id="power-chart" width="1100" height="350"></canvas>
+
+                <h2 style="margin-top: 30px;">Difficulty Modifier %</h2>
+                <canvas id="difficulty-chart" width="1100" height="250"></canvas>
+
+                <h2 style="margin-top: 30px;">Loots per Stage</h2>
+                <canvas id="loots-chart" width="1100" height="250"></canvas>
+            </div>
+
+            <div id="chapters-content" class="tab-content">
+                <h2>Chapters Summary</h2>
+                <div class="table-scroll" id="chapters-table"></div>
+            </div>
+
+            <div id="stages-content" class="tab-content">
+                <h2>Stages Detail</h2>
+                <div class="table-scroll" id="stages-table"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { runSimulation as runSim, getDefaults } from '/src/testing/BrowserEconomyTester.ts';
+
+        // Make functions available globally
+        window.runSimulation = async function() {
+            const statusEl = document.getElementById('status');
+            const runBtn = document.getElementById('runBtn');
+
+            statusEl.textContent = 'Running simulation...';
+            statusEl.className = 'status-running';
+            runBtn.disabled = true;
+
+            // Allow UI to update
+            await new Promise(r => setTimeout(r, 10));
+
+            try {
+                const overrides = getOverridesFromUI();
+                const chapters = parseInt(document.getElementById('maxChapters').value) || 20;
+
+                const summary = runSim(overrides, { maxChapters: chapters, verbose: false });
+
+                renderResults(summary);
+
+                statusEl.textContent = `Done! ${summary.totalChapters} chapters, ${summary.totalLoots} loots, ${summary.totalDefeats} defeats`;
+                statusEl.className = 'status-done';
+            } catch (e) {
+                statusEl.textContent = 'Error: ' + e.message;
+                statusEl.className = 'status-error';
+                console.error(e);
+            } finally {
+                runBtn.disabled = false;
+            }
+        };
+
+        window.resetDefaults = function() {
+            const defaults = getDefaults();
+
+            setSlider('basePowerPerLevel', defaults.basePowerPerLevel);
+            setSlider('powerGrowthPerLevel', defaults.powerGrowthPerLevel);
+            setSlider('powerVariance', defaults.powerVariance);
+            setSlider('minLevelOffset', defaults.minLevelOffset);
+            setSlider('maxRarityLevelOffset', defaults.maxRarityLevelOffset);
+            setSlider('difficultyOnVictory', defaults.difficultyOnVictory);
+            setSlider('difficultyOnDefeat', defaults.difficultyOnDefeat);
+            setSlider('bossPowerMultiplier', defaults.bossPowerMultiplier);
+
+            document.getElementById('rarity-common').value = defaults.rarityMultipliers.common;
+            document.getElementById('rarity-good').value = defaults.rarityMultipliers.good;
+            document.getElementById('rarity-rare').value = defaults.rarityMultipliers.rare;
+            document.getElementById('rarity-epic').value = defaults.rarityMultipliers.epic;
+            document.getElementById('rarity-mythic').value = defaults.rarityMultipliers.mythic;
+            document.getElementById('rarity-legendary').value = defaults.rarityMultipliers.legendary;
+            document.getElementById('rarity-immortal').value = defaults.rarityMultipliers.immortal;
+        };
+
+        window.showTab = function(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-content`).classList.add('active');
+        };
+
+        function getOverridesFromUI() {
+            return {
+                basePowerPerLevel: parseFloat(document.getElementById('basePowerPerLevel').value),
+                powerGrowthPerLevel: parseFloat(document.getElementById('powerGrowthPerLevel').value),
+                powerVariance: parseFloat(document.getElementById('powerVariance').value),
+                minLevelOffset: parseInt(document.getElementById('minLevelOffset').value),
+                maxRarityLevelOffset: parseInt(document.getElementById('maxRarityLevelOffset').value),
+                difficultyOnVictory: parseFloat(document.getElementById('difficultyOnVictory').value),
+                difficultyOnDefeat: parseFloat(document.getElementById('difficultyOnDefeat').value),
+                bossPowerMultiplier: parseFloat(document.getElementById('bossPowerMultiplier').value),
+                rarityMultipliers: {
+                    common: parseFloat(document.getElementById('rarity-common').value),
+                    good: parseFloat(document.getElementById('rarity-good').value),
+                    rare: parseFloat(document.getElementById('rarity-rare').value),
+                    epic: parseFloat(document.getElementById('rarity-epic').value),
+                    mythic: parseFloat(document.getElementById('rarity-mythic').value),
+                    legendary: parseFloat(document.getElementById('rarity-legendary').value),
+                    immortal: parseFloat(document.getElementById('rarity-immortal').value)
+                }
+            };
+        }
+
+        function setSlider(id, value) {
+            const el = document.getElementById(id);
+            el.value = value;
+            el.dispatchEvent(new Event('input'));
+        }
+
+        function renderResults(summary) {
+            document.getElementById('results').classList.add('visible');
+
+            // Summary grid
+            const summaryHtml = `
+                <div class="summary-item">
+                    <div class="summary-value">${summary.totalChapters}</div>
+                    <div class="summary-label">Chapters</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${summary.totalLoots}</div>
+                    <div class="summary-label">Total Loots</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${summary.totalBattles}</div>
+                    <div class="summary-label">Battles</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${summary.totalDefeats}</div>
+                    <div class="summary-label">Defeats</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${summary.finalHeroLevel}</div>
+                    <div class="summary-label">Final Hero Lvl</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${summary.finalLampLevel}</div>
+                    <div class="summary-label">Final Lamp Lvl</div>
+                </div>
+            `;
+            document.getElementById('summary-grid').innerHTML = summaryHtml;
+
+            // Tables
+            renderChaptersTable(summary.chapters);
+            renderStagesTable(summary.stages);
+
+            // Charts
+            renderPowerChart(summary.stages);
+            renderDifficultyChart(summary.stages);
+            renderLootsChart(summary.stages);
+        }
+
+        function renderChaptersTable(chapters) {
+            let html = `<table>
+                <tr>
+                    <th>Ch</th><th>Loots</th><th>Battles</th><th>Defeats</th>
+                    <th>Unfair</th><th>Lamp</th><th>HeroLvl</th><th>Power</th><th>Enemy</th>
+                </tr>`;
+
+            for (const c of chapters) {
+                html += `<tr>
+                    <td>${c.chapter}</td>
+                    <td>${c.loots}</td>
+                    <td>${c.battles}</td>
+                    <td>${c.defeats}</td>
+                    <td>${c.unfairDefeats}</td>
+                    <td>${c.lampLevel}</td>
+                    <td>${c.heroLevel}</td>
+                    <td>${c.heroPower}</td>
+                    <td>${c.maxEnemyPower}</td>
+                </tr>`;
+            }
+
+            html += '</table>';
+            document.getElementById('chapters-table').innerHTML = html;
+        }
+
+        function renderStagesTable(stages) {
+            let html = `<table>
+                <tr>
+                    <th>Ch.St</th><th>Loots</th><th>Defeats</th>
+                    <th>HLvl</th><th>Power</th><th>Enemy</th><th>Diff%</th><th>Lamp</th>
+                </tr>`;
+
+            for (const s of stages) {
+                html += `<tr>
+                    <td>${s.chapter}.${s.stage}</td>
+                    <td>${s.loots}</td>
+                    <td>${s.defeats}</td>
+                    <td>${s.heroLevel}</td>
+                    <td>${s.heroPower}</td>
+                    <td>${s.enemyPower}</td>
+                    <td>${s.difficultyModifier >= 0 ? '+' : ''}${s.difficultyModifier}%</td>
+                    <td>${s.lampLevel}</td>
+                </tr>`;
+            }
+
+            html += '</table>';
+            document.getElementById('stages-table').innerHTML = html;
+        }
+
+        function renderPowerChart(stages) {
+            const canvas = document.getElementById('power-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 40, right: 80, bottom: 60, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const heroPowers = stages.map(s => s.heroPower);
+            const enemyPowers = stages.map(s => s.enemyPower);
+            const maxPower = Math.max(...heroPowers, ...enemyPowers);
+            const minPower = Math.min(...heroPowers.filter(p => p > 0), ...enemyPowers.filter(p => p > 0));
+
+            const logMin = Math.log10(Math.max(1, minPower));
+            const logMax = Math.log10(maxPower);
+
+            const xScale = (i) => padding.left + (i / (stages.length - 1)) * width;
+            const yScale = (v) => {
+                const logV = Math.log10(Math.max(1, v));
+                return padding.top + height - ((logV - logMin) / (logMax - logMin)) * height;
+            };
+
+            // Grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let p = Math.ceil(logMin); p <= Math.floor(logMax); p++) {
+                const y = yScale(Math.pow(10, p));
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#888';
+                ctx.font = '12px Courier New';
+                ctx.textAlign = 'right';
+                ctx.fillText(Math.pow(10, p).toLocaleString(), padding.left - 10, y + 4);
+            }
+
+            // Hero power line
+            ctx.strokeStyle = '#6bff6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScale(heroPowers[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Enemy power line
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScale(enemyPowers[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Boss markers
+            for (let i = 0; i < stages.length; i++) {
+                if (stages[i].stage === 10) {
+                    const x = xScale(i);
+                    ctx.strokeStyle = '#ffd70044';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding.top);
+                    ctx.lineTo(x, padding.top + height);
+                    ctx.stroke();
+                }
+            }
+
+            // Legend
+            ctx.font = '14px Courier New';
+            ctx.fillStyle = '#6bff6b';
+            ctx.fillRect(padding.left + 10, padding.top + 10, 12, 12);
+            ctx.fillText('Hero Power', padding.left + 30, padding.top + 20);
+
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
+            ctx.fillText('Enemy Power', padding.left + 30, padding.top + 40);
+        }
+
+        function renderDifficultyChart(stages) {
+            const canvas = document.getElementById('difficulty-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const diffMods = stages.map(s => s.difficultyModifier || 0);
+            const minDiff = Math.min(...diffMods, -10);
+            const maxDiff = Math.max(...diffMods, 10);
+            const range = Math.max(Math.abs(minDiff), Math.abs(maxDiff), 20);
+
+            const xScale = (i) => padding.left + (i / (stages.length - 1)) * width;
+            const yScale = (v) => padding.top + height / 2 - (v / range) * (height / 2);
+
+            // Zero line
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, yScale(0));
+            ctx.lineTo(padding.left + width, yScale(0));
+            ctx.stroke();
+
+            // Fill
+            ctx.beginPath();
+            ctx.moveTo(xScale(0), yScale(0));
+            for (let i = 0; i < stages.length; i++) {
+                ctx.lineTo(xScale(i), yScale(diffMods[i]));
+            }
+            ctx.lineTo(xScale(stages.length - 1), yScale(0));
+            ctx.closePath();
+
+            const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + height);
+            gradient.addColorStop(0, '#ff6b6b44');
+            gradient.addColorStop(0.5, '#44444444');
+            gradient.addColorStop(1, '#6bff6b44');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Line
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScale(diffMods[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Y labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'right';
+            ctx.fillText(`+${Math.round(range)}%`, padding.left - 10, padding.top + 4);
+            ctx.fillText('0%', padding.left - 10, yScale(0) + 4);
+            ctx.fillText(`${Math.round(-range)}%`, padding.left - 10, padding.top + height + 4);
+        }
+
+        function renderLootsChart(stages) {
+            const canvas = document.getElementById('loots-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const loots = stages.map(s => s.loots);
+            const maxLoots = Math.max(...loots, 1);
+
+            const barWidth = width / stages.length;
+
+            for (let i = 0; i < stages.length; i++) {
+                const x = padding.left + i * barWidth;
+                const barHeight = (loots[i] / maxLoots) * height;
+                const y = padding.top + height - barHeight;
+
+                ctx.fillStyle = loots[i] > 0 ? '#6bff6b' : '#333';
+                ctx.fillRect(x, y, barWidth - 1, barHeight);
+            }
+
+            // Y label
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'right';
+            ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
+            ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+        }
+
+        // Initialize sliders with value display
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            const valEl = document.getElementById(slider.id + '-val');
+            if (!valEl) return;
+
+            slider.addEventListener('input', () => {
+                const v = parseFloat(slider.value);
+                if (slider.id === 'powerVariance') {
+                    valEl.textContent = Math.round(v * 100) + '%';
+                } else if (slider.id.includes('difficulty')) {
+                    valEl.textContent = (v >= 0 ? '+' : '') + Math.round(v * 100) + '%';
+                } else if (slider.id === 'powerGrowthPerLevel' || slider.id === 'bossPowerMultiplier') {
+                    valEl.textContent = v.toFixed(2);
+                } else {
+                    valEl.textContent = v;
+                }
+            });
+
+            // Trigger initial display
+            slider.dispatchEvent(new Event('input'));
+        });
+    </script>
+</body>
+</html>

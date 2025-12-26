@@ -5,14 +5,13 @@ import { SLOT_TYPES } from '../models/Item';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
-import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
+import { createDungeonProgress, advanceProgress, isBossStage, getBossMultiplier, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
 import enemiesConfig from '../../data/enemies.json';
 
 // Конфиг врагов
 const enemyConfig = {
     minEnemies: enemiesConfig.waves.minEnemies,
-    maxEnemies: enemiesConfig.waves.maxEnemies,
-    bossMultiplier: BOSS_MULTIPLIER
+    maxEnemies: enemiesConfig.waves.maxEnemies
 };
 
 // Расчёт силы культа (effectivePower = maxHp + damage * 4)
@@ -192,7 +191,7 @@ export class EconomyTester {
         // Генерация врагов (с учётом всех множителей)
         let targetPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp.level);
         if (isBoss) {
-            targetPower *= enemyConfig.bossMultiplier;
+            targetPower *= getBossMultiplier();
         }
 
         const enemies = generateEnemyWave(
@@ -288,7 +287,7 @@ export class EconomyTester {
         // Макс. сила врагов = сила босса (этап 10) с учётом множителей
         const baseBossPower = getBaseStagePower(chapter, STAGES_PER_CHAPTER);
         const rarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
-        const bossPower = baseBossPower * rarityMultiplier * BOSS_MULTIPLIER;
+        const bossPower = baseBossPower * rarityMultiplier * getBossMultiplier();
 
         this.chapters.push({
             chapter,

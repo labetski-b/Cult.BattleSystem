@@ -1,5 +1,6 @@
 import raritiesData from '../../data/rarities.json';
 import itemsConfig from '../../data/items.json';
+import { getConfig } from '../config/ConfigStore';
 
 // Типы редкости предметов (из JSON)
 export type Rarity = 'common' | 'good' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'immortal';
@@ -102,28 +103,28 @@ export function generateItemId(): string {
 // Генерация уровня предмета (от dungeonChapter - offset до dungeonChapter)
 // isMaxRarity — если true, используется maxRarityLevelOffset (меньший разброс для топовых вещей)
 export function rollItemLevel(dungeonChapter: number, isMaxRarity: boolean = false): number {
-    const offset = isMaxRarity
-        ? (itemsConfig.levelRange as { minLevelOffset: number; maxRarityLevelOffset: number }).maxRarityLevelOffset
-        : itemsConfig.levelRange.minLevelOffset;
+    const config = getConfig();
+    const offset = isMaxRarity ? config.maxRarityLevelOffset : config.minLevelOffset;
     const minLevel = Math.max(1, dungeonChapter - offset);
     return Math.floor(Math.random() * (dungeonChapter - minLevel + 1)) + minLevel;
 }
 
 // Расчёт статов предмета с учётом effectivePower = hp + 4*dmg
-// Генерирует статы так, чтобы effectivePower попадал в targetPower ± 15%
+// Генерирует статы так, чтобы effectivePower попадал в targetPower ± variance
 export function calculateItemStats(
     slot: SlotType,
     level: number,
     rarity: Rarity
 ): { hp: number; damage: number; power: number } {
+    const config = getConfig();
     const ratios = SLOT_STAT_RATIOS[slot];
 
     // Target power от уровня и редкости (экспоненциальный рост)
-    const growthRate = itemsConfig.powerGrowthPerLevel;
-    const targetPower = itemsConfig.basePowerPerLevel * Math.pow(growthRate, level - 1) * RARITY_MULTIPLIERS[rarity];
+    const rarityMultiplier = config.rarityMultipliers[rarity] ?? RARITY_MULTIPLIERS[rarity];
+    const targetPower = config.basePowerPerLevel * Math.pow(config.powerGrowthPerLevel, level - 1) * rarityMultiplier;
 
-    // Вариация (из items.json, по умолчанию ±15%)
-    const varianceRange = itemsConfig.powerVariance ?? 0.15;
+    // Вариация (из ConfigStore)
+    const varianceRange = config.powerVariance;
     const variance = (1 - varianceRange) + Math.random() * (2 * varianceRange);
     const actualTarget = targetPower * variance;
 
