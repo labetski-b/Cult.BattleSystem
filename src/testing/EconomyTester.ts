@@ -5,7 +5,7 @@ import { SLOT_TYPES } from '../models/Item';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
-import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, calculateStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
+import { createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
 import enemiesConfig from '../../data/enemies.json';
 
 // Конфиг врагов
@@ -153,7 +153,7 @@ export class EconomyTester {
             return;
         }
 
-        const enemyPower = getAdjustedEnemyPower(this.state.dungeon);
+        const enemyPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp.level);
 
         // После поражения — сначала минимум 1 лут
         this.lootOneItem();
@@ -189,8 +189,8 @@ export class EconomyTester {
         const currentChapter = this.state.dungeon.chapter;
         const currentStage = this.state.dungeon.stage;
 
-        // Генерация врагов (с учётом difficultyModifier)
-        let targetPower = getAdjustedEnemyPower(this.state.dungeon);
+        // Генерация врагов (с учётом всех множителей)
+        let targetPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp.level);
         if (isBoss) {
             targetPower *= enemyConfig.bossMultiplier;
         }
@@ -234,7 +234,7 @@ export class EconomyTester {
             // Увеличиваем сложность при победе (+1%)
             adjustDifficultyOnVictory(this.state.dungeon);
 
-            this.state.dungeon = advanceProgress(this.state.dungeon, this.state.lamp.level);
+            this.state.dungeon = advanceProgress(this.state.dungeon);
             healHero(this.state.hero);
             return true;
         } else {
@@ -285,8 +285,10 @@ export class EconomyTester {
 
     // Записать метрики главы
     private recordChapterMetrics(chapter: number): void {
-        // Макс. сила врагов = сила босса (этап 10)
-        const bossPower = calculateStagePower(chapter, STAGES_PER_CHAPTER, this.state.lamp.level) * BOSS_MULTIPLIER;
+        // Макс. сила врагов = сила босса (этап 10) с учётом множителей
+        const baseBossPower = getBaseStagePower(chapter, STAGES_PER_CHAPTER);
+        const rarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
+        const bossPower = baseBossPower * rarityMultiplier * BOSS_MULTIPLIER;
 
         this.chapters.push({
             chapter,

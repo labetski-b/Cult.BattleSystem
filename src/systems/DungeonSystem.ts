@@ -4,7 +4,7 @@ import { calculateExpectedRarityMultiplier } from '../models/Lamp';
 export interface DungeonProgress {
     chapter: number;
     stage: number;
-    currentEnemyPower: number;
+    currentEnemyPower: number;  // basePower (без множителей)
     difficultyModifier: number;  // от -0.20 до +0.20
     lastDefeatStage: number;     // для защиты от повторных -2%
 }
@@ -44,22 +44,13 @@ export function createDungeonProgress(): DungeonProgress {
     return {
         chapter: 1,
         stage: 1,
-        currentEnemyPower: data.power,
+        currentEnemyPower: data.power,  // basePower без множителей
         difficultyModifier: 0,
         lastDefeatStage: 0
     };
 }
 
-// Расчёт силы врагов на текущем этапе (из таблицы)
-// lampLevel — уровень лампы игрока для масштабирования по редкости
-export function calculateStagePower(chapter: number, stage: number, lampLevel: number = 1): number {
-    const globalStage = getGlobalStage(chapter, stage);
-    const basePower = getStageData(globalStage).power;
-    const rarityMultiplier = calculateExpectedRarityMultiplier(lampLevel);
-    return Math.round(basePower * rarityMultiplier);
-}
-
-// Получить базовую силу врагов (без множителя редкости)
+// Получить basePower этапа (без множителей)
 export function getBaseStagePower(chapter: number, stage: number): number {
     const globalStage = getGlobalStage(chapter, stage);
     return getStageData(globalStage).power;
@@ -77,8 +68,8 @@ export function isBossStage(stage: number): boolean {
 }
 
 // Переход на следующий этап
-// lampLevel — уровень лампы для масштабирования силы врагов
-export function advanceProgress(progress: DungeonProgress, lampLevel: number = 1): DungeonProgress {
+// currentEnemyPower хранит basePower (без множителей)
+export function advanceProgress(progress: DungeonProgress): DungeonProgress {
     let newStage = progress.stage + 1;
     let newChapter = progress.chapter;
 
@@ -90,7 +81,7 @@ export function advanceProgress(progress: DungeonProgress, lampLevel: number = 1
     return {
         chapter: newChapter,
         stage: newStage,
-        currentEnemyPower: calculateStagePower(newChapter, newStage, lampLevel),
+        currentEnemyPower: getBaseStagePower(newChapter, newStage),
         difficultyModifier: progress.difficultyModifier,
         lastDefeatStage: progress.lastDefeatStage
     };
@@ -111,9 +102,13 @@ export function adjustDifficultyOnDefeat(dungeon: DungeonProgress): void {
     }
 }
 
-// Получить силу врагов с учётом множителя сложности
-export function getAdjustedEnemyPower(dungeon: DungeonProgress): number {
-    return Math.round(dungeon.currentEnemyPower * (1 + dungeon.difficultyModifier));
+// Получить силу врагов с учётом ВСЕХ множителей
+// enemyPower = basePower × rarityMultiplier × (1 + difficultyModifier)
+export function getAdjustedEnemyPower(dungeon: DungeonProgress, lampLevel: number): number {
+    const basePower = dungeon.currentEnemyPower;
+    const rarityMultiplier = calculateExpectedRarityMultiplier(lampLevel);
+    const difficultyMultiplier = 1 + dungeon.difficultyModifier;
+    return Math.round(basePower * rarityMultiplier * difficultyMultiplier);
 }
 
 // Форматирование для отображения

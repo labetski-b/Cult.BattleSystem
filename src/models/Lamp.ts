@@ -85,23 +85,45 @@ function getMaxRarityFromWeights(weights: Partial<Record<Rarity, number>>): Rari
     return maxRarity;
 }
 
-// Рассчитать ожидаемый средний множитель редкости для уровня лампы
+// Рассчитать множитель редкости для уровня лампы (взвешенный верх — top 30%)
+// Берём редкости, покрывающие верхние 30% веса, и считаем их среднее
 // Используется для масштабирования силы врагов
 export function calculateExpectedRarityMultiplier(lampLevel: number): number {
     const config = getLampLevelConfig(lampLevel);
     const weights = config.weights;
 
+    // Собираем редкости с весами, сортируем по убыванию множителя
+    const entries: { rarity: Rarity; weight: number; multiplier: number }[] = [];
     let totalWeight = 0;
-    let weightedSum = 0;
 
-    // Используем RARITY_MULTIPLIERS из Item.ts (читается из rarities.json)
     for (const [rarity, weight] of Object.entries(weights)) {
         const multiplier = RARITY_MULTIPLIERS[rarity as Rarity] || 1.0;
-        weightedSum += weight * multiplier;
+        entries.push({ rarity: rarity as Rarity, weight, multiplier });
         totalWeight += weight;
     }
 
-    return totalWeight > 0 ? weightedSum / totalWeight : 1.0;
+    // Сортируем по множителю (от лучшего к худшему)
+    entries.sort((a, b) => b.multiplier - a.multiplier);
+
+    // Берём верхние 30% веса
+    const topThreshold = totalWeight * 0.30;
+    let accumulatedWeight = 0;
+    let topWeightedSum = 0;
+    let topTotalWeight = 0;
+
+    for (const entry of entries) {
+        if (accumulatedWeight >= topThreshold) break;
+
+        // Сколько веса ещё можем взять
+        const remainingThreshold = topThreshold - accumulatedWeight;
+        const weightToTake = Math.min(entry.weight, remainingThreshold);
+
+        topWeightedSum += weightToTake * entry.multiplier;
+        topTotalWeight += weightToTake;
+        accumulatedWeight += entry.weight;
+    }
+
+    return topTotalWeight > 0 ? topWeightedSum / topTotalWeight : 1.0;
 }
 
 // Генерация предмета из лампы

@@ -195,7 +195,7 @@ export function fight(state: GameState): BattleResult {
 
     if (result.victory) {
         state.hero.gold += result.goldReward + balance.economy.goldPerStageClear;
-        state.dungeon = advanceProgress(state.dungeon, state.lamp.level);
+        state.dungeon = advanceProgress(state.dungeon);
         // После победы восстанавливаем HP
         healHero(state.hero);
     }
@@ -304,7 +304,7 @@ export function applyBattleResult(
 
     if (result.victory) {
         state.hero.gold += result.goldReward + balance.economy.goldPerStageClear;
-        state.dungeon = advanceProgress(state.dungeon, state.lamp.level);
+        state.dungeon = advanceProgress(state.dungeon);
         healHero(state.hero);
     }
 
