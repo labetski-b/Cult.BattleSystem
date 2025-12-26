@@ -347,6 +347,7 @@
         <div class="buttons">
             <button class="btn-primary" id="runBtn" onclick="runSimulation()">Run Simulation</button>
             <button class="btn-secondary" onclick="resetDefaults()">Reset to Defaults</button>
+            <button class="btn-secondary" onclick="saveAsDefault()">Save as Default</button>
         </div>
 
         <div id="status"></div>
@@ -517,24 +518,70 @@
 
         window.resetDefaults = function() {
             const defaults = getDefaults();
-
-            setSlider('basePowerPerLevel', defaults.basePowerPerLevel);
-            setSlider('powerGrowthPerLevel', defaults.powerGrowthPerLevel);
-            setSlider('powerVariance', defaults.powerVariance);
-            setSlider('minLevelOffset', defaults.minLevelOffset);
-            setSlider('maxRarityLevelOffset', defaults.maxRarityLevelOffset);
-            setSlider('difficultyOnVictory', defaults.difficultyOnVictory);
-            setSlider('difficultyOnDefeat', defaults.difficultyOnDefeat);
-            setSlider('bossPowerMultiplier', defaults.bossPowerMultiplier);
-
-            document.getElementById('rarity-common').value = defaults.rarityMultipliers.common;
-            document.getElementById('rarity-good').value = defaults.rarityMultipliers.good;
-            document.getElementById('rarity-rare').value = defaults.rarityMultipliers.rare;
-            document.getElementById('rarity-epic').value = defaults.rarityMultipliers.epic;
-            document.getElementById('rarity-mythic').value = defaults.rarityMultipliers.mythic;
-            document.getElementById('rarity-legendary').value = defaults.rarityMultipliers.legendary;
-            document.getElementById('rarity-immortal').value = defaults.rarityMultipliers.immortal;
+            applySettings(defaults);
+            // Clear saved settings
+            localStorage.removeItem('balanceTunerSettings');
+            showStatus('Reset to code defaults', 'status-done');
         };
+
+        window.saveAsDefault = function() {
+            const settings = getOverridesFromUI();
+            settings.maxChapters = parseInt(document.getElementById('maxChapters').value) || 20;
+            settings.simRuns = parseInt(document.getElementById('simRuns').value) || 1;
+            localStorage.setItem('balanceTunerSettings', JSON.stringify(settings));
+            showStatus('Settings saved to browser', 'status-done');
+        };
+
+        function loadSavedSettings() {
+            const saved = localStorage.getItem('balanceTunerSettings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    applySettings(settings);
+                    if (settings.maxChapters) {
+                        document.getElementById('maxChapters').value = settings.maxChapters;
+                    }
+                    if (settings.simRuns) {
+                        document.getElementById('simRuns').value = settings.simRuns;
+                    }
+                } catch (e) {
+                    console.warn('Failed to load saved settings:', e);
+                }
+            }
+        }
+
+        function applySettings(settings) {
+            setSlider('basePowerPerLevel', settings.basePowerPerLevel);
+            setSlider('powerGrowthPerLevel', settings.powerGrowthPerLevel);
+            setSlider('powerVariance', settings.powerVariance);
+            setSlider('minLevelOffset', settings.minLevelOffset);
+            setSlider('maxRarityLevelOffset', settings.maxRarityLevelOffset);
+            setSlider('difficultyOnVictory', settings.difficultyOnVictory);
+            setSlider('difficultyOnDefeat', settings.difficultyOnDefeat);
+            setSlider('bossPowerMultiplier', settings.bossPowerMultiplier);
+
+            if (settings.rarityMultipliers) {
+                document.getElementById('rarity-common').value = settings.rarityMultipliers.common;
+                document.getElementById('rarity-good').value = settings.rarityMultipliers.good;
+                document.getElementById('rarity-rare').value = settings.rarityMultipliers.rare;
+                document.getElementById('rarity-epic').value = settings.rarityMultipliers.epic;
+                document.getElementById('rarity-mythic').value = settings.rarityMultipliers.mythic;
+                document.getElementById('rarity-legendary').value = settings.rarityMultipliers.legendary;
+                document.getElementById('rarity-immortal').value = settings.rarityMultipliers.immortal;
+            }
+        }
+
+        function showStatus(message, className) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = className;
+            setTimeout(() => {
+                if (statusEl.textContent === message) {
+                    statusEl.textContent = '';
+                    statusEl.className = '';
+                }
+            }, 2000);
+        }
 
         window.showTab = function(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -913,6 +960,9 @@
             // Trigger initial display
             slider.dispatchEvent(new Event('input'));
         });
+
+        // Load saved settings on page load
+        loadSavedSettings();
 
         // Tooltip handlers for Power chart
         const powerCanvas = document.getElementById('power-chart');
