@@ -29,9 +29,12 @@ export function generateEnemy(targetPower: number, isBoss: boolean = false): Ene
     const variance = 0.9 + Math.random() * 0.2;
     const power = Math.floor(targetPower * variance);
 
-    // HP и урон пропорциональны силе (из enemies.json)
-    const hp = Math.floor(power * enemiesConfig.stats.hpRatio);
-    const damage = Math.max(1, Math.floor(power * enemiesConfig.stats.damageRatio));
+    // HP и урон рассчитываются по формуле: power = hp + 4*damage
+    // k = hpToDamageRatio (соотношение hp/damage)
+    // damage = power / (4 + k); hp = damage * k
+    const k = enemiesConfig.stats.hpToDamageRatio;
+    const damage = Math.max(1, Math.floor(power / (4 + k)));
+    const hp = Math.floor(damage * k);
 
     return {
         id: `enemy_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
