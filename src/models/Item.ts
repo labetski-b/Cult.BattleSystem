@@ -122,8 +122,9 @@ export function calculateItemStats(
     const growthRate = itemsConfig.powerGrowthPerLevel;
     const targetPower = itemsConfig.basePowerPerLevel * Math.pow(growthRate, level - 1) * RARITY_MULTIPLIERS[rarity];
 
-    // Вариация ±15%
-    const variance = 0.85 + Math.random() * 0.3;
+    // Вариация (из items.json, по умолчанию ±15%)
+    const varianceRange = itemsConfig.powerVariance ?? 0.15;
+    const variance = (1 - varianceRange) + Math.random() * (2 * varianceRange);
     const actualTarget = targetPower * variance;
 
     // effectiveMultiplier = hpRatio + 4 * damageRatio (считается динамически)

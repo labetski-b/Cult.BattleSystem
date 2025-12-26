@@ -1,8 +1,9 @@
 {
     "basePowerPerLevel": 20,
     "powerGrowthPerLevel": 1.5,
+    "powerVariance": 0.15,
     "levelRange": {
-        "minLevelOffset": 3,
+        "minLevelOffset": 2,
         "maxRarityLevelOffset": 1
     },
     "slots": {
