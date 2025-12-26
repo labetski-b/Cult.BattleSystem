@@ -6,17 +6,17 @@
         "maxRarityLevelOffset": 1
     },
     "slots": {
-        "weapon":   { "unlockStage": 1,   "hpRatio": 0.25, "damageRatio": 0.75 },
-        "helmet":   { "unlockStage": 1,   "hpRatio": 1.0,  "damageRatio": 0.0 },
-        "armor":    { "unlockStage": 1,   "hpRatio": 1.0,  "damageRatio": 0.0 },
+        "weapon":   { "unlockStage": 1,   "hpRatio": 0.45, "damageRatio": 0.55 },
+        "helmet":   { "unlockStage": 1,   "hpRatio": 0.95, "damageRatio": 0.05 },
+        "armor":    { "unlockStage": 1,   "hpRatio": 0.95, "damageRatio": 0.05 },
         "gloves":   { "unlockStage": 1,   "hpRatio": 0.75, "damageRatio": 0.25 },
-        "shoes":    { "unlockStage": 1,   "hpRatio": 0.75, "damageRatio": 0.25 },
-        "magic":    { "unlockStage": 1,   "hpRatio": 0.75, "damageRatio": 0.25 },
-        "ring":     { "unlockStage": 50,  "hpRatio": 0.75, "damageRatio": 0.25 },
-        "amulet":   { "unlockStage": 50,  "hpRatio": 0.75, "damageRatio": 0.25 },
-        "pants":    { "unlockStage": 50,  "hpRatio": 0.75, "damageRatio": 0.25 },
-        "cloak":    { "unlockStage": 100, "hpRatio": 0.75, "damageRatio": 0.25 },
-        "artefact": { "unlockStage": 100, "hpRatio": 0.75, "damageRatio": 0.25 },
-        "belt":     { "unlockStage": 100, "hpRatio": 0.75, "damageRatio": 0.25 }
+        "shoes":    { "unlockStage": 1,   "hpRatio": 0.85, "damageRatio": 0.15 },
+        "magic":    { "unlockStage": 1,   "hpRatio": 0.55, "damageRatio": 0.45 },
+        "ring":     { "unlockStage": 50,  "hpRatio": 0.55, "damageRatio": 0.45 },
+        "amulet":   { "unlockStage": 50,  "hpRatio": 0.85, "damageRatio": 0.15 },
+        "pants":    { "unlockStage": 50,  "hpRatio": 0.85, "damageRatio": 0.15 },
+        "cloak":    { "unlockStage": 100, "hpRatio": 0.7,  "damageRatio": 0.3 },
+        "artefact": { "unlockStage": 100, "hpRatio": 0.6,  "damageRatio": 0.4 },
+        "belt":     { "unlockStage": 100, "hpRatio": 0.95, "damageRatio": 0.05 }
     }
 }
