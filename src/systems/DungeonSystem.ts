@@ -5,7 +5,7 @@ export interface DungeonProgress {
     chapter: number;
     stage: number;
     currentEnemyPower: number;  // basePower (без множителей)
-    difficultyModifier: number;  // от -0.20 до +0.20
+    difficultyModifier: number;  // без лимитов (+1% за победу, -2% за поражение)
     lastDefeatStage: number;     // для защиты от повторных -2%
 }
 
@@ -87,17 +87,17 @@ export function advanceProgress(progress: DungeonProgress): DungeonProgress {
     };
 }
 
-// Изменение множителя сложности при победе (+1%, макс +20%)
+// Изменение множителя сложности при победе (+1%, без лимита)
 export function adjustDifficultyOnVictory(dungeon: DungeonProgress): void {
-    dungeon.difficultyModifier = Math.min(0.20, dungeon.difficultyModifier + 0.01);
+    dungeon.difficultyModifier += 0.01;
 }
 
-// Изменение множителя сложности при поражении (-2%, мин -20%)
+// Изменение множителя сложности при поражении (-2%, без лимита)
 // Только 1 раз за stage (повторные поражения не уменьшают)
 export function adjustDifficultyOnDefeat(dungeon: DungeonProgress): void {
     const stageId = dungeon.chapter * 100 + dungeon.stage;
     if (dungeon.lastDefeatStage !== stageId) {
-        dungeon.difficultyModifier = Math.max(-0.20, dungeon.difficultyModifier - 0.02);
+        dungeon.difficultyModifier -= 0.02;
         dungeon.lastDefeatStage = stageId;
     }
 }
