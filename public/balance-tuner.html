@@ -60,6 +60,14 @@
             border-radius: 4px;
             text-align: right;
         }
+        .control-row select {
+            width: 80px;
+            background: #333;
+            border: 1px solid #555;
+            color: #eee;
+            padding: 4px;
+            border-radius: 4px;
+        }
         .value-display {
             width: 60px;
             text-align: right;
@@ -285,6 +293,15 @@
                     <label>Chapters</label>
                     <input type="number" id="maxChapters" value="20" min="1" max="100">
                 </div>
+                <div class="control-row">
+                    <label>Runs (avg)</label>
+                    <select id="simRuns">
+                        <option value="1">1</option>
+                        <option value="10">10</option>
+                        <option value="100">100</option>
+                        <option value="1000">1000</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -335,8 +352,9 @@
         window.runSimulation = async function() {
             const statusEl = document.getElementById('status');
             const runBtn = document.getElementById('runBtn');
+            const numRuns = parseInt(document.getElementById('simRuns').value) || 1;
 
-            statusEl.textContent = 'Running simulation...';
+            statusEl.textContent = numRuns > 1 ? `Running ${numRuns} simulations...` : 'Running simulation...';
             statusEl.className = 'status-running';
             runBtn.disabled = true;
 
@@ -347,11 +365,27 @@
                 const overrides = getOverridesFromUI();
                 const chapters = parseInt(document.getElementById('maxChapters').value) || 20;
 
-                const summary = runSim(overrides, { maxChapters: chapters, verbose: false });
+                let summary;
 
-                renderResults(summary);
+                if (numRuns === 1) {
+                    summary = runSim(overrides, { maxChapters: chapters, verbose: false });
+                } else {
+                    const summaries = [];
+                    for (let i = 0; i < numRuns; i++) {
+                        summaries.push(runSim(overrides, { maxChapters: chapters, verbose: false }));
+                        // Update progress every 10 runs or for small counts
+                        if (i % Math.max(1, Math.floor(numRuns / 10)) === 0) {
+                            statusEl.textContent = `Running... ${i + 1}/${numRuns}`;
+                            await new Promise(r => setTimeout(r, 0));
+                        }
+                    }
+                    summary = averageSummaries(summaries);
+                }
 
-                statusEl.textContent = `Done! ${summary.totalChapters} chapters, ${summary.totalLoots} loots, ${summary.totalDefeats} defeats`;
+                renderResults(summary, numRuns);
+
+                const runsText = numRuns > 1 ? ` (avg of ${numRuns} runs)` : '';
+                statusEl.textContent = `Done! ${summary.totalChapters} chapters, ${summary.totalLoots} loots, ${summary.totalDefeats} defeats${runsText}`;
                 statusEl.className = 'status-done';
             } catch (e) {
                 statusEl.textContent = 'Error: ' + e.message;
@@ -361,6 +395,70 @@
                 runBtn.disabled = false;
             }
         };
+
+        // Усреднение результатов нескольких симуляций
+        function averageSummaries(summaries) {
+            const n = summaries.length;
+            const first = summaries[0];
+
+            // Усредняем скаляры
+            const avgSummary = {
+                totalChapters: Math.round(summaries.reduce((s, r) => s + r.totalChapters, 0) / n),
+                totalLoots: Math.round(summaries.reduce((s, r) => s + r.totalLoots, 0) / n),
+                totalBattles: Math.round(summaries.reduce((s, r) => s + r.totalBattles, 0) / n),
+                totalDefeats: Math.round(summaries.reduce((s, r) => s + r.totalDefeats, 0) / n),
+                totalUnfairDefeats: Math.round(summaries.reduce((s, r) => s + r.totalUnfairDefeats, 0) / n),
+                totalGoldEarned: Math.round(summaries.reduce((s, r) => s + r.totalGoldEarned, 0) / n),
+                totalGoldSpent: Math.round(summaries.reduce((s, r) => s + r.totalGoldSpent, 0) / n),
+                finalLampLevel: Math.round(summaries.reduce((s, r) => s + r.finalLampLevel, 0) / n),
+                finalHeroPower: Math.round(summaries.reduce((s, r) => s + r.finalHeroPower, 0) / n),
+                finalHeroLevel: Math.round(summaries.reduce((s, r) => s + r.finalHeroLevel, 0) / n),
+                chapters: [],
+                stages: []
+            };
+
+            // Усредняем chapters (по индексу)
+            const numChapters = Math.min(...summaries.map(s => s.chapters.length));
+            for (let i = 0; i < numChapters; i++) {
+                avgSummary.chapters.push({
+                    chapter: first.chapters[i].chapter,
+                    loots: Math.round(summaries.reduce((s, r) => s + r.chapters[i].loots, 0) / n),
+                    battles: Math.round(summaries.reduce((s, r) => s + r.chapters[i].battles, 0) / n),
+                    defeats: Math.round(summaries.reduce((s, r) => s + r.chapters[i].defeats, 0) / n),
+                    unfairDefeats: Math.round(summaries.reduce((s, r) => s + r.chapters[i].unfairDefeats, 0) / n),
+                    lampLevel: Math.round(summaries.reduce((s, r) => s + r.chapters[i].lampLevel, 0) / n),
+                    heroPower: Math.round(summaries.reduce((s, r) => s + r.chapters[i].heroPower, 0) / n),
+                    heroLevel: Math.round(summaries.reduce((s, r) => s + r.chapters[i].heroLevel, 0) / n),
+                    goldEarned: Math.round(summaries.reduce((s, r) => s + r.chapters[i].goldEarned, 0) / n),
+                    goldSpent: Math.round(summaries.reduce((s, r) => s + r.chapters[i].goldSpent, 0) / n),
+                    maxEnemyPower: Math.round(summaries.reduce((s, r) => s + r.chapters[i].maxEnemyPower, 0) / n)
+                });
+            }
+
+            // Усредняем stages (по индексу)
+            const numStages = Math.min(...summaries.map(s => s.stages.length));
+            for (let i = 0; i < numStages; i++) {
+                avgSummary.stages.push({
+                    chapter: first.stages[i].chapter,
+                    stage: first.stages[i].stage,
+                    loots: Math.round(summaries.reduce((s, r) => s + r.stages[i].loots, 0) / n * 10) / 10,
+                    battles: Math.round(summaries.reduce((s, r) => s + r.stages[i].battles, 0) / n * 10) / 10,
+                    defeats: Math.round(summaries.reduce((s, r) => s + r.stages[i].defeats, 0) / n * 10) / 10,
+                    heroLevel: Math.round(summaries.reduce((s, r) => s + r.stages[i].heroLevel, 0) / n),
+                    heroPower: Math.round(summaries.reduce((s, r) => s + r.stages[i].heroPower, 0) / n),
+                    heroHp: Math.round(summaries.reduce((s, r) => s + r.stages[i].heroHp, 0) / n),
+                    heroDamage: Math.round(summaries.reduce((s, r) => s + r.stages[i].heroDamage, 0) / n),
+                    slots: Math.round(summaries.reduce((s, r) => s + r.stages[i].slots, 0) / n),
+                    enemyPower: Math.round(summaries.reduce((s, r) => s + r.stages[i].enemyPower, 0) / n),
+                    rarityMultiplier: Math.round(summaries.reduce((s, r) => s + r.stages[i].rarityMultiplier, 0) / n * 100) / 100,
+                    difficultyModifier: Math.round(summaries.reduce((s, r) => s + r.stages[i].difficultyModifier, 0) / n),
+                    lampLevel: Math.round(summaries.reduce((s, r) => s + r.stages[i].lampLevel, 0) / n),
+                    gold: Math.round(summaries.reduce((s, r) => s + r.stages[i].gold, 0) / n)
+                });
+            }
+
+            return avgSummary;
+        }
 
         window.resetDefaults = function() {
             const defaults = getDefaults();
@@ -418,10 +516,11 @@
             el.dispatchEvent(new Event('input'));
         }
 
-        function renderResults(summary) {
+        function renderResults(summary, numRuns = 1) {
             document.getElementById('results').classList.add('visible');
 
             // Summary grid
+            const avgLabel = numRuns > 1 ? ' (avg)' : '';
             const summaryHtml = `
                 <div class="summary-item">
                     <div class="summary-value">${summary.totalChapters}</div>
@@ -429,15 +528,15 @@
                 </div>
                 <div class="summary-item">
                     <div class="summary-value">${summary.totalLoots}</div>
-                    <div class="summary-label">Total Loots</div>
+                    <div class="summary-label">Total Loots${avgLabel}</div>
                 </div>
                 <div class="summary-item">
                     <div class="summary-value">${summary.totalBattles}</div>
-                    <div class="summary-label">Battles</div>
+                    <div class="summary-label">Battles${avgLabel}</div>
                 </div>
                 <div class="summary-item">
                     <div class="summary-value">${summary.totalDefeats}</div>
-                    <div class="summary-label">Defeats</div>
+                    <div class="summary-label">Defeats${avgLabel}</div>
                 </div>
                 <div class="summary-item">
                     <div class="summary-value">${summary.finalHeroLevel}</div>
