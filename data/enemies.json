@@ -8,7 +8,7 @@
         "powerMultiplier": 1.1
     },
     "stats": {
-        "hpToDamageRatio": 2.0
+        "hpToDamageRatio": 4.0
     },
     "stageTable": [
         {
