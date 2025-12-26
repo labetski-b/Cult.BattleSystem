@@ -25,9 +25,11 @@ export function generateEnemy(targetPower: number, isBoss: boolean = false): Ene
     const names = isBoss ? BOSS_NAMES : ENEMY_NAMES;
     const name = names[Math.floor(Math.random() * names.length)];
 
-    // Враг имеет силу примерно равную целевой (±10%)
-    const variance = 0.9 + Math.random() * 0.2;
-    const power = Math.floor(targetPower * variance);
+    // Враг имеет силу примерно равную целевой
+    // TODO: вернуть разброс ±10% когда баланс будет настроен
+    // const variance = 0.9 + Math.random() * 0.2;
+    // const power = Math.floor(targetPower * variance);
+    const power = Math.floor(targetPower);
 
     // HP и урон рассчитываются по формуле: power = hp + 4*damage
     // k = hpToDamageRatio (соотношение hp/damage)
