@@ -25,6 +25,18 @@ function getFilledSlots(hero: Hero): number {
     return SLOT_TYPES.filter(slot => hero.equipment[slot] !== null).length;
 }
 
+// Подсчёт экипировки по редкостям
+function getEquippedByRarity(hero: Hero): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const slot of SLOT_TYPES) {
+        const item = hero.equipment[slot];
+        if (item) {
+            result[item.rarity] = (result[item.rarity] || 0) + 1;
+        }
+    }
+    return result;
+}
+
 // Создание чистого GameState (без localStorage)
 function createCleanGameState(): GameState {
     const hero = createHero();
@@ -384,7 +396,8 @@ export class EconomyTester {
             goldEarned: this.chapterGoldEarned,
             goldSpent: this.chapterGoldSpent,
             maxEnemyPower: Math.floor(bossPower),
-            lootsByRarity: { ...this.chapterLootsByRarity }
+            lootsByRarity: { ...this.chapterLootsByRarity },
+            equippedByRarity: getEquippedByRarity(this.state.hero)
         });
     }
 

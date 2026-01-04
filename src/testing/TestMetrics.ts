@@ -32,6 +32,7 @@ export interface ChapterMetrics {
     goldSpent: number;       // Потрачено на апгрейд лампы
     maxEnemyPower: number;   // Макс. сила врагов на главе (босс)
     lootsByRarity: Record<string, number>;  // Количество лутов по редкостям { common: N, good: N, ... }
+    equippedByRarity: Record<string, number>;  // Распределение экипировки по редкостям (количество слотов)
 }
 
 // Итоговые метрики теста

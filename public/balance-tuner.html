@@ -410,6 +410,12 @@
                     <div class="chart-tooltip" id="rarity-tooltip"></div>
                 </div>
 
+                <h2 style="margin-top: 30px;">Equipped Rarity per Chapter</h2>
+                <div class="chart-container">
+                    <canvas id="equipped-chart" width="1100" height="280"></canvas>
+                    <div class="chart-tooltip" id="equipped-tooltip"></div>
+                </div>
+
                 <h2 style="margin-top: 30px;">Guaranteed Upgrade Interval (EveryN)</h2>
                 <div class="chart-container">
                     <canvas id="everyn-chart" width="1100" height="200"></canvas>
@@ -464,6 +470,7 @@
             lootsChapter: { chapters: [], padding: {}, barWidth: 0, maxLoots: 0 },
             lamp: { chapters: [], padding: {}, width: 0, height: 0 },
             rarity: { chapters: [], padding: {}, barWidth: 0 },
+            equipped: { chapters: [], padding: {}, barWidth: 0 },
             everyN: { stages: [], padding: {}, width: 0, height: 0 }
         };
 
@@ -545,6 +552,12 @@
                     avgLootsByRarity[rarity] = Math.round(summaries.reduce((s, r) => s + (r.chapters[i].lootsByRarity?.[rarity] || 0), 0) / n);
                 }
 
+                // Усредняем equippedByRarity
+                const avgEquippedByRarity = {};
+                for (const rarity of RARITY_ORDER) {
+                    avgEquippedByRarity[rarity] = Math.round(summaries.reduce((s, r) => s + (r.chapters[i].equippedByRarity?.[rarity] || 0), 0) / n * 10) / 10;
+                }
+
                 avgSummary.chapters.push({
                     chapter: first.chapters[i].chapter,
                     loots: Math.round(summaries.reduce((s, r) => s + r.chapters[i].loots, 0) / n),
@@ -557,7 +570,8 @@
                     goldEarned: Math.round(summaries.reduce((s, r) => s + r.chapters[i].goldEarned, 0) / n),
                     goldSpent: Math.round(summaries.reduce((s, r) => s + r.chapters[i].goldSpent, 0) / n),
                     maxEnemyPower: Math.round(summaries.reduce((s, r) => s + r.chapters[i].maxEnemyPower, 0) / n),
-                    lootsByRarity: avgLootsByRarity
+                    lootsByRarity: avgLootsByRarity,
+                    equippedByRarity: avgEquippedByRarity
                 });
             }
 
@@ -744,6 +758,7 @@
             renderLootsChapterChart(summary.chapters);
             renderLampChart(summary.chapters);
             renderRarityChart(summary.chapters);
+            renderEquippedChart(summary.chapters);
             renderEveryNChart(summary.stages);
             renderPowerChart(summary.chapters);
             renderDifficultyChart(summary.stages);
@@ -1227,6 +1242,77 @@
             }
         }
 
+        function renderEquippedChart(chapters) {
+            const canvas = document.getElementById('equipped-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 120, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (chapters.length === 0) return;
+
+            const barWidth = width / chapters.length;
+
+            // Save data for tooltip
+            chartData.equipped = { chapters, padding, width, height, barWidth };
+
+            // Draw 100% stacked bars (normalized to total equipped slots)
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * barWidth;
+                const equipped = chapters[i].equippedByRarity || {};
+
+                // Calculate total equipped slots
+                let totalSlots = 0;
+                for (const rarity of RARITY_ORDER) {
+                    totalSlots += equipped[rarity] || 0;
+                }
+                if (totalSlots === 0) totalSlots = 1;
+
+                let yOffset = 0;
+                for (const rarity of RARITY_ORDER) {
+                    const count = equipped[rarity] || 0;
+                    const barHeight = (count / totalSlots) * height;
+
+                    ctx.fillStyle = RARITY_COLORS[rarity];
+                    ctx.fillRect(x + 1, padding.top + height - yOffset - barHeight, barWidth - 2, barHeight);
+
+                    yOffset += barHeight;
+                }
+            }
+
+            // X labels
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * barWidth + barWidth / 2;
+                if (chapters.length <= 30 || i % Math.ceil(chapters.length / 30) === 0) {
+                    ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
+                }
+            }
+
+            // Y labels (percentage)
+            ctx.textAlign = 'right';
+            ctx.fillText('100%', padding.left - 10, padding.top + 4);
+            ctx.fillText('0%', padding.left - 10, padding.top + height + 4);
+
+            // Legend
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'left';
+            let legendY = padding.top;
+            for (const rarity of [...RARITY_ORDER].reverse()) {
+                ctx.fillStyle = RARITY_COLORS[rarity];
+                ctx.fillRect(padding.left + width + 10, legendY, 12, 12);
+                ctx.fillStyle = '#888';
+                ctx.fillText(rarity, padding.left + width + 28, legendY + 10);
+                legendY += 18;
+            }
+        }
+
         function renderEveryNChart(stages) {
             const canvas = document.getElementById('everyn-chart');
             const ctx = canvas.getContext('2d');
@@ -1591,6 +1677,63 @@
 
         rarityCanvas.addEventListener('mouseleave', () => {
             rarityTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for Equipped chart
+        const equippedCanvas = document.getElementById('equipped-chart');
+        const equippedTooltip = document.getElementById('equipped-tooltip');
+
+        equippedCanvas.addEventListener('mousemove', (e) => {
+            const rect = equippedCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.equipped;
+
+            if (!data.chapters || data.chapters.length === 0) return;
+
+            const { chapters, padding, barWidth } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > barWidth * chapters.length) {
+                equippedTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.floor(relX / barWidth);
+            if (idx < 0 || idx >= chapters.length) {
+                equippedTooltip.classList.remove('visible');
+                return;
+            }
+
+            const ch = chapters[idx];
+            const equipped = ch.equippedByRarity || {};
+
+            // Calculate total and percentages
+            let totalSlots = 0;
+            for (const r of RARITY_ORDER) {
+                totalSlots += equipped[r] || 0;
+            }
+
+            const equippedRows = RARITY_ORDER.map(r => {
+                const count = equipped[r] || 0;
+                const pct = totalSlots > 0 ? Math.round(count / totalSlots * 100) : 0;
+                return count > 0 ? `<div class="tt-row"><span class="tt-label" style="color:${RARITY_COLORS[r]}">${r}:</span> <span class="tt-value">${count} (${pct}%)</span></div>` : '';
+            }).join('');
+
+            equippedTooltip.innerHTML = `
+                <div class="tt-title">Chapter ${ch.chapter}</div>
+                ${equippedRows}
+                <div class="tt-row"><span class="tt-label">Total slots:</span> <span class="tt-value">${totalSlots}</span></div>
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 180 > rect.width) left = e.clientX - rect.left - 180;
+            equippedTooltip.style.left = left + 'px';
+            equippedTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            equippedTooltip.classList.add('visible');
+        });
+
+        equippedCanvas.addEventListener('mouseleave', () => {
+            equippedTooltip.classList.remove('visible');
         });
 
         // Tooltip handlers for EveryN chart
