@@ -37,7 +37,8 @@ function createCleanGameState(): GameState {
         dungeon: createDungeonProgress(),
         inventory: [],
         lastBattleResult: null,
-        lastLootedItem: null
+        lastLootedItem: null,
+        lootCounter: 0
     };
 }
 

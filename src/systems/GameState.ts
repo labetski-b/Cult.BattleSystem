@@ -1,7 +1,8 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
-import { Item, migrateItemStats } from '../models/Item';
+import { Item, migrateItemStats, SLOT_TYPES, SlotType, generateItemId, generateItemName, calculateItemStatsWithTargetPower } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
-import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL } from '../models/Lamp';
+import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity } from '../models/Lamp';
+import { getConfig } from '../config/ConfigStore';
 import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward, STAGES_PER_CHAPTER } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
 import balanceData from '../../data/balance.json';
@@ -37,6 +38,7 @@ export interface GameState {
     inventory: Item[];
     lastBattleResult: BattleResult | null;
     lastLootedItem: Item | null;
+    lootCounter: number;  // Счётчик лутов для гарантированного апгрейда
 }
 
 // Ключ для localStorage
@@ -54,7 +56,8 @@ export function createNewGame(): GameState {
         dungeon: createDungeonProgress(),
         inventory: [],
         lastBattleResult: null,
-        lastLootedItem: null
+        lastLootedItem: null,
+        lootCounter: 0
     };
 }
 
@@ -104,6 +107,11 @@ export function loadGame(): GameState | null {
                 state.hero.xp = 0;
             }
 
+            // Миграция: добавляем lootCounter если отсутствует
+            if (state.lootCounter === undefined) {
+                state.lootCounter = 0;
+            }
+
             // Пересчитываем статы героя после миграции
             updateHeroStats(state.hero);
 
@@ -120,6 +128,50 @@ export function loadGame(): GameState | null {
     return null;
 }
 
+// Генерация гарантированного апгрейда для самого слабого слота
+function generateGuaranteedUpgrade(state: GameState): Item {
+    const config = getConfig();
+
+    // Находим самый слабый экипированный предмет
+    let weakestSlot: SlotType | null = null;
+    let weakestPower = Infinity;
+
+    for (const slot of SLOT_TYPES) {
+        const equipped = state.hero.equipment[slot];
+        const power = equipped?.power || 0;
+        if (power < weakestPower) {
+            weakestPower = power;
+            weakestSlot = slot;
+        }
+    }
+
+    // Если нет экипировки — берём первый доступный слот
+    if (weakestSlot === null) {
+        weakestSlot = SLOT_TYPES[0];
+    }
+
+    // Целевая сила = текущая × множитель
+    const targetPower = Math.max(1, Math.floor(weakestPower * config.guaranteedUpgradeMultiplier));
+
+    // Генерируем редкость через лампу
+    const lampConfig = getLampLevelConfig(state.lamp.level);
+    const rarity = rollRarity(lampConfig.weights);
+
+    // Генерируем предмет с заданной силой
+    const stats = calculateItemStatsWithTargetPower(weakestSlot, targetPower, rarity);
+
+    return {
+        id: generateItemId(),
+        name: generateItemName(weakestSlot, rarity),
+        rarity,
+        level: stats.level,
+        slot: weakestSlot,
+        power: stats.power,
+        hp: stats.hp,
+        damage: stats.damage
+    };
+}
+
 // Открыть лут (потратить лампу)
 export function openLoot(state: GameState): Item | null {
     if (state.hero.lamps <= 0) {
@@ -127,12 +179,23 @@ export function openLoot(state: GameState): Item | null {
     }
 
     state.hero.lamps--;
+    state.lootCounter++;
 
     // Вычисляем общий номер стадии для разблокировки слотов
     const currentStage = (state.dungeon.chapter - 1) * STAGES_PER_CHAPTER + state.dungeon.stage;
 
-    // Передаём hero.level для определения уровня предмета и currentStage для разблокировки слотов
-    const item = generateItemFromLamp(state.lamp, state.hero.level, currentStage);
+    const config = getConfig();
+    let item: Item;
+
+    // Проверяем, нужен ли гарантированный апгрейд
+    if (config.guaranteedUpgradeEveryN > 0 &&
+        state.lootCounter % config.guaranteedUpgradeEveryN === 0) {
+        // Гарантированный апгрейд: генерируем предмет для самого слабого слота
+        item = generateGuaranteedUpgrade(state);
+    } else {
+        // Обычный рандомный лут
+        item = generateItemFromLamp(state.lamp, state.hero.level, currentStage);
+    }
 
     state.inventory.push(item);
     state.lastLootedItem = item;
