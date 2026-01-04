@@ -56,6 +56,7 @@ export class EconomyTester {
     private chapterUnfairDefeats = 0;  // Поражения при heroPower > enemyPower
     private chapterGoldEarned = 0;
     private chapterGoldSpent = 0;
+    private chapterLootsByRarity: Record<string, number> = {};
 
     // Счётчики текущего этапа
     private stageLoots = 0;
@@ -157,6 +158,7 @@ export class EconomyTester {
 
         this.chapterLoots++;
         this.stageLoots++;
+        this.chapterLootsByRarity[item.rarity] = (this.chapterLootsByRarity[item.rarity] || 0) + 1;
 
         // Проверяем, лучше ли предмет текущего
         const currentItem = this.state.hero.equipment[item.slot];
@@ -328,6 +330,14 @@ export class EconomyTester {
     // Записать метрики этапа
     private recordStageMetrics(chapter: number, stage: number, enemyPower: number): void {
         const rarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
+        const currentStage = this.getCurrentStageNumber();
+        const config = getConfig();
+        const baseEveryN = config.guaranteedUpgradeEveryN;
+        const increaseRate = config.guaranteedUpgradeIncreaseEveryNStages;
+        const currentEveryN = increaseRate > 0
+            ? baseEveryN + Math.floor((currentStage - 1) / increaseRate)
+            : baseEveryN;
+
         this.stages.push({
             chapter,
             stage,
@@ -343,7 +353,8 @@ export class EconomyTester {
             rarityMultiplier: Math.round(rarityMultiplier * 100) / 100,
             difficultyModifier: Math.round(this.state.dungeon.difficultyModifier * 100),  // в процентах
             lampLevel: this.state.lamp.level,
-            gold: this.state.hero.gold
+            gold: this.state.hero.gold,
+            guaranteedEveryN: currentEveryN
         });
     }
 
@@ -372,7 +383,8 @@ export class EconomyTester {
             heroLevel: this.state.hero.level,
             goldEarned: this.chapterGoldEarned,
             goldSpent: this.chapterGoldSpent,
-            maxEnemyPower: Math.floor(bossPower)
+            maxEnemyPower: Math.floor(bossPower),
+            lootsByRarity: { ...this.chapterLootsByRarity }
         });
     }
 
@@ -384,6 +396,7 @@ export class EconomyTester {
         this.chapterUnfairDefeats = 0;
         this.chapterGoldEarned = 0;
         this.chapterGoldSpent = 0;
+        this.chapterLootsByRarity = {};
     }
 
     // Собрать итоговые метрики

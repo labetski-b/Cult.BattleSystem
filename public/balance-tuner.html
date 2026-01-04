@@ -398,6 +398,24 @@
                     <div class="chart-tooltip" id="loots-chapter-tooltip"></div>
                 </div>
 
+                <h2 style="margin-top: 30px;">Lamp Level per Chapter</h2>
+                <div class="chart-container">
+                    <canvas id="lamp-chart" width="1100" height="200"></canvas>
+                    <div class="chart-tooltip" id="lamp-tooltip"></div>
+                </div>
+
+                <h2 style="margin-top: 30px;">Loots by Rarity per Chapter</h2>
+                <div class="chart-container">
+                    <canvas id="rarity-chart" width="1100" height="280"></canvas>
+                    <div class="chart-tooltip" id="rarity-tooltip"></div>
+                </div>
+
+                <h2 style="margin-top: 30px;">Guaranteed Upgrade Interval (EveryN)</h2>
+                <div class="chart-container">
+                    <canvas id="everyn-chart" width="1100" height="200"></canvas>
+                    <div class="chart-tooltip" id="everyn-tooltip"></div>
+                </div>
+
                 <h2 style="margin-top: 30px;">Power Progression by Chapter (log scale)</h2>
                 <div class="chart-container">
                     <canvas id="power-chart" width="1100" height="350"></canvas>
@@ -426,12 +444,27 @@
     <script type="module">
         import { runSimulation as runSim, getDefaults } from '/src/testing/BrowserEconomyTester.ts';
 
+        // Rarity colors
+        const RARITY_COLORS = {
+            common: '#9ca3af',
+            good: '#22c55e',
+            rare: '#3b82f6',
+            epic: '#a855f7',
+            mythic: '#f43f5e',
+            legendary: '#f59e0b',
+            immortal: '#fbbf24'
+        };
+        const RARITY_ORDER = ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal'];
+
         // Chart data storage for tooltips
         let chartData = {
             power: { chapters: [], padding: {}, xScale: null, yScale: null },
             difficulty: { stages: [], padding: {}, xScale: null, range: 0 },
             loots: { stages: [], padding: {}, barWidth: 0, maxLoots: 0 },
-            lootsChapter: { chapters: [], padding: {}, barWidth: 0, maxLoots: 0 }
+            lootsChapter: { chapters: [], padding: {}, barWidth: 0, maxLoots: 0 },
+            lamp: { chapters: [], padding: {}, width: 0, height: 0 },
+            rarity: { chapters: [], padding: {}, barWidth: 0 },
+            everyN: { stages: [], padding: {}, width: 0, height: 0 }
         };
 
         // Make functions available globally
@@ -506,6 +539,12 @@
             // Усредняем chapters (по индексу)
             const numChapters = Math.min(...summaries.map(s => s.chapters.length));
             for (let i = 0; i < numChapters; i++) {
+                // Усредняем lootsByRarity
+                const avgLootsByRarity = {};
+                for (const rarity of RARITY_ORDER) {
+                    avgLootsByRarity[rarity] = Math.round(summaries.reduce((s, r) => s + (r.chapters[i].lootsByRarity?.[rarity] || 0), 0) / n);
+                }
+
                 avgSummary.chapters.push({
                     chapter: first.chapters[i].chapter,
                     loots: Math.round(summaries.reduce((s, r) => s + r.chapters[i].loots, 0) / n),
@@ -517,7 +556,8 @@
                     heroLevel: Math.round(summaries.reduce((s, r) => s + r.chapters[i].heroLevel, 0) / n),
                     goldEarned: Math.round(summaries.reduce((s, r) => s + r.chapters[i].goldEarned, 0) / n),
                     goldSpent: Math.round(summaries.reduce((s, r) => s + r.chapters[i].goldSpent, 0) / n),
-                    maxEnemyPower: Math.round(summaries.reduce((s, r) => s + r.chapters[i].maxEnemyPower, 0) / n)
+                    maxEnemyPower: Math.round(summaries.reduce((s, r) => s + r.chapters[i].maxEnemyPower, 0) / n),
+                    lootsByRarity: avgLootsByRarity
                 });
             }
 
@@ -539,7 +579,8 @@
                     rarityMultiplier: Math.round(summaries.reduce((s, r) => s + r.stages[i].rarityMultiplier, 0) / n * 100) / 100,
                     difficultyModifier: Math.round(summaries.reduce((s, r) => s + r.stages[i].difficultyModifier, 0) / n),
                     lampLevel: Math.round(summaries.reduce((s, r) => s + r.stages[i].lampLevel, 0) / n),
-                    gold: Math.round(summaries.reduce((s, r) => s + r.stages[i].gold, 0) / n)
+                    gold: Math.round(summaries.reduce((s, r) => s + r.stages[i].gold, 0) / n),
+                    guaranteedEveryN: Math.round(summaries.reduce((s, r) => s + (r.stages[i].guaranteedEveryN || 0), 0) / n)
                 });
             }
 
@@ -701,6 +742,9 @@
             // Charts
             renderLootsChart(summary.stages);
             renderLootsChapterChart(summary.chapters);
+            renderLampChart(summary.chapters);
+            renderRarityChart(summary.chapters);
+            renderEveryNChart(summary.stages);
             renderPowerChart(summary.chapters);
             renderDifficultyChart(summary.stages);
         }
@@ -952,7 +996,7 @@
             const ctx = canvas.getContext('2d');
 
             const padding = { top: 30, right: 80, bottom: 50, left: 80 };
-            const minBarWidth = 0.75;  // Минимальная ширина бара
+            const minBarWidth = 0.19;  // Минимальная ширина бара
             const minCanvasWidth = 1100;
 
             // Динамическая ширина canvas
@@ -1034,6 +1078,216 @@
             // Y label
             ctx.textAlign = 'right';
             ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
+            ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+        }
+
+        function renderLampChart(chapters) {
+            const canvas = document.getElementById('lamp-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (chapters.length === 0) return;
+
+            const lampLevels = chapters.map(c => c.lampLevel);
+            const maxLamp = Math.max(...lampLevels, 31);
+
+            const xScale = (i) => padding.left + (i / Math.max(1, chapters.length - 1)) * width;
+            const yScale = (v) => padding.top + height - (v / maxLamp) * height;
+
+            // Save data for tooltip
+            chartData.lamp = { chapters, padding, width, height, xScale, yScale, maxLamp };
+
+            // Grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let lvl = 0; lvl <= maxLamp; lvl += 5) {
+                const y = yScale(lvl);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+            }
+
+            // Line
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScale(i);
+                const y = yScale(lampLevels[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Points
+            ctx.fillStyle = '#ffd700';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScale(i);
+                const y = yScale(lampLevels[i]);
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // X labels
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScale(i);
+                if (chapters.length <= 30 || i % Math.ceil(chapters.length / 30) === 0) {
+                    ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
+                }
+            }
+
+            // Y labels
+            ctx.textAlign = 'right';
+            ctx.fillText(maxLamp.toString(), padding.left - 10, padding.top + 4);
+            ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+        }
+
+        function renderRarityChart(chapters) {
+            const canvas = document.getElementById('rarity-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 120, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (chapters.length === 0) return;
+
+            // Calculate max total for scaling
+            let maxTotal = 0;
+            for (const ch of chapters) {
+                let total = 0;
+                for (const rarity of RARITY_ORDER) {
+                    total += ch.lootsByRarity?.[rarity] || 0;
+                }
+                if (total > maxTotal) maxTotal = total;
+            }
+            if (maxTotal === 0) maxTotal = 1;
+
+            const barWidth = width / chapters.length;
+
+            // Save data for tooltip
+            chartData.rarity = { chapters, padding, width, height, barWidth, maxTotal };
+
+            // Draw stacked bars
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * barWidth;
+                let yOffset = 0;
+
+                for (const rarity of RARITY_ORDER) {
+                    const count = chapters[i].lootsByRarity?.[rarity] || 0;
+                    const barHeight = (count / maxTotal) * height;
+
+                    ctx.fillStyle = RARITY_COLORS[rarity];
+                    ctx.fillRect(x + 1, padding.top + height - yOffset - barHeight, barWidth - 2, barHeight);
+
+                    yOffset += barHeight;
+                }
+            }
+
+            // X labels
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * barWidth + barWidth / 2;
+                if (chapters.length <= 30 || i % Math.ceil(chapters.length / 30) === 0) {
+                    ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
+                }
+            }
+
+            // Y labels
+            ctx.textAlign = 'right';
+            ctx.fillText(maxTotal.toString(), padding.left - 10, padding.top + 4);
+            ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+
+            // Legend
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'left';
+            let legendY = padding.top;
+            for (const rarity of [...RARITY_ORDER].reverse()) {
+                ctx.fillStyle = RARITY_COLORS[rarity];
+                ctx.fillRect(padding.left + width + 10, legendY, 12, 12);
+                ctx.fillStyle = '#888';
+                ctx.fillText(rarity, padding.left + width + 28, legendY + 10);
+                legendY += 18;
+            }
+        }
+
+        function renderEveryNChart(stages) {
+            const canvas = document.getElementById('everyn-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (stages.length === 0) return;
+
+            const everyNValues = stages.map(s => s.guaranteedEveryN || 0);
+            const maxEveryN = Math.max(...everyNValues, 10);
+
+            const xScale = (i) => padding.left + (i / Math.max(1, stages.length - 1)) * width;
+            const yScale = (v) => padding.top + height - (v / maxEveryN) * height;
+
+            // Save data for tooltip
+            chartData.everyN = { stages, padding, width, height, xScale, yScale, maxEveryN };
+
+            // Grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let v = 0; v <= maxEveryN; v += 2) {
+                const y = yScale(v);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+            }
+
+            // Fill area
+            ctx.beginPath();
+            ctx.moveTo(xScale(0), yScale(0));
+            for (let i = 0; i < stages.length; i++) {
+                ctx.lineTo(xScale(i), yScale(everyNValues[i]));
+            }
+            ctx.lineTo(xScale(stages.length - 1), yScale(0));
+            ctx.closePath();
+            ctx.fillStyle = '#ffd70033';
+            ctx.fill();
+
+            // Line
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScale(everyNValues[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Y labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'right';
+            ctx.fillText(maxEveryN.toString(), padding.left - 10, padding.top + 4);
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
         }
 
@@ -1246,6 +1500,139 @@
 
         lootsChapterCanvas.addEventListener('mouseleave', () => {
             lootsChapterTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for Lamp chart
+        const lampCanvas = document.getElementById('lamp-chart');
+        const lampTooltip = document.getElementById('lamp-tooltip');
+
+        lampCanvas.addEventListener('mousemove', (e) => {
+            const rect = lampCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.lamp;
+
+            if (!data.chapters || data.chapters.length === 0) return;
+
+            const { chapters, padding, width } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > width) {
+                lampTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.round((relX / width) * (chapters.length - 1));
+            if (idx < 0 || idx >= chapters.length) {
+                lampTooltip.classList.remove('visible');
+                return;
+            }
+
+            const ch = chapters[idx];
+            lampTooltip.innerHTML = `
+                <div class="tt-title">Chapter ${ch.chapter}</div>
+                <div class="tt-row"><span class="tt-label">Lamp Level:</span> <span class="tt-value tt-diff">${ch.lampLevel}</span></div>
+                <div class="tt-row"><span class="tt-label">Gold Spent:</span> <span class="tt-value">${ch.goldSpent.toLocaleString()}</span></div>
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 160 > rect.width) left = e.clientX - rect.left - 160;
+            lampTooltip.style.left = left + 'px';
+            lampTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            lampTooltip.classList.add('visible');
+        });
+
+        lampCanvas.addEventListener('mouseleave', () => {
+            lampTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for Rarity chart
+        const rarityCanvas = document.getElementById('rarity-chart');
+        const rarityTooltip = document.getElementById('rarity-tooltip');
+
+        rarityCanvas.addEventListener('mousemove', (e) => {
+            const rect = rarityCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.rarity;
+
+            if (!data.chapters || data.chapters.length === 0) return;
+
+            const { chapters, padding, barWidth } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > barWidth * chapters.length) {
+                rarityTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.floor(relX / barWidth);
+            if (idx < 0 || idx >= chapters.length) {
+                rarityTooltip.classList.remove('visible');
+                return;
+            }
+
+            const ch = chapters[idx];
+            const rarityRows = RARITY_ORDER.map(r => {
+                const count = ch.lootsByRarity?.[r] || 0;
+                return count > 0 ? `<div class="tt-row"><span class="tt-label" style="color:${RARITY_COLORS[r]}">${r}:</span> <span class="tt-value">${count}</span></div>` : '';
+            }).join('');
+
+            rarityTooltip.innerHTML = `
+                <div class="tt-title">Chapter ${ch.chapter}</div>
+                ${rarityRows}
+                <div class="tt-row"><span class="tt-label">Total:</span> <span class="tt-value tt-loots">${ch.loots}</span></div>
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 160 > rect.width) left = e.clientX - rect.left - 160;
+            rarityTooltip.style.left = left + 'px';
+            rarityTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            rarityTooltip.classList.add('visible');
+        });
+
+        rarityCanvas.addEventListener('mouseleave', () => {
+            rarityTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for EveryN chart
+        const everyNCanvas = document.getElementById('everyn-chart');
+        const everyNTooltip = document.getElementById('everyn-tooltip');
+
+        everyNCanvas.addEventListener('mousemove', (e) => {
+            const rect = everyNCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.everyN;
+
+            if (!data.stages || data.stages.length === 0) return;
+
+            const { stages, padding, width } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > width) {
+                everyNTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.round((relX / width) * (stages.length - 1));
+            if (idx < 0 || idx >= stages.length) {
+                everyNTooltip.classList.remove('visible');
+                return;
+            }
+
+            const st = stages[idx];
+            everyNTooltip.innerHTML = `
+                <div class="tt-title">Stage ${st.chapter}.${st.stage}</div>
+                <div class="tt-row"><span class="tt-label">EveryN:</span> <span class="tt-value tt-diff">${st.guaranteedEveryN}</span></div>
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 140 > rect.width) left = e.clientX - rect.left - 140;
+            everyNTooltip.style.left = left + 'px';
+            everyNTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            everyNTooltip.classList.add('visible');
+        });
+
+        everyNCanvas.addEventListener('mouseleave', () => {
+            everyNTooltip.classList.remove('visible');
         });
     </script>
 </body>

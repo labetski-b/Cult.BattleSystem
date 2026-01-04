@@ -15,6 +15,7 @@ export interface StageMetrics {
     difficultyModifier: number; // Множитель адаптивной сложности (-20% до +20%)
     lampLevel: number;       // Уровень лампы
     gold: number;            // Золото у игрока
+    guaranteedEveryN: number; // Текущий интервал гарантированного апгрейда
 }
 
 // Метрики по главе
@@ -30,6 +31,7 @@ export interface ChapterMetrics {
     goldEarned: number;      // Заработано золота за главу
     goldSpent: number;       // Потрачено на апгрейд лампы
     maxEnemyPower: number;   // Макс. сила врагов на главе (босс)
+    lootsByRarity: Record<string, number>;  // Количество лутов по редкостям { common: N, good: N, ... }
 }
 
 // Итоговые метрики теста
