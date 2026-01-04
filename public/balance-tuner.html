@@ -292,6 +292,11 @@
             <div class="control-group">
                 <h3>Difficulty</h3>
                 <div class="control-row">
+                    <label>Enabled</label>
+                    <input type="checkbox" id="difficultyEnabled" checked>
+                    <span class="value-display" id="difficultyEnabled-val">ON</span>
+                </div>
+                <div class="control-row">
                     <label>On Victory (%)</label>
                     <input type="range" id="difficultyOnVictory" min="0" max="0.05" step="0.005" value="0.01">
                     <span class="value-display" id="difficultyOnVictory-val">+1%</span>
@@ -576,6 +581,10 @@
             if (settings.guaranteedUpgradeMultiplier !== undefined) {
                 setSlider('guaranteedUpgradeMultiplier', settings.guaranteedUpgradeMultiplier);
             }
+            if (settings.difficultyEnabled !== undefined) {
+                document.getElementById('difficultyEnabled').checked = settings.difficultyEnabled;
+                document.getElementById('difficultyEnabled-val').textContent = settings.difficultyEnabled ? 'ON' : 'OFF';
+            }
             setSlider('difficultyOnVictory', settings.difficultyOnVictory);
             setSlider('difficultyOnDefeat', settings.difficultyOnDefeat);
             setSlider('bossPowerMultiplier', settings.bossPowerMultiplier);
@@ -619,6 +628,7 @@
                 maxRarityLevelOffset: parseInt(document.getElementById('maxRarityLevelOffset').value),
                 guaranteedUpgradeEveryN: parseInt(document.getElementById('guaranteedUpgradeEveryN').value),
                 guaranteedUpgradeMultiplier: parseFloat(document.getElementById('guaranteedUpgradeMultiplier').value),
+                difficultyEnabled: document.getElementById('difficultyEnabled').checked,
                 difficultyOnVictory: parseFloat(document.getElementById('difficultyOnVictory').value),
                 difficultyOnDefeat: parseFloat(document.getElementById('difficultyOnDefeat').value),
                 bossPowerMultiplier: parseFloat(document.getElementById('bossPowerMultiplier').value),
@@ -981,6 +991,12 @@
 
             // Trigger initial display
             slider.dispatchEvent(new Event('input'));
+        });
+
+        // Checkbox handler for difficultyEnabled
+        const difficultyCheckbox = document.getElementById('difficultyEnabled');
+        difficultyCheckbox.addEventListener('change', () => {
+            document.getElementById('difficultyEnabled-val').textContent = difficultyCheckbox.checked ? 'ON' : 'OFF';
         });
 
         // Load saved settings on page load

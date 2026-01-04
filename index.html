@@ -36,7 +36,10 @@
 
     <!-- Прогресс подземелья -->
     <section class="dungeon-progress">
-      <div class="dungeon-title" id="dungeon-title">DUNGEON 1</div>
+      <div class="dungeon-header">
+        <div class="dungeon-title" id="dungeon-title">DUNGEON 1</div>
+        <button id="modifiers-btn" class="btn-icon" title="Модификаторы">📊</button>
+      </div>
       <div class="progress-bar">
         <div class="progress-dots" id="progress-dots">
           <!-- Генерируется динамически из STAGES_PER_CHAPTER -->
@@ -171,6 +174,18 @@
           <!-- Заполняется динамически -->
         </div>
         <button id="close-rarity-popup" class="btn btn-primary">OK</button>
+      </div>
+    </section>
+
+    <!-- Попап модификаторов -->
+    <section id="modifiers-popup" class="modifiers-popup hidden">
+      <div class="modifiers-popup-overlay"></div>
+      <div class="modifiers-popup-content">
+        <h3>📊 Модификаторы</h3>
+        <div class="modifiers-list" id="modifiers-list">
+          <!-- Заполняется динамически -->
+        </div>
+        <button id="close-modifiers-popup" class="btn btn-primary">OK</button>
       </div>
     </section>
 

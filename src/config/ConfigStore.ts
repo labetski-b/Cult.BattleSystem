@@ -22,6 +22,7 @@ export interface BalanceOverrides {
     rarityMultipliers?: Partial<Record<Rarity, number>>;
 
     // DungeonSystem.ts (hardcoded values)
+    difficultyEnabled?: boolean;   // включить/выключить адаптивную сложность
     difficultyOnVictory?: number;  // default: 0.01
     difficultyOnDefeat?: number;   // default: -0.02
 
@@ -39,6 +40,7 @@ export interface BalanceConfig {
     guaranteedUpgradeEveryN: number;
     guaranteedUpgradeMultiplier: number;
     rarityMultipliers: Record<Rarity, number>;
+    difficultyEnabled: boolean;
     difficultyOnVictory: number;
     difficultyOnDefeat: number;
     bossPowerMultiplier: number;
@@ -62,6 +64,7 @@ const defaults: BalanceConfig = {
     guaranteedUpgradeEveryN: guaranteedUpgrade?.everyNLoots ?? 4,
     guaranteedUpgradeMultiplier: guaranteedUpgrade?.powerMultiplier ?? 1.05,
     rarityMultipliers: defaultRarityMultipliers,
+    difficultyEnabled: true,
     difficultyOnVictory: 0.01,
     difficultyOnDefeat: -0.02,
     bossPowerMultiplier: enemiesConfig.boss.powerMultiplier,
@@ -91,6 +94,7 @@ export function getConfig(): BalanceConfig {
         guaranteedUpgradeEveryN: currentOverrides.guaranteedUpgradeEveryN ?? defaults.guaranteedUpgradeEveryN,
         guaranteedUpgradeMultiplier: currentOverrides.guaranteedUpgradeMultiplier ?? defaults.guaranteedUpgradeMultiplier,
         rarityMultipliers: mergedRarityMultipliers,
+        difficultyEnabled: currentOverrides.difficultyEnabled ?? defaults.difficultyEnabled,
         difficultyOnVictory: currentOverrides.difficultyOnVictory ?? defaults.difficultyOnVictory,
         difficultyOnDefeat: currentOverrides.difficultyOnDefeat ?? defaults.difficultyOnDefeat,
         bossPowerMultiplier: currentOverrides.bossPowerMultiplier ?? defaults.bossPowerMultiplier,

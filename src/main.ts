@@ -17,9 +17,10 @@ import {
 } from './systems/GameState';
 import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity, getSlotUnlockStage } from './models/Item';
-import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL } from './models/Lamp';
-import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward } from './systems/DungeonSystem';
+import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier } from './models/Lamp';
+import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward, getBossMultiplier } from './systems/DungeonSystem';
 import { addXp, xpProgress, XpGainResult } from './models/Hero';
+import { getConfig } from './config/ConfigStore';
 
 // DOM элементы
 const $ = <T extends HTMLElement>(selector: string): T => document.querySelector(selector) as T;
@@ -602,6 +603,75 @@ function closeRarityPopup(): void {
     $('#rarity-popup').classList.add('hidden');
 }
 
+// Показать попап модификаторов
+function showModifiersPopup(): void {
+    const popup = $('#modifiers-popup');
+    const list = $('#modifiers-list');
+
+    const config = getConfig();
+    const rarityMultiplier = calculateExpectedRarityMultiplier(gameState.lamp.level);
+    const difficultyPercent = Math.round(gameState.dungeon.difficultyModifier * 100);
+    const bossMult = getBossMultiplier();
+
+    list.innerHTML = '';
+
+    // Множитель редкости (от лампы)
+    const rarityRow = document.createElement('div');
+    rarityRow.className = 'modifier-row';
+    rarityRow.innerHTML = `
+        <span class="modifier-label">Множитель редкости (лампа)</span>
+        <span class="modifier-value neutral">×${rarityMultiplier.toFixed(2)}</span>
+    `;
+    list.appendChild(rarityRow);
+
+    // Адаптивная сложность
+    const diffRow = document.createElement('div');
+    diffRow.className = 'modifier-row';
+    const diffSign = difficultyPercent >= 0 ? '+' : '';
+    const diffClass = difficultyPercent > 0 ? 'negative' : (difficultyPercent < 0 ? 'positive' : 'neutral');
+    diffRow.innerHTML = `
+        <span class="modifier-label">Адаптивная сложность</span>
+        <span class="modifier-value ${diffClass}">${config.difficultyEnabled ? diffSign + difficultyPercent + '%' : 'OFF'}</span>
+    `;
+    list.appendChild(diffRow);
+
+    // Множитель босса
+    const bossRow = document.createElement('div');
+    bossRow.className = 'modifier-row';
+    bossRow.innerHTML = `
+        <span class="modifier-label">Множитель босса</span>
+        <span class="modifier-value neutral">×${bossMult.toFixed(2)}</span>
+    `;
+    list.appendChild(bossRow);
+
+    // Гарантированный апгрейд
+    const upgradeRow = document.createElement('div');
+    upgradeRow.className = 'modifier-row';
+    const everyN = config.guaranteedUpgradeEveryN;
+    upgradeRow.innerHTML = `
+        <span class="modifier-label">Гарантированный апгрейд</span>
+        <span class="modifier-value neutral">${everyN > 0 ? 'каждый ' + everyN + '-й лут' : 'OFF'}</span>
+    `;
+    list.appendChild(upgradeRow);
+
+    // Счётчик лутов
+    const lootRow = document.createElement('div');
+    lootRow.className = 'modifier-row';
+    const nextUpgrade = everyN > 0 ? everyN - (gameState.lootCounter % everyN) : '-';
+    lootRow.innerHTML = `
+        <span class="modifier-label">До апгрейда (лутов)</span>
+        <span class="modifier-value neutral">${nextUpgrade}</span>
+    `;
+    list.appendChild(lootRow);
+
+    popup.classList.remove('hidden');
+}
+
+// Закрыть попап модификаторов
+function closeModifiersPopup(): void {
+    $('#modifiers-popup').classList.add('hidden');
+}
+
 // Продать предмет
 function sellPendingItem(): void {
     if (!pendingItem) return;
@@ -695,6 +765,13 @@ function setupEventListeners(): void {
     // Закрыть попап вероятностей
     $('#close-rarity-popup').addEventListener('click', closeRarityPopup);
     $('.rarity-popup-overlay').addEventListener('click', closeRarityPopup);
+
+    // Показать модификаторы
+    $('#modifiers-btn').addEventListener('click', showModifiersPopup);
+
+    // Закрыть попап модификаторов
+    $('#close-modifiers-popup').addEventListener('click', closeModifiersPopup);
+    $('.modifiers-popup-overlay').addEventListener('click', closeModifiersPopup);
 
     // Горячие клавиши
     document.addEventListener('keydown', (e) => {

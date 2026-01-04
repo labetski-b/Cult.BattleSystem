@@ -96,6 +96,7 @@ export function advanceProgress(progress: DungeonProgress): DungeonProgress {
 // Изменение множителя сложности при победе (из ConfigStore, без лимита)
 export function adjustDifficultyOnVictory(dungeon: DungeonProgress): void {
     const config = getConfig();
+    if (!config.difficultyEnabled) return;
     dungeon.difficultyModifier += config.difficultyOnVictory;
 }
 
@@ -103,6 +104,7 @@ export function adjustDifficultyOnVictory(dungeon: DungeonProgress): void {
 // Только 1 раз за stage (повторные поражения не уменьшают)
 export function adjustDifficultyOnDefeat(dungeon: DungeonProgress): void {
     const config = getConfig();
+    if (!config.difficultyEnabled) return;
     const stageId = dungeon.chapter * 100 + dungeon.stage;
     if (dungeon.lastDefeatStage !== stageId) {
         dungeon.difficultyModifier += config.difficultyOnDefeat; // отрицательное значение
