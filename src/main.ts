@@ -775,10 +775,16 @@ function setupEventListeners(): void {
 
     // Горячие клавиши
     document.addEventListener('keydown', (e) => {
-        // Q — продать шмотку в луте
+        // Q — продать шмотку в луте ИЛИ открыть лут
         if (e.key === 'q' || e.key === 'Q' || e.key === 'й' || e.key === 'Й') {
             if (pendingItem) {
                 sellPendingItem();
+            } else if (gameState.hero.lamps > 0 && !currentBattle) {
+                const item = openLoot(gameState);
+                if (item) {
+                    showLootPopup(item);
+                    updateUI();
+                }
             }
         }
         // W — многофункциональная клавиша:
