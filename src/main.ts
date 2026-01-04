@@ -809,6 +809,10 @@ function setupEventListeners(): void {
     $('#reset-btn').addEventListener('click', () => {
         if (confirm('Сбросить весь прогресс?')) {
             gameState = resetGame();
+            // Сбрасываем счётчик сессий
+            sessionCounter = 1;
+            localStorage.setItem(STORAGE_SESSION_KEY, '1');
+            $('#session-counter').textContent = '1';
             updateUI();
         }
     });
