@@ -386,7 +386,19 @@
             </div>
 
             <div id="charts-content" class="tab-content active">
-                <h2>Power Progression by Chapter (log scale)</h2>
+                <h2>Loots per Stage</h2>
+                <div class="chart-container chart-scroll">
+                    <canvas id="loots-chart" height="250"></canvas>
+                    <div class="chart-tooltip" id="loots-tooltip"></div>
+                </div>
+
+                <h2 style="margin-top: 30px;">Loots per Chapter</h2>
+                <div class="chart-container">
+                    <canvas id="loots-chapter-chart" width="1100" height="250"></canvas>
+                    <div class="chart-tooltip" id="loots-chapter-tooltip"></div>
+                </div>
+
+                <h2 style="margin-top: 30px;">Power Progression by Chapter (log scale)</h2>
                 <div class="chart-container">
                     <canvas id="power-chart" width="1100" height="350"></canvas>
                     <div class="chart-tooltip" id="power-tooltip"></div>
@@ -396,12 +408,6 @@
                 <div class="chart-container">
                     <canvas id="difficulty-chart" width="1100" height="250"></canvas>
                     <div class="chart-tooltip" id="difficulty-tooltip"></div>
-                </div>
-
-                <h2 style="margin-top: 30px;">Loots per Stage</h2>
-                <div class="chart-container chart-scroll">
-                    <canvas id="loots-chart" height="250"></canvas>
-                    <div class="chart-tooltip" id="loots-tooltip"></div>
                 </div>
             </div>
 
@@ -424,7 +430,8 @@
         let chartData = {
             power: { chapters: [], padding: {}, xScale: null, yScale: null },
             difficulty: { stages: [], padding: {}, xScale: null, range: 0 },
-            loots: { stages: [], padding: {}, barWidth: 0, maxLoots: 0 }
+            loots: { stages: [], padding: {}, barWidth: 0, maxLoots: 0 },
+            lootsChapter: { chapters: [], padding: {}, barWidth: 0, maxLoots: 0 }
         };
 
         // Make functions available globally
@@ -692,9 +699,10 @@
             renderStagesTable(summary.stages);
 
             // Charts
+            renderLootsChart(summary.stages);
+            renderLootsChapterChart(summary.chapters);
             renderPowerChart(summary.chapters);
             renderDifficultyChart(summary.stages);
-            renderLootsChart(summary.stages);
         }
 
         function renderChaptersTable(chapters) {
@@ -944,7 +952,7 @@
             const ctx = canvas.getContext('2d');
 
             const padding = { top: 30, right: 80, bottom: 50, left: 80 };
-            const minBarWidth = 12;  // Минимальная ширина бара для читаемости
+            const minBarWidth = 3;  // Минимальная ширина бара
             const minCanvasWidth = 1100;
 
             // Динамическая ширина canvas
@@ -977,6 +985,53 @@
             // Y label
             ctx.fillStyle = '#888';
             ctx.font = '12px Courier New';
+            ctx.textAlign = 'right';
+            ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
+            ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+        }
+
+        function renderLootsChapterChart(chapters) {
+            const canvas = document.getElementById('loots-chapter-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (chapters.length === 0) return;
+
+            const loots = chapters.map(c => c.loots);
+            const maxLoots = Math.max(...loots, 1);
+
+            const barWidth = width / chapters.length;
+
+            // Save data for tooltip
+            chartData.lootsChapter = { chapters, padding, width, height, barWidth, maxLoots };
+
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * barWidth;
+                const barHeight = (loots[i] / maxLoots) * height;
+                const y = padding.top + height - barHeight;
+
+                ctx.fillStyle = '#6bff6b';
+                ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
+            }
+
+            // X labels (chapter numbers)
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * barWidth + barWidth / 2;
+                if (chapters.length <= 30 || i % Math.ceil(chapters.length / 30) === 0) {
+                    ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
+                }
+            }
+
+            // Y label
             ctx.textAlign = 'right';
             ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
@@ -1147,6 +1202,50 @@
 
         lootsCanvas.addEventListener('mouseleave', () => {
             lootsTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for Loots Chapter chart
+        const lootsChapterCanvas = document.getElementById('loots-chapter-chart');
+        const lootsChapterTooltip = document.getElementById('loots-chapter-tooltip');
+
+        lootsChapterCanvas.addEventListener('mousemove', (e) => {
+            const rect = lootsChapterCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.lootsChapter;
+
+            if (!data.chapters || data.chapters.length === 0) return;
+
+            const { chapters, padding, barWidth } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > barWidth * chapters.length) {
+                lootsChapterTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.floor(relX / barWidth);
+            if (idx < 0 || idx >= chapters.length) {
+                lootsChapterTooltip.classList.remove('visible');
+                return;
+            }
+
+            const ch = chapters[idx];
+            lootsChapterTooltip.innerHTML = `
+                <div class="tt-title">Chapter ${ch.chapter}</div>
+                <div class="tt-row"><span class="tt-label">Loots:</span> <span class="tt-value tt-loots">${ch.loots}</span></div>
+                <div class="tt-row"><span class="tt-label">Defeats:</span> <span class="tt-value">${ch.defeats}</span></div>
+                <div class="tt-row"><span class="tt-label">Hero Power:</span> <span class="tt-value tt-hero">${ch.heroPower.toLocaleString()}</span></div>
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 160 > rect.width) left = e.clientX - rect.left - 160;
+            lootsChapterTooltip.style.left = left + 'px';
+            lootsChapterTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            lootsChapterTooltip.classList.add('visible');
+        });
+
+        lootsChapterCanvas.addEventListener('mouseleave', () => {
+            lootsChapterTooltip.classList.remove('visible');
         });
     </script>
 </body>
