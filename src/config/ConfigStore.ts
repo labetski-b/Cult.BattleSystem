@@ -15,8 +15,9 @@ export interface BalanceOverrides {
     maxRarityLevelOffset?: number;    // диапазон для макс. редкости
 
     // Guaranteed upgrade (items.json)
-    guaranteedUpgradeEveryN?: number;      // каждый N-й лут — гарантированный апгрейд
-    guaranteedUpgradeMultiplier?: number;  // множитель силы (1.05 = +5%)
+    guaranteedUpgradeEveryN?: number;           // каждый N-й лут — гарантированный апгрейд
+    guaranteedUpgradeIncreaseEveryNStages?: number;  // каждые N стадий everyN увеличивается на 1
+    guaranteedUpgradeMultiplier?: number;       // множитель силы (1.05 = +5%) — не используется
 
     // rarities.json (множители по id)
     rarityMultipliers?: Partial<Record<Rarity, number>>;
@@ -38,6 +39,7 @@ export interface BalanceConfig {
     minLevelOffset: number;
     maxRarityLevelOffset: number;
     guaranteedUpgradeEveryN: number;
+    guaranteedUpgradeIncreaseEveryNStages: number;
     guaranteedUpgradeMultiplier: number;
     rarityMultipliers: Record<Rarity, number>;
     difficultyEnabled: boolean;
@@ -52,7 +54,7 @@ const defaultRarityMultipliers: Record<Rarity, number> = Object.fromEntries(
 ) as Record<Rarity, number>;
 
 // Типизация для guaranteedUpgrade
-const guaranteedUpgrade = (itemsConfig as { guaranteedUpgrade?: { everyNLoots: number; powerMultiplier: number } }).guaranteedUpgrade;
+const guaranteedUpgrade = (itemsConfig as { guaranteedUpgrade?: { everyNLoots: number; increaseEveryNStages: number; powerMultiplier: number } }).guaranteedUpgrade;
 
 // Дефолтные значения (читаются из JSON при инициализации)
 const defaults: BalanceConfig = {
@@ -62,6 +64,7 @@ const defaults: BalanceConfig = {
     minLevelOffset: itemsConfig.levelRange.minLevelOffset,
     maxRarityLevelOffset: (itemsConfig.levelRange as { minLevelOffset: number; maxRarityLevelOffset: number }).maxRarityLevelOffset,
     guaranteedUpgradeEveryN: guaranteedUpgrade?.everyNLoots ?? 4,
+    guaranteedUpgradeIncreaseEveryNStages: guaranteedUpgrade?.increaseEveryNStages ?? 10,
     guaranteedUpgradeMultiplier: guaranteedUpgrade?.powerMultiplier ?? 1.05,
     rarityMultipliers: defaultRarityMultipliers,
     difficultyEnabled: true,
@@ -92,6 +95,7 @@ export function getConfig(): BalanceConfig {
         minLevelOffset: currentOverrides.minLevelOffset ?? defaults.minLevelOffset,
         maxRarityLevelOffset: currentOverrides.maxRarityLevelOffset ?? defaults.maxRarityLevelOffset,
         guaranteedUpgradeEveryN: currentOverrides.guaranteedUpgradeEveryN ?? defaults.guaranteedUpgradeEveryN,
+        guaranteedUpgradeIncreaseEveryNStages: currentOverrides.guaranteedUpgradeIncreaseEveryNStages ?? defaults.guaranteedUpgradeIncreaseEveryNStages,
         guaranteedUpgradeMultiplier: currentOverrides.guaranteedUpgradeMultiplier ?? defaults.guaranteedUpgradeMultiplier,
         rarityMultipliers: mergedRarityMultipliers,
         difficultyEnabled: currentOverrides.difficultyEnabled ?? defaults.difficultyEnabled,

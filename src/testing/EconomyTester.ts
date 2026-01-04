@@ -137,9 +137,17 @@ export class EconomyTester {
 
         let item: Item;
 
+        // Вычисляем текущий everyN с учётом прогресса
+        // everyN увеличивается на 1 каждые increaseEveryNStages стадий
+        const baseEveryN = config.guaranteedUpgradeEveryN;
+        const increaseRate = config.guaranteedUpgradeIncreaseEveryNStages;
+        const currentEveryN = increaseRate > 0
+            ? baseEveryN + Math.floor((currentStage - 1) / increaseRate)
+            : baseEveryN;
+
         // Проверяем, нужен ли гарантированный апгрейд
-        if (config.guaranteedUpgradeEveryN > 0 &&
-            this.totalLootCounter % config.guaranteedUpgradeEveryN === 0) {
+        if (currentEveryN > 0 &&
+            this.totalLootCounter % currentEveryN === 0) {
             // Гарантированный апгрейд: предмет с максимальным уровнем
             item = this.generateGuaranteedUpgrade(currentStage);
         } else {

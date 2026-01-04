@@ -65,13 +65,20 @@ power = hp + 4 * damage  // итоговый effectivePower
 ```
 
 ### Гарантированный апгрейд
-Каждый N-й лут (everyNLoots из items.json) генерирует предмет для самого слабого слота:
+Каждый N-й лут генерирует предмет для самого слабого слота:
 ```
+// N увеличивается с прогрессом
+baseEveryN = everyNLoots  // из items.json (4)
+increaseRate = increaseEveryNStages  // из items.json (10)
+currentEveryN = baseEveryN + floor((currentStage - 1) / increaseRate)
+
+// Пример: на стадии 35 → everyN = 4 + floor(34/10) = 4 + 3 = 7
+
 itemLevel = heroLevel  // максимальный доступный уровень
 slot = слот с минимальным equipped.power среди разблокированных
 rarity = rollRarity(lampWeights)  // обычный ролл редкости
 ```
-Это гарантирует прогресс даже при неудачных роллах слотов.
+Это гарантирует прогресс даже при неудачных роллах слотов, но реже на поздних стадиях.
 
 ### Effective Multiplier по слотам
 | Слот | hpRatio | dmgRatio | effectiveMultiplier |

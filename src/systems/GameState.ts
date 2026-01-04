@@ -189,9 +189,17 @@ export function openLoot(state: GameState): Item | null {
     const config = getConfig();
     let item: Item;
 
+    // Вычисляем текущий everyN с учётом прогресса
+    // everyN увеличивается на 1 каждые increaseEveryNStages стадий
+    const baseEveryN = config.guaranteedUpgradeEveryN;
+    const increaseRate = config.guaranteedUpgradeIncreaseEveryNStages;
+    const currentEveryN = increaseRate > 0
+        ? baseEveryN + Math.floor((currentStage - 1) / increaseRate)
+        : baseEveryN;
+
     // Проверяем, нужен ли гарантированный апгрейд
-    if (config.guaranteedUpgradeEveryN > 0 &&
-        state.lootCounter % config.guaranteedUpgradeEveryN === 0) {
+    if (currentEveryN > 0 &&
+        state.lootCounter % currentEveryN === 0) {
         // Гарантированный апгрейд: генерируем предмет для самого слабого слота
         item = generateGuaranteedUpgrade(state, currentStage);
     } else {
