@@ -134,11 +134,11 @@ export function calculateItemStats(
     // internalPower для расчёта статов
     const internalPower = actualTarget / effectiveMultiplier;
 
-    const hp = Math.floor(internalPower * ratios.hpRatio);
-    const damage = Math.floor(internalPower * ratios.damageRatio);
+    const hp = Math.round(internalPower * ratios.hpRatio * 10) / 10;
+    const damage = Math.round(internalPower * ratios.damageRatio * 10) / 10;
 
     // Фактический effectivePower (для отображения)
-    const power = hp + 4 * damage;
+    const power = Math.round((hp + 4 * damage) * 10) / 10;
 
     return { hp, damage, power };
 }
@@ -150,8 +150,8 @@ export function migrateItemStats(slot: SlotType, power: number): { hp: number; d
     const effectiveMultiplier = ratios.hpRatio + 4 * ratios.damageRatio;
     const internalPower = power / effectiveMultiplier;
     return {
-        hp: Math.floor(internalPower * ratios.hpRatio),
-        damage: Math.floor(internalPower * ratios.damageRatio)
+        hp: Math.round(internalPower * ratios.hpRatio * 10) / 10,
+        damage: Math.round(internalPower * ratios.damageRatio * 10) / 10
     };
 }
 
@@ -169,11 +169,11 @@ export function calculateItemStatsWithTargetPower(
     // internalPower для расчёта статов
     const internalPower = targetPower / effectiveMultiplier;
 
-    const hp = Math.floor(internalPower * ratios.hpRatio);
-    const damage = Math.floor(internalPower * ratios.damageRatio);
+    const hp = Math.round(internalPower * ratios.hpRatio * 10) / 10;
+    const damage = Math.round(internalPower * ratios.damageRatio * 10) / 10;
 
     // Фактический effectivePower
-    const power = hp + 4 * damage;
+    const power = Math.round((hp + 4 * damage) * 10) / 10;
 
     // Вычисляем примерный уровень из targetPower (обратная формула)
     const config = getConfig();

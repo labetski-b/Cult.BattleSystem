@@ -40,10 +40,11 @@ export function calculateHeroStats(hero: Hero): HeroStats {
         }
     }
 
+    // Округляем до 1 знака после запятой
     return {
-        totalHp: BASE_HERO_STATS.hp + bonusHp,
-        totalDamage: BASE_HERO_STATS.damage + bonusDamage,
-        totalPower: totalPower
+        totalHp: Math.round((BASE_HERO_STATS.hp + bonusHp) * 10) / 10,
+        totalDamage: Math.round((BASE_HERO_STATS.damage + bonusDamage) * 10) / 10,
+        totalPower: Math.round(totalPower * 10) / 10
     };
 }
 

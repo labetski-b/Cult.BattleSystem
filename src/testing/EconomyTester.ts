@@ -17,7 +17,7 @@ const enemyConfig = {
 
 // Расчёт силы культа (effectivePower = maxHp + damage * 4)
 function getHeroPower(hero: Hero): number {
-    return hero.maxHp + hero.damage * 4;
+    return Math.round((hero.maxHp + hero.damage * 4) * 10) / 10;
 }
 
 // Подсчёт заполненных слотов
