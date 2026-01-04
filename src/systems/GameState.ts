@@ -1,5 +1,5 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
-import { Item, migrateItemStats, SLOT_TYPES, SlotType, generateItemId, generateItemName, calculateItemStatsWithTargetPower } from '../models/Item';
+import { Item, migrateItemStats, SlotType, generateItemId, generateItemName, calculateItemStatsWithTargetPower, getUnlockedSlots } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
 import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity } from '../models/Lamp';
 import { getConfig } from '../config/ConfigStore';
@@ -129,14 +129,17 @@ export function loadGame(): GameState | null {
 }
 
 // Генерация гарантированного апгрейда для самого слабого слота
-function generateGuaranteedUpgrade(state: GameState): Item {
+function generateGuaranteedUpgrade(state: GameState, currentStage: number): Item {
     const config = getConfig();
 
-    // Находим самый слабый экипированный предмет
+    // Получаем только разблокированные слоты
+    const unlockedSlots = getUnlockedSlots(currentStage);
+
+    // Находим самый слабый экипированный предмет среди разблокированных
     let weakestSlot: SlotType | null = null;
     let weakestPower = Infinity;
 
-    for (const slot of SLOT_TYPES) {
+    for (const slot of unlockedSlots) {
         const equipped = state.hero.equipment[slot];
         const power = equipped?.power || 0;
         if (power < weakestPower) {
@@ -145,9 +148,9 @@ function generateGuaranteedUpgrade(state: GameState): Item {
         }
     }
 
-    // Если нет экипировки — берём первый доступный слот
+    // Если нет экипировки — берём первый разблокированный слот
     if (weakestSlot === null) {
-        weakestSlot = SLOT_TYPES[0];
+        weakestSlot = unlockedSlots[0];
     }
 
     // Целевая сила = текущая × множитель
@@ -191,7 +194,7 @@ export function openLoot(state: GameState): Item | null {
     if (config.guaranteedUpgradeEveryN > 0 &&
         state.lootCounter % config.guaranteedUpgradeEveryN === 0) {
         // Гарантированный апгрейд: генерируем предмет для самого слабого слота
-        item = generateGuaranteedUpgrade(state);
+        item = generateGuaranteedUpgrade(state, currentStage);
     } else {
         // Обычный рандомный лут
         item = generateItemFromLamp(state.lamp, state.hero.level, currentStage);

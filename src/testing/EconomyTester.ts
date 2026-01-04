@@ -1,7 +1,7 @@
 import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
-import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStatsWithTargetPower } from '../models/Item';
+import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStatsWithTargetPower, getUnlockedSlots } from '../models/Item';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, rollRarity, getLampLevelConfig } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
@@ -163,12 +163,15 @@ export class EconomyTester {
     }
 
     // Генерация гарантированного апгрейда для самого слабого слота
-    private generateGuaranteedUpgrade(_currentStage: number, multiplier: number): Item {
-        // Находим самый слабый экипированный предмет
+    private generateGuaranteedUpgrade(currentStage: number, multiplier: number): Item {
+        // Получаем только разблокированные слоты
+        const unlockedSlots = getUnlockedSlots(currentStage);
+
+        // Находим самый слабый экипированный предмет среди разблокированных
         let weakestSlot: SlotType | null = null;
         let weakestPower = Infinity;
 
-        for (const slot of SLOT_TYPES) {
+        for (const slot of unlockedSlots) {
             const equipped = this.state.hero.equipment[slot];
             const power = equipped?.power || 0;
             if (power < weakestPower) {
@@ -177,9 +180,9 @@ export class EconomyTester {
             }
         }
 
-        // Если нет экипировки - берём первый слот
+        // Если нет экипировки — берём первый разблокированный слот
         if (weakestSlot === null) {
-            weakestSlot = SLOT_TYPES[0];
+            weakestSlot = unlockedSlots[0];
         }
 
         // Целевая сила = текущая * множитель
