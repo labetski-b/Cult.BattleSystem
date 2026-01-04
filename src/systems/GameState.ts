@@ -1,5 +1,5 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
-import { Item, migrateItemStats, SlotType, generateItemId, generateItemName, calculateItemStatsWithTargetPower, getUnlockedSlots } from '../models/Item';
+import { Item, migrateItemStats, SlotType, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
 import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity } from '../models/Lamp';
 import { getConfig } from '../config/ConfigStore';
@@ -129,9 +129,8 @@ export function loadGame(): GameState | null {
 }
 
 // Генерация гарантированного апгрейда для самого слабого слота
+// Предмет генерируется с максимальным уровнем (текущая глава)
 function generateGuaranteedUpgrade(state: GameState, currentStage: number): Item {
-    const config = getConfig();
-
     // Получаем только разблокированные слоты
     const unlockedSlots = getUnlockedSlots(currentStage);
 
@@ -153,21 +152,21 @@ function generateGuaranteedUpgrade(state: GameState, currentStage: number): Item
         weakestSlot = unlockedSlots[0];
     }
 
-    // Целевая сила = текущая × множитель
-    const targetPower = Math.max(1, Math.floor(weakestPower * config.guaranteedUpgradeMultiplier));
-
     // Генерируем редкость через лампу
     const lampConfig = getLampLevelConfig(state.lamp.level);
     const rarity = rollRarity(lampConfig.weights);
 
-    // Генерируем предмет с заданной силой
-    const stats = calculateItemStatsWithTargetPower(weakestSlot, targetPower, rarity);
+    // Уровень предмета = текущая глава (максимальный доступный)
+    const itemLevel = state.dungeon.chapter;
+
+    // Генерируем предмет с максимальным уровнем
+    const stats = calculateItemStats(weakestSlot, itemLevel, rarity);
 
     return {
         id: generateItemId(),
         name: generateItemName(weakestSlot, rarity),
         rarity,
-        level: stats.level,
+        level: itemLevel,
         slot: weakestSlot,
         power: stats.power,
         hp: stats.hp,

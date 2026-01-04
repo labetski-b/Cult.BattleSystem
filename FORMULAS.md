@@ -64,6 +64,15 @@ damage = floor(internalPower * damageRatio)
 power = hp + 4 * damage  // итоговый effectivePower
 ```
 
+### Гарантированный апгрейд
+Каждый N-й лут (everyNLoots из items.json) генерирует предмет для самого слабого слота:
+```
+itemLevel = currentChapter  // максимальный доступный уровень
+slot = слот с минимальным equipped.power среди разблокированных
+rarity = rollRarity(lampWeights)  // обычный ролл редкости
+```
+Это гарантирует прогресс даже при неудачных роллах слотов.
+
 ### Effective Multiplier по слотам
 | Слот | hpRatio | dmgRatio | effectiveMultiplier |
 |------|---------|----------|---------------------|

@@ -1,7 +1,7 @@
 import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
-import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStatsWithTargetPower, getUnlockedSlots } from '../models/Item';
+import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, rollRarity, getLampLevelConfig } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
@@ -140,8 +140,8 @@ export class EconomyTester {
         // Проверяем, нужен ли гарантированный апгрейд
         if (config.guaranteedUpgradeEveryN > 0 &&
             this.totalLootCounter % config.guaranteedUpgradeEveryN === 0) {
-            // Гарантированный апгрейд: находим самый слабый предмет
-            item = this.generateGuaranteedUpgrade(currentStage, config.guaranteedUpgradeMultiplier);
+            // Гарантированный апгрейд: предмет с максимальным уровнем
+            item = this.generateGuaranteedUpgrade(currentStage);
         } else {
             // Обычный рандомный лут
             item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
@@ -163,7 +163,8 @@ export class EconomyTester {
     }
 
     // Генерация гарантированного апгрейда для самого слабого слота
-    private generateGuaranteedUpgrade(currentStage: number, multiplier: number): Item {
+    // Предмет генерируется с максимальным уровнем (текущая глава)
+    private generateGuaranteedUpgrade(currentStage: number): Item {
         // Получаем только разблокированные слоты
         const unlockedSlots = getUnlockedSlots(currentStage);
 
@@ -185,21 +186,21 @@ export class EconomyTester {
             weakestSlot = unlockedSlots[0];
         }
 
-        // Целевая сила = текущая * множитель
-        const targetPower = Math.max(1, Math.floor(weakestPower * multiplier));
-
         // Генерируем редкость через лампу
         const lampConfig = getLampLevelConfig(this.state.lamp.level);
         const rarity = rollRarity(lampConfig.weights);
 
-        // Генерируем предмет с заданной силой
-        const stats = calculateItemStatsWithTargetPower(weakestSlot, targetPower, rarity);
+        // Уровень предмета = текущая глава (максимальный доступный)
+        const itemLevel = this.state.dungeon.chapter;
+
+        // Генерируем предмет с максимальным уровнем
+        const stats = calculateItemStats(weakestSlot, itemLevel, rarity);
 
         return {
             id: generateItemId(),
             name: generateItemName(weakestSlot, rarity),
             rarity,
-            level: stats.level,
+            level: itemLevel,
             slot: weakestSlot,
             power: stats.power,
             hp: stats.hp,
