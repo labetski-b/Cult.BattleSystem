@@ -144,8 +144,8 @@ function updateUI(): void {
     $('#enemy-power').textContent = displayPower.toString();
 
     // Статы героя (над экипировкой) — только максимум HP
-    $('#hero-hp-display').textContent = gameState.hero.maxHp.toString();
-    $('#hero-damage-display').textContent = gameState.hero.damage.toString();
+    $('#hero-hp-display').textContent = (Math.round(gameState.hero.maxHp * 10) / 10).toString();
+    $('#hero-damage-display').textContent = (Math.round(gameState.hero.damage * 10) / 10).toString();
 
     // Обновляем точки прогресса (генерируем динамически)
     renderProgressDots();
@@ -303,8 +303,10 @@ function updateBattleUI(): void {
     // Обновить HP героя
     const heroHpPercent = Math.max(0, (currentBattle.hero.hp / currentBattle.hero.maxHp) * 100);
     $('#battle-hero-hp-fill').style.width = `${heroHpPercent}%`;
-    $('#battle-hero-hp-text').textContent = `${Math.max(0, currentBattle.hero.hp)}/${currentBattle.hero.maxHp}`;
-    $('#hero-damage').textContent = currentBattle.hero.damage.toString();
+    const displayHp = Math.round(Math.max(0, currentBattle.hero.hp) * 10) / 10;
+    const displayMaxHp = Math.round(currentBattle.hero.maxHp * 10) / 10;
+    $('#battle-hero-hp-text').textContent = `${displayHp}/${displayMaxHp}`;
+    $('#hero-damage').textContent = (Math.round(currentBattle.hero.damage * 10) / 10).toString();
 
     // Обновить врагов
     renderEnemiesInArena();
