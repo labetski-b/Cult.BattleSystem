@@ -198,6 +198,10 @@
         .chart-container {
             position: relative;
         }
+        .chart-scroll {
+            overflow-x: auto;
+            max-width: 100%;
+        }
         .chart-tooltip {
             position: absolute;
             background: rgba(42, 42, 78, 0.95);
@@ -395,8 +399,8 @@
                 </div>
 
                 <h2 style="margin-top: 30px;">Loots per Stage</h2>
-                <div class="chart-container">
-                    <canvas id="loots-chart" width="1100" height="250"></canvas>
+                <div class="chart-container chart-scroll">
+                    <canvas id="loots-chart" height="250"></canvas>
                     <div class="chart-tooltip" id="loots-tooltip"></div>
                 </div>
             </div>
@@ -940,6 +944,13 @@
             const ctx = canvas.getContext('2d');
 
             const padding = { top: 30, right: 80, bottom: 50, left: 80 };
+            const minBarWidth = 12;  // Минимальная ширина бара для читаемости
+            const minCanvasWidth = 1100;
+
+            // Динамическая ширина canvas
+            const neededWidth = padding.left + padding.right + stages.length * minBarWidth;
+            canvas.width = Math.max(minCanvasWidth, neededWidth);
+
             const width = canvas.width - padding.left - padding.right;
             const height = canvas.height - padding.top - padding.bottom;
 
