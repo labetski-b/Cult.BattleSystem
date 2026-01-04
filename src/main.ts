@@ -130,7 +130,7 @@ function updateUI(): void {
     lampsBadge.dataset.count = gameState.hero.lamps.toString();
 
     // Сила героя = effectivePower (та же формула что и для предметов)
-    const heroPower = gameState.hero.maxHp + gameState.hero.damage * 4;
+    const heroPower = Math.round(gameState.hero.maxHp + gameState.hero.damage * 4);
     $('#hero-power').textContent = heroPower.toString();
 
     // Подземелье - теперь показываем только номер главы
@@ -480,7 +480,7 @@ function showLootPopup(newItem: Item): void {
     const dmgDiff = (newItem.damage || 0) - (equippedItem?.damage || 0);
 
     // Расчёт изменения силы культа (effectivePower = hp + damage * 4)
-    const cultPowerDiff = hpDiff + dmgDiff * 4;
+    const cultPowerDiff = Math.round(hpDiff + dmgDiff * 4);
 
     // Отображение изменения силы культа
     const statsChangeEl = $('#stats-change');
