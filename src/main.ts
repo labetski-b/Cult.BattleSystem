@@ -775,19 +775,37 @@ function setupEventListeners(): void {
 
     // Горячие клавиши
     document.addEventListener('keydown', (e) => {
-        // Q — открыть лут
+        // Q — продать шмотку в луте
         if (e.key === 'q' || e.key === 'Q' || e.key === 'й' || e.key === 'Й') {
-            if (gameState.hero.lamps > 0 && !pendingItem) {
-                const item = openLoot(gameState);
-                if (item) {
-                    showLootPopup(item);
-                    updateUI();
-                }
+            if (pendingItem) {
+                sellPendingItem();
             }
         }
-        // W — начать бой
+        // W — многофункциональная клавиша:
+        // 1. Надеть шмотку в луте
+        // 2. Закрыть окно результата боя
+        // 3. Включить авто-режим в бою
+        // 4. Начать бой (если ничего не открыто)
         if (e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') {
-            if (!currentBattle && !pendingItem) {
+            // Приоритет 1: надеть шмотку
+            if (pendingItem) {
+                equipPendingItem();
+                return;
+            }
+            // Приоритет 2: закрыть результат боя
+            const battleResult = $('#battle-result');
+            if (!battleResult.classList.contains('hidden')) {
+                battleResult.classList.add('hidden');
+                hideBattleArena();
+                return;
+            }
+            // Приоритет 3: включить авто в бою
+            if (currentBattle && !isAutoMode) {
+                startAutoMode();
+                return;
+            }
+            // Приоритет 4: начать бой
+            if (!currentBattle) {
                 startBattle();
             }
         }
