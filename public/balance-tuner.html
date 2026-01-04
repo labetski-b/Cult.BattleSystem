@@ -416,6 +416,12 @@
                     <div class="chart-tooltip" id="equipped-tooltip"></div>
                 </div>
 
+                <h2 style="margin-top: 30px;">Rarity Multiplier Progression</h2>
+                <div class="chart-container">
+                    <canvas id="rarity-mult-chart" width="1100" height="200"></canvas>
+                    <div class="chart-tooltip" id="rarity-mult-tooltip"></div>
+                </div>
+
                 <h2 style="margin-top: 30px;">Guaranteed Upgrade Interval (EveryN)</h2>
                 <div class="chart-container">
                     <canvas id="everyn-chart" width="1100" height="200"></canvas>
@@ -471,6 +477,7 @@
             lamp: { chapters: [], padding: {}, width: 0, height: 0 },
             rarity: { chapters: [], padding: {}, barWidth: 0 },
             equipped: { chapters: [], padding: {}, barWidth: 0 },
+            rarityMult: { stages: [], padding: {}, width: 0, height: 0 },
             everyN: { stages: [], padding: {}, width: 0, height: 0 }
         };
 
@@ -591,6 +598,7 @@
                     slots: Math.round(summaries.reduce((s, r) => s + r.stages[i].slots, 0) / n),
                     enemyPower: Math.round(summaries.reduce((s, r) => s + r.stages[i].enemyPower, 0) / n),
                     rarityMultiplier: Math.round(summaries.reduce((s, r) => s + r.stages[i].rarityMultiplier, 0) / n * 100) / 100,
+                    currentRarityMultiplier: Math.round(summaries.reduce((s, r) => s + (r.stages[i].currentRarityMultiplier || r.stages[i].rarityMultiplier), 0) / n * 100) / 100,
                     difficultyModifier: Math.round(summaries.reduce((s, r) => s + r.stages[i].difficultyModifier, 0) / n),
                     lampLevel: Math.round(summaries.reduce((s, r) => s + r.stages[i].lampLevel, 0) / n),
                     gold: Math.round(summaries.reduce((s, r) => s + r.stages[i].gold, 0) / n),
@@ -759,6 +767,7 @@
             renderLampChart(summary.chapters);
             renderRarityChart(summary.chapters);
             renderEquippedChart(summary.chapters);
+            renderRarityMultChart(summary.stages);
             renderEveryNChart(summary.stages);
             renderPowerChart(summary.chapters);
             renderDifficultyChart(summary.stages);
@@ -1313,6 +1322,82 @@
             }
         }
 
+        function renderRarityMultChart(stages) {
+            const canvas = document.getElementById('rarity-mult-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (stages.length === 0) return;
+
+            const targetValues = stages.map(s => s.rarityMultiplier || 1);
+            const currentValues = stages.map(s => s.currentRarityMultiplier || s.rarityMultiplier || 1);
+            const maxMult = Math.max(...targetValues, ...currentValues, 2);
+
+            const xScale = (i) => padding.left + (i / Math.max(1, stages.length - 1)) * width;
+            const yScale = (v) => padding.top + height - ((v - 1) / (maxMult - 1)) * height;
+
+            // Save data for tooltip
+            chartData.rarityMult = { stages, padding, width, height, xScale, yScale, maxMult };
+
+            // Grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let v = 1; v <= maxMult; v += 0.5) {
+                const y = yScale(v);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+            }
+
+            // Target line (dashed)
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScale(targetValues[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Current line (solid)
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScale(currentValues[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Y labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'right';
+            ctx.fillText(maxMult.toFixed(1), padding.left - 10, padding.top + 4);
+            ctx.fillText('1.0', padding.left - 10, padding.top + height + 4);
+
+            // Legend
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText('Current', padding.left + width - 80, padding.top + 15);
+            ctx.fillStyle = '#888';
+            ctx.fillText('Target', padding.left + width - 80, padding.top + 30);
+        }
+
         function renderEveryNChart(stages) {
             const canvas = document.getElementById('everyn-chart');
             const ctx = canvas.getContext('2d');
@@ -1734,6 +1819,54 @@
 
         equippedCanvas.addEventListener('mouseleave', () => {
             equippedTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for Rarity Mult chart
+        const rarityMultCanvas = document.getElementById('rarity-mult-chart');
+        const rarityMultTooltip = document.getElementById('rarity-mult-tooltip');
+
+        rarityMultCanvas.addEventListener('mousemove', (e) => {
+            const rect = rarityMultCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.rarityMult;
+
+            if (!data.stages || data.stages.length === 0) return;
+
+            const { stages, padding, width } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > width) {
+                rarityMultTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.round((relX / width) * (stages.length - 1));
+            if (idx < 0 || idx >= stages.length) {
+                rarityMultTooltip.classList.remove('visible');
+                return;
+            }
+
+            const st = stages[idx];
+            const current = st.currentRarityMultiplier || st.rarityMultiplier || 1;
+            const target = st.rarityMultiplier || 1;
+            const diff = target - current;
+
+            rarityMultTooltip.innerHTML = `
+                <div class="tt-title">Stage ${st.chapter}.${st.stage}</div>
+                <div class="tt-row"><span class="tt-label">Current:</span> <span class="tt-value" style="color:#ffd700">×${current.toFixed(2)}</span></div>
+                <div class="tt-row"><span class="tt-label">Target:</span> <span class="tt-value">×${target.toFixed(2)}</span></div>
+                ${diff > 0.01 ? `<div class="tt-row"><span class="tt-label">Gap:</span> <span class="tt-value tt-defeats">+${diff.toFixed(2)}</span></div>` : ''}
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 150 > rect.width) left = e.clientX - rect.left - 150;
+            rarityMultTooltip.style.left = left + 'px';
+            rarityMultTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            rarityMultTooltip.classList.add('visible');
+        });
+
+        rarityMultCanvas.addEventListener('mouseleave', () => {
+            rarityMultTooltip.classList.remove('visible');
         });
 
         // Tooltip handlers for EveryN chart

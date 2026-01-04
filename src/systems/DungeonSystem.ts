@@ -1,5 +1,5 @@
 import enemiesConfig from '../../data/enemies.json';
-import { calculateExpectedRarityMultiplier } from '../models/Lamp';
+import { Lamp } from '../models/Lamp';
 import { getConfig } from '../config/ConfigStore';
 
 export interface DungeonProgress {
@@ -114,9 +114,10 @@ export function adjustDifficultyOnDefeat(dungeon: DungeonProgress): void {
 
 // Получить силу врагов с учётом ВСЕХ множителей
 // enemyPower = basePower × rarityMultiplier × (1 + difficultyModifier)
-export function getAdjustedEnemyPower(dungeon: DungeonProgress, lampLevel: number): number {
+// Использует currentRarityMultiplier (плавный рост) вместо целевого
+export function getAdjustedEnemyPower(dungeon: DungeonProgress, lamp: Lamp): number {
     const basePower = dungeon.currentEnemyPower;
-    const rarityMultiplier = calculateExpectedRarityMultiplier(lampLevel);
+    const rarityMultiplier = lamp.currentRarityMultiplier;
     const difficultyMultiplier = 1 + dungeon.difficultyModifier;
     return Math.round(basePower * rarityMultiplier * difficultyMultiplier);
 }

@@ -1,7 +1,7 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
 import { Item, migrateItemStats, SlotType, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
-import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity } from '../models/Lamp';
+import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity, calculateExpectedRarityMultiplier } from '../models/Lamp';
 import { getConfig } from '../config/ConfigStore';
 import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward, STAGES_PER_CHAPTER } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
@@ -97,6 +97,11 @@ export function loadGame(): GameState | null {
             } else if ('maxRarity' in state.lamp) {
                 // Старый формат с maxRarity - конвертируем в новый
                 state.lamp = createLamp(state.lamp.level || 1);
+            }
+
+            // Миграция: добавляем currentRarityMultiplier если отсутствует
+            if (state.lamp.currentRarityMultiplier === undefined) {
+                state.lamp.currentRarityMultiplier = calculateExpectedRarityMultiplier(state.lamp.level);
             }
 
             // Миграция: добавляем level и xp если отсутствуют
@@ -294,7 +299,12 @@ export function upgradeLamp(state: GameState): boolean {
     if (state.hero.gold < cost) return false;
 
     state.hero.gold -= cost;
+
+    // При апгрейде лампы сохраняем текущий множитель
+    // Он будет плавно расти к новому целевому множителю
+    const oldMultiplier = state.lamp.currentRarityMultiplier;
     state.lamp = createLamp(currentLevel + 1);
+    state.lamp.currentRarityMultiplier = oldMultiplier;
 
     saveGame(state);
     return true;

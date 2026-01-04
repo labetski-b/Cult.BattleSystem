@@ -17,6 +17,7 @@ export const MAX_LAMP_LEVEL = lampLevels.length;
 
 export interface Lamp {
     level: number;
+    currentRarityMultiplier: number;  // Текущий множитель (плавно растёт к целевому)
 }
 
 // Получить конфиг уровня лампы
@@ -45,7 +46,10 @@ export function getAllLampLevels(): LampLevelConfig[] {
 
 // Создание лампы по уровню
 export function createLamp(level: number): Lamp {
-    return { level };
+    return {
+        level,
+        currentRarityMultiplier: calculateExpectedRarityMultiplier(level)
+    };
 }
 
 // Выбор редкости по весам из конфига уровня лампы
@@ -124,6 +128,49 @@ export function calculateExpectedRarityMultiplier(lampLevel: number): number {
     }
 
     return topTotalWeight > 0 ? topWeightedSum / topTotalWeight : 1.0;
+}
+
+// Получить вероятность самой редкой редкости (с минимальным весом > 0)
+export function getLowestRarityProbability(lampLevel: number): number {
+    const config = getLampLevelConfig(lampLevel);
+    const weights = config.weights;
+    let totalWeight = 0;
+    let minWeight = Infinity;
+
+    for (const weight of Object.values(weights)) {
+        if (weight !== undefined && weight > 0) {
+            totalWeight += weight;
+            if (weight < minWeight) {
+                minWeight = weight;
+            }
+        }
+    }
+
+    if (totalWeight === 0 || minWeight === Infinity) return 1;
+    return minWeight / totalWeight;
+}
+
+// Обновить множитель редкости после убийства врага
+// Множитель плавно растёт от текущего к целевому
+// Скорость роста = 1 / (1 / lowestProbability) = lowestProbability
+export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
+    const targetMultiplier = calculateExpectedRarityMultiplier(lamp.level);
+
+    // Если уже достигли целевого — ничего не делаем
+    if (lamp.currentRarityMultiplier >= targetMultiplier) {
+        lamp.currentRarityMultiplier = targetMultiplier;
+        return;
+    }
+
+    const lowestProb = getLowestRarityProbability(lamp.level);
+    const enemiesNeeded = 1 / lowestProb;
+    const delta = targetMultiplier - lamp.currentRarityMultiplier;
+    const increment = delta / enemiesNeeded;
+
+    lamp.currentRarityMultiplier = Math.min(
+        lamp.currentRarityMultiplier + increment,
+        targetMultiplier
+    );
 }
 
 // Генерация предмета из лампы

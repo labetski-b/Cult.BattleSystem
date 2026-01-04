@@ -17,7 +17,7 @@ import {
 } from './systems/GameState';
 import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity, getSlotUnlockStage } from './models/Item';
-import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier } from './models/Lamp';
+import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, updateRarityMultiplierAfterKill } from './models/Lamp';
 import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward, getBossMultiplier } from './systems/DungeonSystem';
 import { addXp, xpProgress, XpGainResult } from './models/Hero';
 import { getConfig } from './config/ConfigStore';
@@ -391,6 +391,9 @@ function finishBattle(): void {
     // Начисляем опыт за прохождение этапа (из таблицы)
     let xpResult: XpGainResult | null = null;
     if (result.victory) {
+        // Плавно увеличиваем множитель редкости после победы
+        updateRarityMultiplierAfterKill(gameState.lamp);
+
         // XP берём из таблицы для ПРЕДЫДУЩЕГО этапа (который мы только что прошли)
         // Т.к. dungeon уже продвинулся, нужно вычислить предыдущий этап
         const prevChapter = gameState.dungeon.stage === 1

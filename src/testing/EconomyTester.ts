@@ -2,7 +2,7 @@ import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
-import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, rollRarity, getLampLevelConfig } from '../models/Lamp';
+import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
 import { createDungeonProgress, advanceProgress, isBossStage, getBossMultiplier, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
@@ -238,7 +238,7 @@ export class EconomyTester {
             return;
         }
 
-        const enemyPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp.level);
+        const enemyPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp);
 
         // После поражения — сначала минимум 1 лут
         this.lootOneItem();
@@ -260,7 +260,10 @@ export class EconomyTester {
 
             if (this.state.hero.gold >= cost) {
                 this.state.hero.gold -= cost;
+                // Сохраняем текущий множитель при апгрейде
+                const oldMultiplier = this.state.lamp.currentRarityMultiplier;
                 this.state.lamp = createLamp(this.state.lamp.level + 1);
+                this.state.lamp.currentRarityMultiplier = oldMultiplier;
                 this.chapterGoldSpent += cost;
             } else {
                 break;
@@ -275,7 +278,7 @@ export class EconomyTester {
         const currentStage = this.state.dungeon.stage;
 
         // Генерация врагов (с учётом всех множителей)
-        let targetPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp.level);
+        let targetPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp);
         if (isBoss) {
             targetPower *= getBossMultiplier();
         }
@@ -303,6 +306,9 @@ export class EconomyTester {
         if (this.state.hero.hp < 0) this.state.hero.hp = 0;
 
         if (result.victory) {
+            // Плавно увеличиваем множитель редкости после победы
+            updateRarityMultiplierAfterKill(this.state.lamp);
+
             // Записываем метрики этапа перед переходом
             this.recordStageMetrics(currentChapter, currentStage, targetPower);
             this.resetStageCounters();
@@ -341,7 +347,7 @@ export class EconomyTester {
 
     // Записать метрики этапа
     private recordStageMetrics(chapter: number, stage: number, enemyPower: number): void {
-        const rarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
+        const targetRarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
         const currentStage = this.getCurrentStageNumber();
         const config = getConfig();
         const baseEveryN = config.guaranteedUpgradeEveryN;
@@ -362,7 +368,8 @@ export class EconomyTester {
             heroDamage: this.state.hero.damage,
             slots: getFilledSlots(this.state.hero),
             enemyPower: Math.floor(enemyPower),
-            rarityMultiplier: Math.round(rarityMultiplier * 100) / 100,
+            rarityMultiplier: Math.round(targetRarityMultiplier * 100) / 100,  // целевой множитель
+            currentRarityMultiplier: Math.round(this.state.lamp.currentRarityMultiplier * 100) / 100,  // текущий (плавный)
             difficultyModifier: Math.round(this.state.dungeon.difficultyModifier * 100),  // в процентах
             lampLevel: this.state.lamp.level,
             gold: this.state.hero.gold,
