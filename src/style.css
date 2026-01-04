@@ -833,6 +833,11 @@ body {
   line-height: 1.2;
 }
 
+.slot .slot-power {
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
 .slot .slot-empty-label {
   font-size: 8px;
   color: var(--text-secondary);

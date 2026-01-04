@@ -210,6 +210,7 @@ function renderEquipment(): void {
       `;
             slot.title = `${SLOT_NAMES[slotType]} — откроется на стадии ${unlockStage}`;
         } else if (item) {
+            const itemPower = Math.round((item.hp + item.damage * 4) * 10) / 10;
             slot.innerHTML = `
         <div class="slot-left">
           <span class="slot-icon">${SLOT_ICONS[slotType]}</span>
@@ -218,9 +219,10 @@ function renderEquipment(): void {
         <div class="slot-right">
           <span class="slot-stat">${item.hp}❤️</span>
           <span class="slot-stat">${item.damage}⚔️</span>
+          <span class="slot-stat slot-power">⚡${itemPower}</span>
         </div>
       `;
-            slot.title = `${item.name} (Lvl ${item.level}) - HP: ${item.hp}, DMG: ${item.damage}`;
+            slot.title = `${item.name} (Lvl ${item.level}) - HP: ${item.hp}, DMG: ${item.damage}, Power: ${itemPower}`;
         } else {
             slot.innerHTML = `
         <span class="slot-icon" style="opacity: 0.3">${SLOT_ICONS[slotType]}</span>
