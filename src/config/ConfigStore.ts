@@ -14,6 +14,10 @@ export interface BalanceOverrides {
     minLevelOffset?: number;          // диапазон уровня предмета (heroLevel - offset)
     maxRarityLevelOffset?: number;    // диапазон для макс. редкости
 
+    // Guaranteed upgrade (items.json)
+    guaranteedUpgradeEveryN?: number;      // каждый N-й лут — гарантированный апгрейд
+    guaranteedUpgradeMultiplier?: number;  // множитель силы (1.05 = +5%)
+
     // rarities.json (множители по id)
     rarityMultipliers?: Partial<Record<Rarity, number>>;
 
@@ -32,6 +36,8 @@ export interface BalanceConfig {
     powerVariance: number;
     minLevelOffset: number;
     maxRarityLevelOffset: number;
+    guaranteedUpgradeEveryN: number;
+    guaranteedUpgradeMultiplier: number;
     rarityMultipliers: Record<Rarity, number>;
     difficultyOnVictory: number;
     difficultyOnDefeat: number;
@@ -43,6 +49,9 @@ const defaultRarityMultipliers: Record<Rarity, number> = Object.fromEntries(
     (raritiesData as { id: string; multiplier: number }[]).map(r => [r.id, r.multiplier])
 ) as Record<Rarity, number>;
 
+// Типизация для guaranteedUpgrade
+const guaranteedUpgrade = (itemsConfig as { guaranteedUpgrade?: { everyNLoots: number; powerMultiplier: number } }).guaranteedUpgrade;
+
 // Дефолтные значения (читаются из JSON при инициализации)
 const defaults: BalanceConfig = {
     basePowerPerLevel: itemsConfig.basePowerPerLevel,
@@ -50,6 +59,8 @@ const defaults: BalanceConfig = {
     powerVariance: itemsConfig.powerVariance ?? 0.1,
     minLevelOffset: itemsConfig.levelRange.minLevelOffset,
     maxRarityLevelOffset: (itemsConfig.levelRange as { minLevelOffset: number; maxRarityLevelOffset: number }).maxRarityLevelOffset,
+    guaranteedUpgradeEveryN: guaranteedUpgrade?.everyNLoots ?? 4,
+    guaranteedUpgradeMultiplier: guaranteedUpgrade?.powerMultiplier ?? 1.05,
     rarityMultipliers: defaultRarityMultipliers,
     difficultyOnVictory: 0.01,
     difficultyOnDefeat: -0.02,
@@ -77,6 +88,8 @@ export function getConfig(): BalanceConfig {
         powerVariance: currentOverrides.powerVariance ?? defaults.powerVariance,
         minLevelOffset: currentOverrides.minLevelOffset ?? defaults.minLevelOffset,
         maxRarityLevelOffset: currentOverrides.maxRarityLevelOffset ?? defaults.maxRarityLevelOffset,
+        guaranteedUpgradeEveryN: currentOverrides.guaranteedUpgradeEveryN ?? defaults.guaranteedUpgradeEveryN,
+        guaranteedUpgradeMultiplier: currentOverrides.guaranteedUpgradeMultiplier ?? defaults.guaranteedUpgradeMultiplier,
         rarityMultipliers: mergedRarityMultipliers,
         difficultyOnVictory: currentOverrides.difficultyOnVictory ?? defaults.difficultyOnVictory,
         difficultyOnDefeat: currentOverrides.difficultyOnDefeat ?? defaults.difficultyOnDefeat,

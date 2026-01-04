@@ -276,6 +276,20 @@
             </div>
 
             <div class="control-group">
+                <h3>Guaranteed Upgrade</h3>
+                <div class="control-row">
+                    <label>Every N loots</label>
+                    <input type="range" id="guaranteedUpgradeEveryN" min="0" max="10" step="1" value="4">
+                    <span class="value-display" id="guaranteedUpgradeEveryN-val">4</span>
+                </div>
+                <div class="control-row">
+                    <label>Power multiplier</label>
+                    <input type="range" id="guaranteedUpgradeMultiplier" min="1.0" max="1.5" step="0.01" value="1.05">
+                    <span class="value-display" id="guaranteedUpgradeMultiplier-val">1.05</span>
+                </div>
+            </div>
+
+            <div class="control-group">
                 <h3>Difficulty</h3>
                 <div class="control-row">
                     <label>On Victory (%)</label>
@@ -556,6 +570,12 @@
             setSlider('powerVariance', settings.powerVariance);
             setSlider('minLevelOffset', settings.minLevelOffset);
             setSlider('maxRarityLevelOffset', settings.maxRarityLevelOffset);
+            if (settings.guaranteedUpgradeEveryN !== undefined) {
+                setSlider('guaranteedUpgradeEveryN', settings.guaranteedUpgradeEveryN);
+            }
+            if (settings.guaranteedUpgradeMultiplier !== undefined) {
+                setSlider('guaranteedUpgradeMultiplier', settings.guaranteedUpgradeMultiplier);
+            }
             setSlider('difficultyOnVictory', settings.difficultyOnVictory);
             setSlider('difficultyOnDefeat', settings.difficultyOnDefeat);
             setSlider('bossPowerMultiplier', settings.bossPowerMultiplier);
@@ -597,6 +617,8 @@
                 powerVariance: parseFloat(document.getElementById('powerVariance').value),
                 minLevelOffset: parseInt(document.getElementById('minLevelOffset').value),
                 maxRarityLevelOffset: parseInt(document.getElementById('maxRarityLevelOffset').value),
+                guaranteedUpgradeEveryN: parseInt(document.getElementById('guaranteedUpgradeEveryN').value),
+                guaranteedUpgradeMultiplier: parseFloat(document.getElementById('guaranteedUpgradeMultiplier').value),
                 difficultyOnVictory: parseFloat(document.getElementById('difficultyOnVictory').value),
                 difficultyOnDefeat: parseFloat(document.getElementById('difficultyOnDefeat').value),
                 bossPowerMultiplier: parseFloat(document.getElementById('bossPowerMultiplier').value),

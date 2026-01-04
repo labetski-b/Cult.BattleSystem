@@ -1,11 +1,12 @@
 import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
-import { SLOT_TYPES } from '../models/Item';
-import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier } from '../models/Lamp';
+import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStatsWithTargetPower } from '../models/Item';
+import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, rollRarity, getLampLevelConfig } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
 import { createDungeonProgress, advanceProgress, isBossStage, getBossMultiplier, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
+import { getConfig } from '../config/ConfigStore';
 import enemiesConfig from '../../data/enemies.json';
 
 // Конфиг врагов
@@ -65,6 +66,9 @@ export class EconomyTester {
 
     // Флаг поражения в прошлом бою
     private lastBattleLost = false;
+
+    // Счётчик лутов для гарантированного апгрейда
+    private totalLootCounter = 0;
 
     constructor(config: Partial<TesterConfig> = {}) {
         this.config = { ...DEFAULT_CONFIG, ...config };
@@ -126,8 +130,21 @@ export class EconomyTester {
 
     // Лут одного предмета
     private lootOneItem(): void {
+        this.totalLootCounter++;
         const currentStage = this.getCurrentStageNumber();
-        const item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
+        const config = getConfig();
+
+        let item: Item;
+
+        // Проверяем, нужен ли гарантированный апгрейд
+        if (config.guaranteedUpgradeEveryN > 0 &&
+            this.totalLootCounter % config.guaranteedUpgradeEveryN === 0) {
+            // Гарантированный апгрейд: находим самый слабый предмет
+            item = this.generateGuaranteedUpgrade(currentStage, config.guaranteedUpgradeMultiplier);
+        } else {
+            // Обычный рандомный лут
+            item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
+        }
 
         this.chapterLoots++;
         this.stageLoots++;
@@ -142,6 +159,48 @@ export class EconomyTester {
         }
 
         this.totalIterations++;
+    }
+
+    // Генерация гарантированного апгрейда для самого слабого слота
+    private generateGuaranteedUpgrade(_currentStage: number, multiplier: number): Item {
+        // Находим самый слабый экипированный предмет
+        let weakestSlot: SlotType | null = null;
+        let weakestPower = Infinity;
+
+        for (const slot of SLOT_TYPES) {
+            const equipped = this.state.hero.equipment[slot];
+            const power = equipped?.power || 0;
+            if (power < weakestPower) {
+                weakestPower = power;
+                weakestSlot = slot;
+            }
+        }
+
+        // Если нет экипировки - берём первый слот
+        if (weakestSlot === null) {
+            weakestSlot = SLOT_TYPES[0];
+        }
+
+        // Целевая сила = текущая * множитель
+        const targetPower = Math.max(1, Math.floor(weakestPower * multiplier));
+
+        // Генерируем редкость через лампу
+        const lampConfig = getLampLevelConfig(this.state.lamp.level);
+        const rarity = rollRarity(lampConfig.weights);
+
+        // Генерируем предмет с заданной силой
+        const stats = calculateItemStatsWithTargetPower(weakestSlot, targetPower, rarity);
+
+        return {
+            id: generateItemId(),
+            name: generateItemName(weakestSlot, rarity),
+            rarity,
+            level: stats.level,
+            slot: weakestSlot,
+            power: stats.power,
+            hp: stats.hp,
+            damage: stats.damage
+        };
     }
 
     // Фаза лута: лутаем только после поражения

@@ -155,6 +155,35 @@ export function migrateItemStats(slot: SlotType, power: number): { hp: number; d
     };
 }
 
+// Генерация предмета с заданной целевой силой (для гарантированного апгрейда)
+export function calculateItemStatsWithTargetPower(
+    slot: SlotType,
+    targetPower: number,
+    rarity: Rarity
+): { hp: number; damage: number; power: number; level: number } {
+    const ratios = SLOT_STAT_RATIOS[slot];
+
+    // effectiveMultiplier = hpRatio + 4 * damageRatio
+    const effectiveMultiplier = ratios.hpRatio + 4 * ratios.damageRatio;
+
+    // internalPower для расчёта статов
+    const internalPower = targetPower / effectiveMultiplier;
+
+    const hp = Math.floor(internalPower * ratios.hpRatio);
+    const damage = Math.floor(internalPower * ratios.damageRatio);
+
+    // Фактический effectivePower
+    const power = hp + 4 * damage;
+
+    // Вычисляем примерный уровень из targetPower (обратная формула)
+    const config = getConfig();
+    const rarityMultiplier = config.rarityMultipliers[rarity] ?? RARITY_MULTIPLIERS[rarity];
+    const baseTarget = targetPower / rarityMultiplier;
+    const level = Math.max(1, Math.round(Math.log(baseTarget / config.basePowerPerLevel) / Math.log(config.powerGrowthPerLevel) + 1));
+
+    return { hp, damage, power, level };
+}
+
 // Генерация имени предмета
 const ITEM_PREFIXES: Record<Rarity, string[]> = {
     common: ['Простой', 'Обычный', 'Базовый'],

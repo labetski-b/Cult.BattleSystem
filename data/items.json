@@ -6,6 +6,10 @@
         "minLevelOffset": 2,
         "maxRarityLevelOffset": 1
     },
+    "guaranteedUpgrade": {
+        "everyNLoots": 4,
+        "powerMultiplier": 1.05
+    },
     "slots": {
         "weapon":   { "unlockStage": 1,   "hpRatio": 0.50, "damageRatio": 0.50 },
         "helmet":   { "unlockStage": 1,   "hpRatio": 0.80, "damageRatio": 0.20 },
