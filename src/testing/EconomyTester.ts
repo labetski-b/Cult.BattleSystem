@@ -190,8 +190,8 @@ export class EconomyTester {
         const lampConfig = getLampLevelConfig(this.state.lamp.level);
         const rarity = rollRarity(lampConfig.weights);
 
-        // Уровень предмета = текущая глава (максимальный доступный)
-        const itemLevel = this.state.dungeon.chapter;
+        // Уровень предмета = уровень героя (максимальный доступный)
+        const itemLevel = this.state.hero.level;
 
         // Генерируем предмет с максимальным уровнем
         const stats = calculateItemStats(weakestSlot, itemLevel, rarity);

@@ -156,8 +156,8 @@ function generateGuaranteedUpgrade(state: GameState, currentStage: number): Item
     const lampConfig = getLampLevelConfig(state.lamp.level);
     const rarity = rollRarity(lampConfig.weights);
 
-    // Уровень предмета = текущая глава (максимальный доступный)
-    const itemLevel = state.dungeon.chapter;
+    // Уровень предмета = уровень героя (максимальный доступный)
+    const itemLevel = state.hero.level;
 
     // Генерируем предмет с максимальным уровнем
     const stats = calculateItemStats(weakestSlot, itemLevel, rarity);
