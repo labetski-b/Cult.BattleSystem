@@ -398,10 +398,10 @@
                     <div class="chart-tooltip" id="loots-chapter-tooltip"></div>
                 </div>
 
-                <h2 style="margin-top: 30px;">Lamp Level per Chapter</h2>
+                <h2 style="margin-top: 30px;">Lamp Level & Rarity Multiplier</h2>
                 <div class="chart-container">
-                    <canvas id="lamp-chart" width="1100" height="200"></canvas>
-                    <div class="chart-tooltip" id="lamp-tooltip"></div>
+                    <canvas id="lamp-mult-chart" width="1100" height="250"></canvas>
+                    <div class="chart-tooltip" id="lamp-mult-tooltip"></div>
                 </div>
 
                 <h2 style="margin-top: 30px;">Loots by Rarity per Chapter</h2>
@@ -414,12 +414,6 @@
                 <div class="chart-container">
                     <canvas id="equipped-chart" width="1100" height="280"></canvas>
                     <div class="chart-tooltip" id="equipped-tooltip"></div>
-                </div>
-
-                <h2 style="margin-top: 30px;">Rarity Multiplier Progression</h2>
-                <div class="chart-container">
-                    <canvas id="rarity-mult-chart" width="1100" height="200"></canvas>
-                    <div class="chart-tooltip" id="rarity-mult-tooltip"></div>
                 </div>
 
                 <h2 style="margin-top: 30px;">Guaranteed Upgrade Interval (EveryN)</h2>
@@ -474,10 +468,9 @@
             difficulty: { stages: [], padding: {}, xScale: null, range: 0 },
             loots: { stages: [], padding: {}, barWidth: 0, maxLoots: 0 },
             lootsChapter: { chapters: [], padding: {}, barWidth: 0, maxLoots: 0 },
-            lamp: { chapters: [], padding: {}, width: 0, height: 0 },
+            lampMult: { chapters: [], stages: [], padding: {}, width: 0, height: 0 },
             rarity: { chapters: [], padding: {}, barWidth: 0 },
             equipped: { chapters: [], padding: {}, barWidth: 0 },
-            rarityMult: { stages: [], padding: {}, width: 0, height: 0 },
             everyN: { stages: [], padding: {}, width: 0, height: 0 }
         };
 
@@ -764,10 +757,9 @@
             // Charts
             renderLootsChart(summary.stages);
             renderLootsChapterChart(summary.chapters);
-            renderLampChart(summary.chapters);
+            renderLampMultChart(summary.chapters, summary.stages);
             renderRarityChart(summary.chapters);
             renderEquippedChart(summary.chapters);
-            renderRarityMultChart(summary.stages);
             renderEveryNChart(summary.stages);
             renderPowerChart(summary.chapters);
             renderDifficultyChart(summary.stages);
@@ -1105,8 +1097,8 @@
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
         }
 
-        function renderLampChart(chapters) {
-            const canvas = document.getElementById('lamp-chart');
+        function renderLampMultChart(chapters, stages) {
+            const canvas = document.getElementById('lamp-mult-chart');
             const ctx = canvas.getContext('2d');
 
             const padding = { top: 30, right: 80, bottom: 50, left: 80 };
@@ -1116,65 +1108,127 @@
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if (chapters.length === 0) return;
+            if (chapters.length === 0 || stages.length === 0) return;
 
+            // Lamp level data (by chapter)
             const lampLevels = chapters.map(c => c.lampLevel);
             const maxLamp = Math.max(...lampLevels, 31);
 
-            const xScale = (i) => padding.left + (i / Math.max(1, chapters.length - 1)) * width;
-            const yScale = (v) => padding.top + height - (v / maxLamp) * height;
+            // Multiplier data (by stage)
+            const targetValues = stages.map(s => s.rarityMultiplier || 1);
+            const currentValues = stages.map(s => s.currentRarityMultiplier || s.rarityMultiplier || 1);
+            const maxMult = Math.max(...targetValues, ...currentValues, 2);
+
+            // Scales
+            const xScaleChapter = (i) => padding.left + (i / Math.max(1, chapters.length - 1)) * width;
+            const xScaleStage = (i) => padding.left + (i / Math.max(1, stages.length - 1)) * width;
+            const yScaleLamp = (v) => padding.top + height - (v / maxLamp) * height;
+            const yScaleMult = (v) => padding.top + height - ((v - 1) / (maxMult - 1)) * height;
 
             // Save data for tooltip
-            chartData.lamp = { chapters, padding, width, height, xScale, yScale, maxLamp };
+            chartData.lampMult = { chapters, stages, padding, width, height, maxLamp, maxMult };
 
-            // Grid
+            // Grid (based on lamp levels)
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 1;
             for (let lvl = 0; lvl <= maxLamp; lvl += 5) {
-                const y = yScale(lvl);
+                const y = yScaleLamp(lvl);
                 ctx.beginPath();
                 ctx.moveTo(padding.left, y);
                 ctx.lineTo(padding.left + width, y);
                 ctx.stroke();
             }
 
-            // Line
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 3;
+            // === Multiplier lines (by stage) ===
+            // Target line (dashed gray)
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
             ctx.beginPath();
-            for (let i = 0; i < chapters.length; i++) {
-                const x = xScale(i);
-                const y = yScale(lampLevels[i]);
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScaleStage(i);
+                const y = yScaleMult(targetValues[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Current multiplier line (cyan)
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScaleStage(i);
+                const y = yScaleMult(currentValues[i]);
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
             ctx.stroke();
 
-            // Points
+            // === Lamp level line (by chapter) ===
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < chapters.length; i++) {
+                const x = xScaleChapter(i);
+                const y = yScaleLamp(lampLevels[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Lamp level points
             ctx.fillStyle = '#ffd700';
             for (let i = 0; i < chapters.length; i++) {
-                const x = xScale(i);
-                const y = yScale(lampLevels[i]);
+                const x = xScaleChapter(i);
+                const y = yScaleLamp(lampLevels[i]);
                 ctx.beginPath();
                 ctx.arc(x, y, 4, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            // X labels
+            // X labels (chapters)
             ctx.fillStyle = '#888';
             ctx.font = '11px Courier New';
             ctx.textAlign = 'center';
             for (let i = 0; i < chapters.length; i++) {
-                const x = xScale(i);
+                const x = xScaleChapter(i);
                 if (chapters.length <= 30 || i % Math.ceil(chapters.length / 30) === 0) {
                     ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
                 }
             }
 
-            // Y labels
+            // Left Y axis labels (Lamp Level)
             ctx.textAlign = 'right';
+            ctx.fillStyle = '#ffd700';
             ctx.fillText(maxLamp.toString(), padding.left - 10, padding.top + 4);
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+
+            // Right Y axis labels (Multiplier)
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#22d3ee';
+            ctx.fillText('×' + maxMult.toFixed(1), padding.left + width + 10, padding.top + 4);
+            ctx.fillText('×1.0', padding.left + width + 10, padding.top + height + 4);
+
+            // Legend
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'left';
+            let legendX = padding.left + 10;
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(legendX, padding.top + 5, 12, 3);
+            ctx.fillText('Lamp Lvl', legendX + 16, padding.top + 10);
+            ctx.fillStyle = '#22d3ee';
+            ctx.fillRect(legendX + 80, padding.top + 5, 12, 3);
+            ctx.fillText('Mult', legendX + 96, padding.top + 10);
+            ctx.fillStyle = '#666';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(legendX + 130, padding.top + 7);
+            ctx.lineTo(legendX + 142, padding.top + 7);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillText('Target', legendX + 146, padding.top + 10);
         }
 
         function renderRarityChart(chapters) {
@@ -1320,82 +1374,6 @@
                 ctx.fillText(rarity, padding.left + width + 28, legendY + 10);
                 legendY += 18;
             }
-        }
-
-        function renderRarityMultChart(stages) {
-            const canvas = document.getElementById('rarity-mult-chart');
-            const ctx = canvas.getContext('2d');
-
-            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
-            const width = canvas.width - padding.left - padding.right;
-            const height = canvas.height - padding.top - padding.bottom;
-
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (stages.length === 0) return;
-
-            const targetValues = stages.map(s => s.rarityMultiplier || 1);
-            const currentValues = stages.map(s => s.currentRarityMultiplier || s.rarityMultiplier || 1);
-            const maxMult = Math.max(...targetValues, ...currentValues, 2);
-
-            const xScale = (i) => padding.left + (i / Math.max(1, stages.length - 1)) * width;
-            const yScale = (v) => padding.top + height - ((v - 1) / (maxMult - 1)) * height;
-
-            // Save data for tooltip
-            chartData.rarityMult = { stages, padding, width, height, xScale, yScale, maxMult };
-
-            // Grid
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 1;
-            for (let v = 1; v <= maxMult; v += 0.5) {
-                const y = yScale(v);
-                ctx.beginPath();
-                ctx.moveTo(padding.left, y);
-                ctx.lineTo(padding.left + width, y);
-                ctx.stroke();
-            }
-
-            // Target line (dashed)
-            ctx.strokeStyle = '#888';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
-                const x = xScale(i);
-                const y = yScale(targetValues[i]);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Current line (solid)
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
-                const x = xScale(i);
-                const y = yScale(currentValues[i]);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-
-            // Y labels
-            ctx.fillStyle = '#888';
-            ctx.font = '12px Courier New';
-            ctx.textAlign = 'right';
-            ctx.fillText(maxMult.toFixed(1), padding.left - 10, padding.top + 4);
-            ctx.fillText('1.0', padding.left - 10, padding.top + height + 4);
-
-            // Legend
-            ctx.font = '11px Courier New';
-            ctx.textAlign = 'left';
-            ctx.fillStyle = '#ffd700';
-            ctx.fillText('Current', padding.left + width - 80, padding.top + 15);
-            ctx.fillStyle = '#888';
-            ctx.fillText('Target', padding.left + width - 80, padding.top + 30);
         }
 
         function renderEveryNChart(stages) {
@@ -1673,47 +1651,57 @@
             lootsChapterTooltip.classList.remove('visible');
         });
 
-        // Tooltip handlers for Lamp chart
-        const lampCanvas = document.getElementById('lamp-chart');
-        const lampTooltip = document.getElementById('lamp-tooltip');
+        // Tooltip handlers for combined Lamp & Multiplier chart
+        const lampMultCanvas = document.getElementById('lamp-mult-chart');
+        const lampMultTooltip = document.getElementById('lamp-mult-tooltip');
 
-        lampCanvas.addEventListener('mousemove', (e) => {
-            const rect = lampCanvas.getBoundingClientRect();
+        lampMultCanvas.addEventListener('mousemove', (e) => {
+            const rect = lampMultCanvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            const data = chartData.lamp;
+            const data = chartData.lampMult;
 
             if (!data.chapters || data.chapters.length === 0) return;
 
-            const { chapters, padding, width } = data;
+            const { chapters, stages, padding, width } = data;
 
             const relX = x - padding.left;
             if (relX < 0 || relX > width) {
-                lampTooltip.classList.remove('visible');
+                lampMultTooltip.classList.remove('visible');
                 return;
             }
 
-            const idx = Math.round((relX / width) * (chapters.length - 1));
-            if (idx < 0 || idx >= chapters.length) {
-                lampTooltip.classList.remove('visible');
+            // Find chapter by x position
+            const chapterIdx = Math.round((relX / width) * (chapters.length - 1));
+            if (chapterIdx < 0 || chapterIdx >= chapters.length) {
+                lampMultTooltip.classList.remove('visible');
                 return;
             }
 
-            const ch = chapters[idx];
-            lampTooltip.innerHTML = `
+            // Find corresponding stage for multiplier data
+            const stageIdx = Math.round((relX / width) * (stages.length - 1));
+            const ch = chapters[chapterIdx];
+            const st = stages[Math.min(stageIdx, stages.length - 1)];
+
+            const current = st?.currentRarityMultiplier || st?.rarityMultiplier || 1;
+            const target = st?.rarityMultiplier || 1;
+
+            lampMultTooltip.innerHTML = `
                 <div class="tt-title">Chapter ${ch.chapter}</div>
-                <div class="tt-row"><span class="tt-label">Lamp Level:</span> <span class="tt-value tt-diff">${ch.lampLevel}</span></div>
+                <div class="tt-row"><span class="tt-label">Lamp Level:</span> <span class="tt-value" style="color:#ffd700">${ch.lampLevel}</span></div>
                 <div class="tt-row"><span class="tt-label">Gold Spent:</span> <span class="tt-value">${ch.goldSpent.toLocaleString()}</span></div>
+                <div class="tt-row"><span class="tt-label">Current Mult:</span> <span class="tt-value" style="color:#22d3ee">×${current.toFixed(2)}</span></div>
+                <div class="tt-row"><span class="tt-label">Target Mult:</span> <span class="tt-value">×${target.toFixed(2)}</span></div>
             `;
 
             let left = e.clientX - rect.left + 15;
-            if (left + 160 > rect.width) left = e.clientX - rect.left - 160;
-            lampTooltip.style.left = left + 'px';
-            lampTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
-            lampTooltip.classList.add('visible');
+            if (left + 170 > rect.width) left = e.clientX - rect.left - 170;
+            lampMultTooltip.style.left = left + 'px';
+            lampMultTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            lampMultTooltip.classList.add('visible');
         });
 
-        lampCanvas.addEventListener('mouseleave', () => {
-            lampTooltip.classList.remove('visible');
+        lampMultCanvas.addEventListener('mouseleave', () => {
+            lampMultTooltip.classList.remove('visible');
         });
 
         // Tooltip handlers for Rarity chart
@@ -1819,54 +1807,6 @@
 
         equippedCanvas.addEventListener('mouseleave', () => {
             equippedTooltip.classList.remove('visible');
-        });
-
-        // Tooltip handlers for Rarity Mult chart
-        const rarityMultCanvas = document.getElementById('rarity-mult-chart');
-        const rarityMultTooltip = document.getElementById('rarity-mult-tooltip');
-
-        rarityMultCanvas.addEventListener('mousemove', (e) => {
-            const rect = rarityMultCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const data = chartData.rarityMult;
-
-            if (!data.stages || data.stages.length === 0) return;
-
-            const { stages, padding, width } = data;
-
-            const relX = x - padding.left;
-            if (relX < 0 || relX > width) {
-                rarityMultTooltip.classList.remove('visible');
-                return;
-            }
-
-            const idx = Math.round((relX / width) * (stages.length - 1));
-            if (idx < 0 || idx >= stages.length) {
-                rarityMultTooltip.classList.remove('visible');
-                return;
-            }
-
-            const st = stages[idx];
-            const current = st.currentRarityMultiplier || st.rarityMultiplier || 1;
-            const target = st.rarityMultiplier || 1;
-            const diff = target - current;
-
-            rarityMultTooltip.innerHTML = `
-                <div class="tt-title">Stage ${st.chapter}.${st.stage}</div>
-                <div class="tt-row"><span class="tt-label">Current:</span> <span class="tt-value" style="color:#ffd700">×${current.toFixed(2)}</span></div>
-                <div class="tt-row"><span class="tt-label">Target:</span> <span class="tt-value">×${target.toFixed(2)}</span></div>
-                ${diff > 0.01 ? `<div class="tt-row"><span class="tt-label">Gap:</span> <span class="tt-value tt-defeats">+${diff.toFixed(2)}</span></div>` : ''}
-            `;
-
-            let left = e.clientX - rect.left + 15;
-            if (left + 150 > rect.width) left = e.clientX - rect.left - 150;
-            rarityMultTooltip.style.left = left + 'px';
-            rarityMultTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
-            rarityMultTooltip.classList.add('visible');
-        });
-
-        rarityMultCanvas.addEventListener('mouseleave', () => {
-            rarityMultTooltip.classList.remove('visible');
         });
 
         // Tooltip handlers for EveryN chart
