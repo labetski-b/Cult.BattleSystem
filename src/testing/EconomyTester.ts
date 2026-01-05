@@ -260,10 +260,11 @@ export class EconomyTester {
 
             if (this.state.hero.gold >= cost) {
                 this.state.hero.gold -= cost;
-                // Сохраняем текущий множитель при апгрейде
+                // Сохраняем текущий множитель как базовый при апгрейде
                 const oldMultiplier = this.state.lamp.currentRarityMultiplier;
                 this.state.lamp = createLamp(this.state.lamp.level + 1);
                 this.state.lamp.currentRarityMultiplier = oldMultiplier;
+                this.state.lamp.baseRarityMultiplier = oldMultiplier;
                 this.chapterGoldSpent += cost;
             } else {
                 break;

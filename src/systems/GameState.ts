@@ -104,6 +104,11 @@ export function loadGame(): GameState | null {
                 state.lamp.currentRarityMultiplier = calculateExpectedRarityMultiplier(state.lamp.level);
             }
 
+            // Миграция: добавляем baseRarityMultiplier если отсутствует
+            if (state.lamp.baseRarityMultiplier === undefined) {
+                state.lamp.baseRarityMultiplier = state.lamp.currentRarityMultiplier;
+            }
+
             // Миграция: добавляем level и xp если отсутствуют
             if (state.hero.level === undefined) {
                 state.hero.level = 1;
@@ -300,11 +305,12 @@ export function upgradeLamp(state: GameState): boolean {
 
     state.hero.gold -= cost;
 
-    // При апгрейде лампы сохраняем текущий множитель
+    // При апгрейде лампы сохраняем текущий множитель как базовый
     // Он будет плавно расти к новому целевому множителю
     const oldMultiplier = state.lamp.currentRarityMultiplier;
     state.lamp = createLamp(currentLevel + 1);
     state.lamp.currentRarityMultiplier = oldMultiplier;
+    state.lamp.baseRarityMultiplier = oldMultiplier;
 
     saveGame(state);
     return true;

@@ -19,6 +19,7 @@ export const MAX_LAMP_LEVEL = lampLevels.length;
 export interface Lamp {
     level: number;
     currentRarityMultiplier: number;  // Текущий множитель (плавно растёт к целевому)
+    baseRarityMultiplier: number;     // Множитель на момент апгрейда (для расчёта скорости роста)
 }
 
 // Получить конфиг уровня лампы
@@ -47,9 +48,11 @@ export function getAllLampLevels(): LampLevelConfig[] {
 
 // Создание лампы по уровню
 export function createLamp(level: number): Lamp {
+    const mult = calculateExpectedRarityMultiplier(level);
     return {
         level,
-        currentRarityMultiplier: calculateExpectedRarityMultiplier(level)
+        currentRarityMultiplier: mult,
+        baseRarityMultiplier: mult
     };
 }
 
@@ -157,8 +160,8 @@ const MIN_RARITY_PROB_FOR_GRADUAL_GROWTH = balanceData.rarityMultiplier.minProbF
 const GROWTH_SPEED_MULTIPLIER = balanceData.rarityMultiplier.growthSpeedMultiplier;
 
 // Обновить множитель редкости после убийства врага
-// Множитель плавно растёт от текущего к целевому
-// Базовая скорость = lowestProbability, умножается на growthSpeedMultiplier
+// Множитель плавно растёт от базового к целевому с фиксированной скоростью
+// Скорость = (target - base) * lowestProbability * growthSpeedMultiplier
 export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
     const targetMultiplier = calculateExpectedRarityMultiplier(lamp.level);
 
@@ -175,10 +178,11 @@ export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
         return;
     }
 
-    // enemiesNeeded уменьшается в growthSpeedMultiplier раз
+    // Фиксированный инкремент на основе разницы target - base (не current!)
+    // Это даёт линейный рост с постоянной скоростью
+    const totalDelta = targetMultiplier - lamp.baseRarityMultiplier;
     const enemiesNeeded = 1 / lowestProb / GROWTH_SPEED_MULTIPLIER;
-    const delta = targetMultiplier - lamp.currentRarityMultiplier;
-    const increment = delta / enemiesNeeded;
+    const increment = totalDelta / enemiesNeeded;
 
     lamp.currentRarityMultiplier = Math.min(
         lamp.currentRarityMultiplier + increment,
