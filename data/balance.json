@@ -38,6 +38,6 @@
     "rarityMultiplier": {
         "minProbForGradualGrowth": 0.025,
         "topPercentForAverage": 0.30,
-        "growthSpeedMultiplier": 100
+        "stepsToTarget": 40
     }
 }
