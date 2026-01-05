@@ -152,13 +152,13 @@ export function getLowestRarityProbability(lampLevel: number): number {
     return minWeight / totalWeight;
 }
 
-// Минимальная вероятность редкости для плавного роста множителя (из balance.json)
-// Если шанс самой редкой редкости < порога, множитель не растёт плавно
+// Настройки из balance.json
 const MIN_RARITY_PROB_FOR_GRADUAL_GROWTH = balanceData.rarityMultiplier.minProbForGradualGrowth;
+const GROWTH_SPEED_MULTIPLIER = balanceData.rarityMultiplier.growthSpeedMultiplier;
 
 // Обновить множитель редкости после убийства врага
 // Множитель плавно растёт от текущего к целевому
-// Скорость роста = 1 / (1 / lowestProbability) = lowestProbability
+// Базовая скорость = lowestProbability, умножается на growthSpeedMultiplier
 export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
     const targetMultiplier = calculateExpectedRarityMultiplier(lamp.level);
 
@@ -170,13 +170,13 @@ export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
 
     const lowestProb = getLowestRarityProbability(lamp.level);
 
-    // Если шанс редкой редкости < 2.5%, не меняем множитель
-    // (слишком редкая редкость — множитель остаётся на старом значении)
+    // Если шанс редкой редкости < порога, не меняем множитель
     if (lowestProb < MIN_RARITY_PROB_FOR_GRADUAL_GROWTH) {
         return;
     }
 
-    const enemiesNeeded = 1 / lowestProb;
+    // enemiesNeeded уменьшается в growthSpeedMultiplier раз
+    const enemiesNeeded = 1 / lowestProb / GROWTH_SPEED_MULTIPLIER;
     const delta = targetMultiplier - lamp.currentRarityMultiplier;
     const increment = delta / enemiesNeeded;
 
