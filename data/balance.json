@@ -34,5 +34,9 @@
         "goldPerEnemy": 10,
         "goldPerStageClear": 50,
         "lampsPerMinute": 1
+    },
+    "rarityMultiplier": {
+        "minProbForGradualGrowth": 0.025,
+        "topPercentForAverage": 0.30
     }
 }

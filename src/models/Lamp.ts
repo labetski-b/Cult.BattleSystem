@@ -1,5 +1,6 @@
 import { Rarity, Item, SlotType, generateItemId, generateItemName, calculateItemStats, rollItemLevel, RARITY_MULTIPLIERS, getUnlockedSlots } from './Item';
 import lampLevelsData from '../../data/lamp-levels.json';
+import balanceData from '../../data/balance.json';
 
 // Типы для конфигурации уровней лампы
 export interface LampLevelConfig {
@@ -89,12 +90,13 @@ function getMaxRarityFromWeights(weights: Partial<Record<Rarity, number>>): Rari
     return maxRarity;
 }
 
-// Рассчитать множитель редкости для уровня лампы (взвешенный верх — top 30%)
-// Берём редкости, покрывающие верхние 30% веса, и считаем их среднее
+// Рассчитать множитель редкости для уровня лампы (взвешенный верх)
+// Берём редкости, покрывающие верхний % веса (из balance.json), и считаем их среднее
 // Используется для масштабирования силы врагов
 export function calculateExpectedRarityMultiplier(lampLevel: number): number {
     const config = getLampLevelConfig(lampLevel);
     const weights = config.weights;
+    const topPercent = balanceData.rarityMultiplier.topPercentForAverage;
 
     // Собираем редкости с весами, сортируем по убыванию множителя
     const entries: { rarity: Rarity; weight: number; multiplier: number }[] = [];
@@ -109,8 +111,8 @@ export function calculateExpectedRarityMultiplier(lampLevel: number): number {
     // Сортируем по множителю (от лучшего к худшему)
     entries.sort((a, b) => b.multiplier - a.multiplier);
 
-    // Берём верхние 30% веса
-    const topThreshold = totalWeight * 0.30;
+    // Берём верхние N% веса (из balance.json)
+    const topThreshold = totalWeight * topPercent;
     let accumulatedWeight = 0;
     let topWeightedSum = 0;
     let topTotalWeight = 0;
@@ -150,9 +152,9 @@ export function getLowestRarityProbability(lampLevel: number): number {
     return minWeight / totalWeight;
 }
 
-// Минимальная вероятность редкости для плавного роста множителя
-// Если шанс самой редкой редкости < 2.5%, множитель не растёт плавно
-const MIN_RARITY_PROB_FOR_GRADUAL_GROWTH = 0.025;
+// Минимальная вероятность редкости для плавного роста множителя (из balance.json)
+// Если шанс самой редкой редкости < порога, множитель не растёт плавно
+const MIN_RARITY_PROB_FOR_GRADUAL_GROWTH = balanceData.rarityMultiplier.minProbForGradualGrowth;
 
 // Обновить множитель редкости после убийства врага
 // Множитель плавно растёт от текущего к целевому
