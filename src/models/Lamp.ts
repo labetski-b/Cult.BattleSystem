@@ -167,10 +167,11 @@ export function calculateSlotBasedRarityMultiplier(
     let totalPower = 0;
 
     for (const { prob, mult } of validRarities) {
-        if (remainingSlots <= 0) break;
+        if (remainingSlots < 1) break;  // Меньше 1 слота — выходим
 
         const drops = totalDrops * prob;
         // Формула Coupon Collector: ожидаемое заполнение
+        // remainingSlots должен быть >= 1, иначе формула даёт NaN
         const expectedFilled = remainingSlots * (1 - Math.pow((remainingSlots - 1) / remainingSlots, drops));
         const filledSlots = Math.min(expectedFilled, remainingSlots);
 
