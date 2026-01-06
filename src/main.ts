@@ -17,8 +17,8 @@ import {
 } from './systems/GameState';
 import { Enemy } from './models/Enemy';
 import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity, getSlotUnlockStage, getUnlockedSlots } from './models/Item';
-import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, updateRarityMultiplierAfterKill } from './models/Lamp';
-import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward, getBossMultiplier } from './systems/DungeonSystem';
+import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL, calculateSlotBasedRarityMultiplier, updateRarityMultiplierAfterKill } from './models/Lamp';
+import { isBossStage, STAGES_PER_CHAPTER, getStageXpReward, getBossMultiplier, getAdjustedEnemyPower } from './systems/DungeonSystem';
 import { addXp, xpProgress, XpGainResult } from './models/Hero';
 import { getConfig } from './config/ConfigStore';
 
@@ -137,11 +137,12 @@ function updateUI(): void {
     // Подземелье - теперь показываем только номер главы
     $('#dungeon-title').textContent = `DUNGEON ${gameState.dungeon.chapter}`;
 
-    // Показываем реальную силу врагов (с учётом множителя босса)
+    // Показываем реальную силу врагов (с учётом всех множителей: rarity, difficulty, boss)
     const isBoss = isBossStage(gameState.dungeon.stage);
-    const displayPower = isBoss
-        ? Math.floor(gameState.dungeon.currentEnemyPower * BOSS_MULTIPLIER)
-        : gameState.dungeon.currentEnemyPower;
+    let displayPower = getAdjustedEnemyPower(gameState.dungeon, gameState.lamp);
+    if (isBoss) {
+        displayPower = Math.round(displayPower * getBossMultiplier());
+    }
     $('#enemy-power').textContent = displayPower.toString();
 
     // Статы героя (над экипировкой) — только максимум HP
@@ -615,48 +616,157 @@ function showModifiersPopup(): void {
     const list = $('#modifiers-list');
 
     const config = getConfig();
-    const rarityMultiplier = calculateExpectedRarityMultiplier(gameState.lamp.level);
+    const currentStage = (gameState.dungeon.chapter - 1) * STAGES_PER_CHAPTER + gameState.dungeon.stage;
+    const unlockedSlots = getUnlockedSlots(currentStage);
+    const totalSlots = unlockedSlots.length;
+
+    // Базовые значения
+    const basePower = gameState.dungeon.currentEnemyPower;
+    const currentRarityMult = gameState.lamp.currentRarityMultiplier;
+    const targetRarityMult = calculateSlotBasedRarityMultiplier(gameState.lamp.level, totalSlots, gameState.dungeon.chapter);
+    const difficultyMult = 1 + gameState.dungeon.difficultyModifier;
     const difficultyPercent = Math.round(gameState.dungeon.difficultyModifier * 100);
-    const bossMult = getBossMultiplier();
+    const finalPower = getAdjustedEnemyPower(gameState.dungeon, gameState.lamp);
+
+    // Параметры расчёта target multiplier
+    const totalDrops = config.baseDropsForMultiplier + (gameState.dungeon.chapter - 1) * config.dropsPerChapter;
 
     list.innerHTML = '';
 
-    // Множитель редкости (от лампы)
-    const rarityRow = document.createElement('div');
-    rarityRow.className = 'modifier-row';
-    rarityRow.innerHTML = `
-        <span class="modifier-label">Множитель редкости (лампа)</span>
-        <span class="modifier-value neutral">×${rarityMultiplier.toFixed(2)}</span>
-    `;
-    list.appendChild(rarityRow);
+    // === СЕКЦИЯ: ENEMY POWER ===
+    const headerEnemy = document.createElement('div');
+    headerEnemy.className = 'modifier-section-header';
+    headerEnemy.textContent = '⚔️ Enemy Power Formula';
+    list.appendChild(headerEnemy);
 
-    // Адаптивная сложность
+    // Формула
+    const formulaRow = document.createElement('div');
+    formulaRow.className = 'modifier-row formula';
+    formulaRow.innerHTML = `
+        <span class="modifier-formula">base × rarityMult × diffMult = final</span>
+    `;
+    list.appendChild(formulaRow);
+
+    // Base Power (из stageTable)
+    const baseRow = document.createElement('div');
+    baseRow.className = 'modifier-row';
+    baseRow.innerHTML = `
+        <span class="modifier-label">Base Power (stageTable)</span>
+        <span class="modifier-value neutral">${basePower}</span>
+    `;
+    list.appendChild(baseRow);
+
+    // Current Rarity Multiplier
+    const currentMultRow = document.createElement('div');
+    currentMultRow.className = 'modifier-row';
+    currentMultRow.innerHTML = `
+        <span class="modifier-label">Current Rarity Mult</span>
+        <span class="modifier-value neutral">×${currentRarityMult.toFixed(2)}</span>
+    `;
+    list.appendChild(currentMultRow);
+
+    // Target Rarity Multiplier
+    const targetMultRow = document.createElement('div');
+    targetMultRow.className = 'modifier-row';
+    targetMultRow.innerHTML = `
+        <span class="modifier-label">Target Rarity Mult</span>
+        <span class="modifier-value neutral">×${targetRarityMult.toFixed(2)}</span>
+    `;
+    list.appendChild(targetMultRow);
+
+    // Difficulty Multiplier
     const diffRow = document.createElement('div');
     diffRow.className = 'modifier-row';
     const diffSign = difficultyPercent >= 0 ? '+' : '';
     const diffClass = difficultyPercent > 0 ? 'negative' : (difficultyPercent < 0 ? 'positive' : 'neutral');
     diffRow.innerHTML = `
-        <span class="modifier-label">Адаптивная сложность</span>
-        <span class="modifier-value ${diffClass}">${config.difficultyEnabled ? diffSign + difficultyPercent + '%' : 'OFF'}</span>
+        <span class="modifier-label">Difficulty Mult</span>
+        <span class="modifier-value ${diffClass}">${config.difficultyEnabled ? '×' + difficultyMult.toFixed(2) + ' (' + diffSign + difficultyPercent + '%)' : 'OFF'}</span>
     `;
     list.appendChild(diffRow);
 
-    // Множитель босса
-    const bossRow = document.createElement('div');
-    bossRow.className = 'modifier-row';
-    bossRow.innerHTML = `
-        <span class="modifier-label">Множитель босса</span>
-        <span class="modifier-value neutral">×${bossMult.toFixed(2)}</span>
+    // Final Enemy Power
+    const finalRow = document.createElement('div');
+    finalRow.className = 'modifier-row result';
+    finalRow.innerHTML = `
+        <span class="modifier-label"><b>Final Enemy Power</b></span>
+        <span class="modifier-value neutral"><b>${finalPower}</b></span>
     `;
-    list.appendChild(bossRow);
+    list.appendChild(finalRow);
+
+    // === СЕКЦИЯ: RARITY MULT PARAMS ===
+    const headerRarity = document.createElement('div');
+    headerRarity.className = 'modifier-section-header';
+    headerRarity.textContent = '🔮 Rarity Mult Params';
+    list.appendChild(headerRarity);
+
+    // Lamp Level
+    const lampRow = document.createElement('div');
+    lampRow.className = 'modifier-row';
+    lampRow.innerHTML = `
+        <span class="modifier-label">Lamp Level</span>
+        <span class="modifier-value neutral">${gameState.lamp.level}</span>
+    `;
+    list.appendChild(lampRow);
+
+    // Total Slots
+    const slotsRow = document.createElement('div');
+    slotsRow.className = 'modifier-row';
+    slotsRow.innerHTML = `
+        <span class="modifier-label">Total Slots</span>
+        <span class="modifier-value neutral">${totalSlots}</span>
+    `;
+    list.appendChild(slotsRow);
+
+    // Chapter
+    const chapterRow = document.createElement('div');
+    chapterRow.className = 'modifier-row';
+    chapterRow.innerHTML = `
+        <span class="modifier-label">Chapter</span>
+        <span class="modifier-value neutral">${gameState.dungeon.chapter}</span>
+    `;
+    list.appendChild(chapterRow);
+
+    // Total Drops (для расчёта)
+    const dropsRow = document.createElement('div');
+    dropsRow.className = 'modifier-row';
+    dropsRow.innerHTML = `
+        <span class="modifier-label">Expected Drops</span>
+        <span class="modifier-value neutral">${totalDrops} (${config.baseDropsForMultiplier} + ${gameState.dungeon.chapter - 1}×${config.dropsPerChapter})</span>
+    `;
+    list.appendChild(dropsRow);
+
+    // Min Prob Threshold
+    const thresholdRow = document.createElement('div');
+    thresholdRow.className = 'modifier-row';
+    thresholdRow.innerHTML = `
+        <span class="modifier-label">Min Prob Threshold</span>
+        <span class="modifier-value neutral">${(config.minProbForGradualGrowth * 100).toFixed(1)}%</span>
+    `;
+    list.appendChild(thresholdRow);
+
+    // Steps to Target
+    const stepsRow = document.createElement('div');
+    stepsRow.className = 'modifier-row';
+    stepsRow.innerHTML = `
+        <span class="modifier-label">Steps to Target</span>
+        <span class="modifier-value neutral">${config.stepsToTarget}</span>
+    `;
+    list.appendChild(stepsRow);
+
+    // === СЕКЦИЯ: LOOT ===
+    const headerLoot = document.createElement('div');
+    headerLoot.className = 'modifier-section-header';
+    headerLoot.textContent = '🎁 Loot Settings';
+    list.appendChild(headerLoot);
 
     // Гарантированный апгрейд
+    const everyN = config.guaranteedUpgradeEveryN;
     const upgradeRow = document.createElement('div');
     upgradeRow.className = 'modifier-row';
-    const everyN = config.guaranteedUpgradeEveryN;
     upgradeRow.innerHTML = `
-        <span class="modifier-label">Гарантированный апгрейд</span>
-        <span class="modifier-value neutral">${everyN > 0 ? 'каждый ' + everyN + '-й лут' : 'OFF'}</span>
+        <span class="modifier-label">Guaranteed Upgrade</span>
+        <span class="modifier-value neutral">${everyN > 0 ? 'every ' + everyN + 'th loot' : 'OFF'}</span>
     `;
     list.appendChild(upgradeRow);
 
@@ -665,7 +775,7 @@ function showModifiersPopup(): void {
     lootRow.className = 'modifier-row';
     const nextUpgrade = everyN > 0 ? everyN - (gameState.lootCounter % everyN) : '-';
     lootRow.innerHTML = `
-        <span class="modifier-label">До апгрейда (лутов)</span>
+        <span class="modifier-label">Loots until upgrade</span>
         <span class="modifier-value neutral">${nextUpgrade}</span>
     `;
     list.appendChild(lootRow);

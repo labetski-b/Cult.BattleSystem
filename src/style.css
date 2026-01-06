@@ -1563,6 +1563,35 @@ body {
   color: var(--accent-gold);
 }
 
+.modifier-section-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 8px 0 4px;
+  border-bottom: 1px solid var(--border-color);
+  margin-top: 8px;
+}
+
+.modifier-section-header:first-child {
+  margin-top: 0;
+}
+
+.modifier-row.formula {
+  background: var(--bg-tertiary);
+  justify-content: center;
+}
+
+.modifier-formula {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.modifier-row.result {
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  border: 1px solid var(--accent-gold);
+}
+
 .modifiers-popup-content .btn-primary {
   width: 100%;
 }
