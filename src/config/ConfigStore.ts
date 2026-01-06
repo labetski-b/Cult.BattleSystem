@@ -67,7 +67,7 @@ const defaults: BalanceConfig = {
     guaranteedUpgradeIncreaseEveryNStages: guaranteedUpgrade?.increaseEveryNStages ?? 10,
     guaranteedUpgradeMultiplier: guaranteedUpgrade?.powerMultiplier ?? 1.05,
     rarityMultipliers: defaultRarityMultipliers,
-    difficultyEnabled: true,
+    difficultyEnabled: false,  // ВРЕМЕННО ОТКЛЮЧЕНО
     difficultyOnVictory: 0.01,
     difficultyOnDefeat: -0.02,
     bossPowerMultiplier: enemiesConfig.boss.powerMultiplier,
