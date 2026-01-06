@@ -326,13 +326,23 @@
                 </div>
                 <div class="control-row">
                     <label>minProbForGradualGrowth</label>
-                    <input type="range" id="minProbForGradualGrowth" min="0" max="0.05" step="0.001" value="0.0099">
-                    <span class="value-display" id="minProbForGradualGrowth-val">0.99%</span>
+                    <input type="range" id="minProbForGradualGrowth" min="0" max="0.05" step="0.001" value="0.015">
+                    <span class="value-display" id="minProbForGradualGrowth-val">1.50%</span>
                 </div>
                 <div class="control-row">
                     <label>stepsToTarget</label>
                     <input type="range" id="stepsToTarget" min="10" max="100" step="5" value="40">
                     <span class="value-display" id="stepsToTarget-val">40</span>
+                </div>
+                <div class="control-row">
+                    <label>baseDropsForMultiplier</label>
+                    <input type="range" id="baseDropsForMultiplier" min="5" max="30" step="1" value="10">
+                    <span class="value-display" id="baseDropsForMultiplier-val">10</span>
+                </div>
+                <div class="control-row">
+                    <label>dropsPerChapter</label>
+                    <input type="range" id="dropsPerChapter" min="0" max="5" step="0.5" value="2">
+                    <span class="value-display" id="dropsPerChapter-val">2</span>
                 </div>
             </div>
 
@@ -683,6 +693,12 @@
             if (settings.stepsToTarget !== undefined) {
                 setSlider('stepsToTarget', settings.stepsToTarget);
             }
+            if (settings.baseDropsForMultiplier !== undefined) {
+                setSlider('baseDropsForMultiplier', settings.baseDropsForMultiplier);
+            }
+            if (settings.dropsPerChapter !== undefined) {
+                setSlider('dropsPerChapter', settings.dropsPerChapter);
+            }
 
             if (settings.rarityMultipliers) {
                 document.getElementById('rarity-common').value = settings.rarityMultipliers.common;
@@ -730,6 +746,8 @@
                 topPercentForAverage: parseFloat(document.getElementById('topPercentForAverage').value),
                 minProbForGradualGrowth: parseFloat(document.getElementById('minProbForGradualGrowth').value),
                 stepsToTarget: parseInt(document.getElementById('stepsToTarget').value),
+                baseDropsForMultiplier: parseInt(document.getElementById('baseDropsForMultiplier').value),
+                dropsPerChapter: parseFloat(document.getElementById('dropsPerChapter').value),
                 rarityMultipliers: {
                     common: parseFloat(document.getElementById('rarity-common').value),
                     good: parseFloat(document.getElementById('rarity-good').value),
