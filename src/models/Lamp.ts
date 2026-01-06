@@ -1,4 +1,4 @@
-import { Rarity, Item, SlotType, generateItemId, generateItemName, calculateItemStats, rollItemLevel, RARITY_MULTIPLIERS, getUnlockedSlots } from './Item';
+import { Rarity, Item, SlotType, generateItemId, generateItemName, calculateItemStats, rollItemLevel, getUnlockedSlots } from './Item';
 import lampLevelsData from '../../data/lamp-levels.json';
 import { getConfig } from '../config/ConfigStore';
 
@@ -93,68 +93,102 @@ function getMaxRarityFromWeights(weights: Partial<Record<Rarity, number>>): Rari
     return maxRarity;
 }
 
-// Рассчитать множитель редкости для уровня лампы (взвешенный верх)
-// Берём редкости, покрывающие верхний % веса (из ConfigStore), и считаем их среднее
-// Редкости с шансом < minProbForGradualGrowth исключаются из расчёта
-// Используется для масштабирования силы врагов
-export function calculateExpectedRarityMultiplier(lampLevel: number): number {
+// Новая логика: slot-based multiplier
+// Рассчитывает ожидаемый множитель силы на основе заполнения слотов предметами
+// chapter — текущая глава (влияет на количество ожидаемых дропов)
+// totalSlots — количество разблокированных слотов (6/9/12)
+export function calculateSlotBasedRarityMultiplier(
+    lampLevel: number,
+    totalSlots: number = 6,
+    chapter: number = 1
+): number {
     const lampConfig = getLampLevelConfig(lampLevel);
     const weights = lampConfig.weights;
-    const balanceConfig = getConfig();
-    const topPercent = balanceConfig.topPercentForAverage;
-    const minProb = balanceConfig.minProbForGradualGrowth;
+    const config = getConfig();
 
-    // Сначала считаем общий вес для определения вероятностей
-    let rawTotalWeight = 0;
+    // Параметры
+    // totalDrops растёт с главой: baseDrops + (chapter - 1) * dropsPerChapter
+    const baseDrops = config.baseDropsForMultiplier;      // 10
+    const dropsPerChapter = config.dropsPerChapter;       // 2
+    const totalDrops = baseDrops + (chapter - 1) * dropsPerChapter;
+    const minProbThreshold = config.minProbForGradualGrowth;  // 0.015 (1.5%)
+    const levelBonus = Math.pow(
+        config.powerGrowthPerLevel,
+        (config.minLevelOffset - config.maxRarityLevelOffset) / 2
+    );
+
+    // Считаем общий вес
+    let totalWeight = 0;
     for (const weight of Object.values(weights)) {
         if (weight !== undefined && weight > 0) {
-            rawTotalWeight += weight;
+            totalWeight += weight;
         }
     }
 
-    // Собираем редкости с весами, исключая те, чей шанс < minProb
-    const entries: { rarity: Rarity; weight: number; multiplier: number }[] = [];
-    let totalWeight = 0;
+    if (totalWeight === 0) return 1.0;
 
+    // Определяем максимальную редкость (самая редкая с достаточным шансом)
+    const rarityOrder: Rarity[] = ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal'];
+    let maxRarity: Rarity = 'common';
+    for (const r of rarityOrder) {
+        const weight = weights[r];
+        if (weight && weight > 0) {
+            const prob = weight / totalWeight;
+            if (prob >= minProbThreshold) {
+                maxRarity = r;  // Обновляем макс редкость если шанс >= порога
+            }
+        }
+    }
+
+    // Собираем редкости: только те, что >= minProbThreshold
+    const validRarities: { rarity: Rarity; prob: number; mult: number }[] = [];
     for (const [rarity, weight] of Object.entries(weights)) {
         if (weight === undefined || weight <= 0) continue;
+        const prob = weight / totalWeight;
+        if (prob < minProbThreshold) continue;  // Исключаем редкие
 
-        const probability = weight / rawTotalWeight;
-        // Исключаем редкости с шансом < порога
-        if (probability < minProb) continue;
-
-        const multiplier = RARITY_MULTIPLIERS[rarity as Rarity] || 1.0;
-        entries.push({ rarity: rarity as Rarity, weight, multiplier });
-        totalWeight += weight;
+        let mult = config.rarityMultipliers[rarity as Rarity] || 1.0;
+        if (rarity === maxRarity) {
+            mult *= levelBonus;  // Бонус уровня для макс редкости
+        }
+        validRarities.push({ rarity: rarity as Rarity, prob, mult });
     }
 
     // Если все редкости исключены, возвращаем 1.0
-    if (entries.length === 0 || totalWeight === 0) {
+    if (validRarities.length === 0) {
         return 1.0;
     }
 
-    // Сортируем по множителю (от лучшего к худшему)
-    entries.sort((a, b) => b.multiplier - a.multiplier);
+    // Сортируем по множителю (убывание) — лучшие редкости заполняют слоты первыми
+    validRarities.sort((a, b) => b.mult - a.mult);
 
-    // Берём верхние N% веса (из balance.json)
-    const topThreshold = totalWeight * topPercent;
-    let accumulatedWeight = 0;
-    let topWeightedSum = 0;
-    let topTotalWeight = 0;
+    // Рассчитываем заполнение слотов
+    let remainingSlots = totalSlots;
+    let totalPower = 0;
 
-    for (const entry of entries) {
-        if (accumulatedWeight >= topThreshold) break;
+    for (const { prob, mult } of validRarities) {
+        if (remainingSlots <= 0) break;
 
-        // Сколько веса ещё можем взять
-        const remainingThreshold = topThreshold - accumulatedWeight;
-        const weightToTake = Math.min(entry.weight, remainingThreshold);
+        const drops = totalDrops * prob;
+        // Формула Coupon Collector: ожидаемое заполнение
+        const expectedFilled = remainingSlots * (1 - Math.pow((remainingSlots - 1) / remainingSlots, drops));
+        const filledSlots = Math.min(expectedFilled, remainingSlots);
 
-        topWeightedSum += weightToTake * entry.multiplier;
-        topTotalWeight += weightToTake;
-        accumulatedWeight += entry.weight;
+        totalPower += filledSlots * mult;
+        remainingSlots -= filledSlots;
     }
 
-    return topTotalWeight > 0 ? topWeightedSum / topTotalWeight : 1.0;
+    // Если остались незаполненные слоты — считаем их с mult=1.0
+    if (remainingSlots > 0) {
+        totalPower += remainingSlots * 1.0;
+    }
+
+    return totalPower / totalSlots;
+}
+
+// Обёртка для обратной совместимости (использует 6 слотов и главу 1 по умолчанию)
+export function calculateExpectedRarityMultiplier(lampLevel: number): number {
+    return calculateSlotBasedRarityMultiplier(lampLevel, 6, 1);
 }
 
 // Получить вероятность самой редкой редкости (с минимальным весом > 0)

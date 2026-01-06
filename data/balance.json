@@ -36,8 +36,10 @@
         "lampsPerMinute": 1
     },
     "rarityMultiplier": {
-        "minProbForGradualGrowth": 0.0099,
+        "minProbForGradualGrowth": 0.015,
         "topPercentForAverage": 0.8,
-        "stepsToTarget": 40
+        "stepsToTarget": 40,
+        "baseDrops": 10,
+        "dropsPerChapter": 2
     }
 }

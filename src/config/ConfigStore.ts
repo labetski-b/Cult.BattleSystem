@@ -35,6 +35,8 @@ export interface BalanceOverrides {
     topPercentForAverage?: number;      // % верхних редкостей для расчёта множителя врагов
     minProbForGradualGrowth?: number;   // минимальный шанс для включения в расчёт
     stepsToTarget?: number;             // шагов для достижения целевого множителя
+    baseDropsForMultiplier?: number;    // начальное кол-во дропов для расчёта (10)
+    dropsPerChapter?: number;           // увеличение дропов за главу (2)
 }
 
 // Полный конфиг с дефолтными значениями
@@ -55,6 +57,8 @@ export interface BalanceConfig {
     topPercentForAverage: number;
     minProbForGradualGrowth: number;
     stepsToTarget: number;
+    baseDropsForMultiplier: number;
+    dropsPerChapter: number;
 }
 
 // Загружаем дефолтные множители редкостей из JSON
@@ -83,6 +87,8 @@ const defaults: BalanceConfig = {
     topPercentForAverage: balanceData.rarityMultiplier.topPercentForAverage,
     minProbForGradualGrowth: balanceData.rarityMultiplier.minProbForGradualGrowth,
     stepsToTarget: balanceData.rarityMultiplier.stepsToTarget,
+    baseDropsForMultiplier: (balanceData.rarityMultiplier as { baseDrops: number }).baseDrops,
+    dropsPerChapter: (balanceData.rarityMultiplier as { dropsPerChapter: number }).dropsPerChapter,
 };
 
 // Текущие переопределения
@@ -117,6 +123,8 @@ export function getConfig(): BalanceConfig {
         topPercentForAverage: currentOverrides.topPercentForAverage ?? defaults.topPercentForAverage,
         minProbForGradualGrowth: currentOverrides.minProbForGradualGrowth ?? defaults.minProbForGradualGrowth,
         stepsToTarget: currentOverrides.stepsToTarget ?? defaults.stepsToTarget,
+        baseDropsForMultiplier: currentOverrides.baseDropsForMultiplier ?? defaults.baseDropsForMultiplier,
+        dropsPerChapter: currentOverrides.dropsPerChapter ?? defaults.dropsPerChapter,
     };
 }
 
