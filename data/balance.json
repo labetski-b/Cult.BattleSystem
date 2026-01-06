@@ -31,8 +31,8 @@
         "damagePerPower": 0.5
     },
     "economy": {
-        "goldPerEnemy": 10,
-        "goldPerStageClear": 50,
+        "goldPerEnemy": 40,
+        "goldPerStageClear": 200,
         "lampsPerMinute": 1
     },
     "rarityMultiplier": {
