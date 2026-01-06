@@ -3,7 +3,7 @@ import { Item, migrateItemStats, SlotType, generateItemId, generateItemName, cal
 import { Enemy, generateEnemyWave } from '../models/Enemy';
 import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity, calculateExpectedRarityMultiplier } from '../models/Lamp';
 import { getConfig } from '../config/ConfigStore';
-import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward, STAGES_PER_CHAPTER } from './DungeonSystem';
+import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward, STAGES_PER_CHAPTER, getAdjustedEnemyPower, getBossMultiplier } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
 import balanceData from '../../data/balance.json';
 import enemiesConfig from '../../data/enemies.json';
@@ -350,10 +350,10 @@ export function getCurrentLampConfig(state: GameState) {
 export function generateEnemiesForBattle(state: GameState): Enemy[] {
     const isBoss = isBossStage(state.dungeon.stage);
 
-    // Используем enemies.json
-    let targetPower = state.dungeon.currentEnemyPower;
+    // Используем getAdjustedEnemyPower для учёта rarityMultiplier и difficulty
+    let targetPower = getAdjustedEnemyPower(state.dungeon, state.lamp);
     if (isBoss) {
-        targetPower *= enemyConfig.bossMultiplier;
+        targetPower *= getBossMultiplier();
     }
 
     return generateEnemyWave(
