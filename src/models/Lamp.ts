@@ -1,6 +1,6 @@
 import { Rarity, Item, SlotType, generateItemId, generateItemName, calculateItemStats, rollItemLevel, RARITY_MULTIPLIERS, getUnlockedSlots } from './Item';
 import lampLevelsData from '../../data/lamp-levels.json';
-import balanceData from '../../data/balance.json';
+import { getConfig } from '../config/ConfigStore';
 
 // Типы для конфигурации уровней лампы
 export interface LampLevelConfig {
@@ -94,14 +94,15 @@ function getMaxRarityFromWeights(weights: Partial<Record<Rarity, number>>): Rari
 }
 
 // Рассчитать множитель редкости для уровня лампы (взвешенный верх)
-// Берём редкости, покрывающие верхний % веса (из balance.json), и считаем их среднее
+// Берём редкости, покрывающие верхний % веса (из ConfigStore), и считаем их среднее
 // Редкости с шансом < minProbForGradualGrowth исключаются из расчёта
 // Используется для масштабирования силы врагов
 export function calculateExpectedRarityMultiplier(lampLevel: number): number {
-    const config = getLampLevelConfig(lampLevel);
-    const weights = config.weights;
-    const topPercent = balanceData.rarityMultiplier.topPercentForAverage;
-    const minProb = balanceData.rarityMultiplier.minProbForGradualGrowth;
+    const lampConfig = getLampLevelConfig(lampLevel);
+    const weights = lampConfig.weights;
+    const balanceConfig = getConfig();
+    const topPercent = balanceConfig.topPercentForAverage;
+    const minProb = balanceConfig.minProbForGradualGrowth;
 
     // Сначала считаем общий вес для определения вероятностей
     let rawTotalWeight = 0;
@@ -176,9 +177,6 @@ export function getLowestRarityProbability(lampLevel: number): number {
     return minWeight / totalWeight;
 }
 
-// Настройки из balance.json
-const STEPS_TO_TARGET = balanceData.rarityMultiplier.stepsToTarget;
-
 // Обновить множитель редкости после убийства врага
 // Множитель плавно растёт от базового к целевому за фиксированное число шагов
 export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
@@ -190,9 +188,10 @@ export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
         return;
     }
 
-    // Фиксированный инкремент: достигаем target за STEPS_TO_TARGET шагов
+    // Фиксированный инкремент: достигаем target за stepsToTarget шагов
+    const stepsToTarget = getConfig().stepsToTarget;
     const totalDelta = targetMultiplier - lamp.baseRarityMultiplier;
-    const increment = totalDelta / STEPS_TO_TARGET;
+    const increment = totalDelta / stepsToTarget;
 
     lamp.currentRarityMultiplier = Math.min(
         lamp.currentRarityMultiplier + increment,

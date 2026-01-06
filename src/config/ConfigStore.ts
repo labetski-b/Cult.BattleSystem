@@ -1,6 +1,7 @@
 import itemsConfig from '../../data/items.json';
 import raritiesData from '../../data/rarities.json';
 import enemiesConfig from '../../data/enemies.json';
+import balanceData from '../../data/balance.json';
 
 // Типы редкости (синхронизировать с Item.ts)
 type Rarity = 'common' | 'good' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'immortal';
@@ -29,6 +30,11 @@ export interface BalanceOverrides {
 
     // enemies.json
     bossPowerMultiplier?: number;
+
+    // balance.json (rarityMultiplier settings)
+    topPercentForAverage?: number;      // % верхних редкостей для расчёта множителя врагов
+    minProbForGradualGrowth?: number;   // минимальный шанс для включения в расчёт
+    stepsToTarget?: number;             // шагов для достижения целевого множителя
 }
 
 // Полный конфиг с дефолтными значениями
@@ -46,6 +52,9 @@ export interface BalanceConfig {
     difficultyOnVictory: number;
     difficultyOnDefeat: number;
     bossPowerMultiplier: number;
+    topPercentForAverage: number;
+    minProbForGradualGrowth: number;
+    stepsToTarget: number;
 }
 
 // Загружаем дефолтные множители редкостей из JSON
@@ -71,6 +80,9 @@ const defaults: BalanceConfig = {
     difficultyOnVictory: 0.01,
     difficultyOnDefeat: -0.02,
     bossPowerMultiplier: enemiesConfig.boss.powerMultiplier,
+    topPercentForAverage: balanceData.rarityMultiplier.topPercentForAverage,
+    minProbForGradualGrowth: balanceData.rarityMultiplier.minProbForGradualGrowth,
+    stepsToTarget: balanceData.rarityMultiplier.stepsToTarget,
 };
 
 // Текущие переопределения
@@ -102,6 +114,9 @@ export function getConfig(): BalanceConfig {
         difficultyOnVictory: currentOverrides.difficultyOnVictory ?? defaults.difficultyOnVictory,
         difficultyOnDefeat: currentOverrides.difficultyOnDefeat ?? defaults.difficultyOnDefeat,
         bossPowerMultiplier: currentOverrides.bossPowerMultiplier ?? defaults.bossPowerMultiplier,
+        topPercentForAverage: currentOverrides.topPercentForAverage ?? defaults.topPercentForAverage,
+        minProbForGradualGrowth: currentOverrides.minProbForGradualGrowth ?? defaults.minProbForGradualGrowth,
+        stepsToTarget: currentOverrides.stepsToTarget ?? defaults.stepsToTarget,
     };
 }
 

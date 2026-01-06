@@ -318,6 +318,25 @@
             </div>
 
             <div class="control-group">
+                <h3>Enemy Scaling</h3>
+                <div class="control-row">
+                    <label>topPercentForAverage</label>
+                    <input type="range" id="topPercentForAverage" min="0.1" max="1.0" step="0.05" value="0.8">
+                    <span class="value-display" id="topPercentForAverage-val">80%</span>
+                </div>
+                <div class="control-row">
+                    <label>minProbForGradualGrowth</label>
+                    <input type="range" id="minProbForGradualGrowth" min="0" max="0.05" step="0.001" value="0.0099">
+                    <span class="value-display" id="minProbForGradualGrowth-val">0.99%</span>
+                </div>
+                <div class="control-row">
+                    <label>stepsToTarget</label>
+                    <input type="range" id="stepsToTarget" min="10" max="100" step="5" value="40">
+                    <span class="value-display" id="stepsToTarget-val">40</span>
+                </div>
+            </div>
+
+            <div class="control-group">
                 <h3>Rarity Multipliers</h3>
                 <div class="control-row">
                     <label style="color:#9ca3af">Common</label>
@@ -655,6 +674,15 @@
             setSlider('difficultyOnVictory', settings.difficultyOnVictory);
             setSlider('difficultyOnDefeat', settings.difficultyOnDefeat);
             setSlider('bossPowerMultiplier', settings.bossPowerMultiplier);
+            if (settings.topPercentForAverage !== undefined) {
+                setSlider('topPercentForAverage', settings.topPercentForAverage);
+            }
+            if (settings.minProbForGradualGrowth !== undefined) {
+                setSlider('minProbForGradualGrowth', settings.minProbForGradualGrowth);
+            }
+            if (settings.stepsToTarget !== undefined) {
+                setSlider('stepsToTarget', settings.stepsToTarget);
+            }
 
             if (settings.rarityMultipliers) {
                 document.getElementById('rarity-common').value = settings.rarityMultipliers.common;
@@ -699,6 +727,9 @@
                 difficultyOnVictory: parseFloat(document.getElementById('difficultyOnVictory').value),
                 difficultyOnDefeat: parseFloat(document.getElementById('difficultyOnDefeat').value),
                 bossPowerMultiplier: parseFloat(document.getElementById('bossPowerMultiplier').value),
+                topPercentForAverage: parseFloat(document.getElementById('topPercentForAverage').value),
+                minProbForGradualGrowth: parseFloat(document.getElementById('minProbForGradualGrowth').value),
+                stepsToTarget: parseInt(document.getElementById('stepsToTarget').value),
                 rarityMultipliers: {
                     common: parseFloat(document.getElementById('rarity-common').value),
                     good: parseFloat(document.getElementById('rarity-good').value),
@@ -1447,8 +1478,10 @@
 
             slider.addEventListener('input', () => {
                 const v = parseFloat(slider.value);
-                if (slider.id === 'powerVariance') {
+                if (slider.id === 'powerVariance' || slider.id === 'topPercentForAverage') {
                     valEl.textContent = Math.round(v * 100) + '%';
+                } else if (slider.id === 'minProbForGradualGrowth') {
+                    valEl.textContent = (v * 100).toFixed(2) + '%';
                 } else if (slider.id.includes('difficulty')) {
                     valEl.textContent = (v >= 0 ? '+' : '') + Math.round(v * 100) + '%';
                 } else if (slider.id === 'powerGrowthPerLevel' || slider.id === 'bossPowerMultiplier') {
