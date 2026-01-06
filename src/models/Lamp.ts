@@ -193,9 +193,14 @@ export function getLowestRarityProbability(lampLevel: number): number {
 }
 
 // Обновить множитель редкости после убийства врага
-// Множитель плавно растёт от базового к целевому за фиксированное число шагов
-export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
-    const targetMultiplier = calculateExpectedRarityMultiplier(lamp.level);
+// Множитель плавно растёт от текущего к целевому за фиксированное число шагов
+// При изменении target (новые слоты, новая глава) шаг пересчитывается
+export function updateRarityMultiplierAfterKill(
+    lamp: Lamp,
+    totalSlots: number = 6,
+    chapter: number = 1
+): void {
+    const targetMultiplier = calculateSlotBasedRarityMultiplier(lamp.level, totalSlots, chapter);
 
     // Если уже достигли целевого — ничего не делаем
     if (lamp.currentRarityMultiplier >= targetMultiplier) {
@@ -203,10 +208,11 @@ export function updateRarityMultiplierAfterKill(lamp: Lamp): void {
         return;
     }
 
-    // Фиксированный инкремент: достигаем target за stepsToTarget шагов
+    // Шаг пересчитывается от ТЕКУЩЕГО значения к target
+    // Всегда достигаем target за stepsToTarget шагов от текущей позиции
     const stepsToTarget = getConfig().stepsToTarget;
-    const totalDelta = targetMultiplier - lamp.baseRarityMultiplier;
-    const increment = totalDelta / stepsToTarget;
+    const remainingDelta = targetMultiplier - lamp.currentRarityMultiplier;
+    const increment = remainingDelta / stepsToTarget;
 
     lamp.currentRarityMultiplier = Math.min(
         lamp.currentRarityMultiplier + increment,

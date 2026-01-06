@@ -16,7 +16,7 @@ import {
     BattleState
 } from './systems/GameState';
 import { Enemy } from './models/Enemy';
-import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity, getSlotUnlockStage } from './models/Item';
+import { SLOT_TYPES, SLOT_NAMES, RARITY_COLORS, RARITY_NAMES_RU, Item, SlotType, Rarity, getSlotUnlockStage, getUnlockedSlots } from './models/Item';
 import { getLampLevelConfig, getUpgradeCost, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, updateRarityMultiplierAfterKill } from './models/Lamp';
 import { isBossStage, BOSS_MULTIPLIER, STAGES_PER_CHAPTER, getStageXpReward, getBossMultiplier } from './systems/DungeonSystem';
 import { addXp, xpProgress, XpGainResult } from './models/Hero';
@@ -392,7 +392,10 @@ function finishBattle(): void {
     let xpResult: XpGainResult | null = null;
     if (result.victory) {
         // Плавно увеличиваем множитель редкости после победы
-        updateRarityMultiplierAfterKill(gameState.lamp);
+        // Передаём актуальные слоты и главу для корректного расчёта target
+        const currentStage = (gameState.dungeon.chapter - 1) * STAGES_PER_CHAPTER + gameState.dungeon.stage;
+        const unlockedSlots = getUnlockedSlots(currentStage);
+        updateRarityMultiplierAfterKill(gameState.lamp, unlockedSlots.length, gameState.dungeon.chapter);
 
         // XP берём из таблицы для ПРЕДЫДУЩЕГО этапа (который мы только что прошли)
         // Т.к. dungeon уже продвинулся, нужно вычислить предыдущий этап

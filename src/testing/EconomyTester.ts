@@ -311,7 +311,10 @@ export class EconomyTester {
 
         if (result.victory) {
             // Плавно увеличиваем множитель редкости после победы
-            updateRarityMultiplierAfterKill(this.state.lamp);
+            // Передаём актуальные слоты и главу для корректного расчёта target
+            const currentStageNumber = this.getCurrentStageNumber();
+            const unlockedSlots = getUnlockedSlots(currentStageNumber);
+            updateRarityMultiplierAfterKill(this.state.lamp, unlockedSlots.length, currentChapter);
 
             // Записываем метрики этапа перед переходом
             this.recordStageMetrics(currentChapter, currentStage, targetPower);
