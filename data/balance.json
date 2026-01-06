@@ -37,7 +37,7 @@
     },
     "rarityMultiplier": {
         "minProbForGradualGrowth": 0.0099,
-        "topPercentForAverage": 1,
+        "topPercentForAverage": 0.8,
         "stepsToTarget": 40
     }
 }
