@@ -128,9 +128,11 @@ export function calculateSlotBasedRarityMultiplier(
     if (totalWeight === 0) return 1.0;
 
     // Определяем максимальную редкость (самая редкая с достаточным шансом)
+    // common не считается — бонус только для редкостей выше common
     const rarityOrder: Rarity[] = ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal'];
-    let maxRarity: Rarity = 'common';
+    let maxRarity: Rarity | null = null;  // null = нет редкости выше common
     for (const r of rarityOrder) {
+        if (r === 'common') continue;  // common не получает levelBonus
         const weight = weights[r];
         if (weight && weight > 0) {
             const prob = weight / totalWeight;
@@ -148,8 +150,8 @@ export function calculateSlotBasedRarityMultiplier(
         if (prob < minProbThreshold) continue;  // Исключаем редкие
 
         let mult = config.rarityMultipliers[rarity as Rarity] || 1.0;
-        if (rarity === maxRarity) {
-            mult *= levelBonus;  // Бонус уровня для макс редкости
+        if (maxRarity && rarity === maxRarity) {
+            mult *= levelBonus;  // Бонус уровня для макс редкости (не common)
         }
         validRarities.push({ rarity: rarity as Rarity, prob, mult });
     }
