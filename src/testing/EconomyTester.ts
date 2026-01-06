@@ -231,8 +231,8 @@ export class EconomyTester {
     }
 
     // Фаза лута: лутаем только после поражения
-    // После поражения — минимум 1 лут, затем пока power < enemyPower (с учётом difficultyModifier)
-    // Защита от бесконечного лута: максимум 100 лутов за этап
+    // После поражения — максимум 5 лутов перед следующей попыткой боя
+    // (или меньше, если сила уже превысила врага)
     private lootPhase(): void {
         // Лутаем только если был проигрыш
         if (!this.lastBattleLost) {
@@ -240,19 +240,16 @@ export class EconomyTester {
         }
 
         const enemyPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp);
-        const maxLootsPerStage = 100;  // Защита от бесконечного лута
+        const maxLootsBeforeBattle = 5;  // Лимит лутов перед следующим боем
 
-        // После поражения — сначала минимум 1 лут
-        this.lootOneItem();
         this.lastBattleLost = false;
-        if (this.totalIterations > this.config.maxIterations) return;
 
-        // Затем лутаем пока сила < силы врагов (с лимитом)
-        let lootsThisPhase = 1;
-        while (getHeroPower(this.state.hero) < enemyPower && lootsThisPhase < maxLootsPerStage) {
+        // Лутаем до 5 раз или пока сила не превысит врага
+        for (let i = 0; i < maxLootsBeforeBattle; i++) {
             this.lootOneItem();
-            lootsThisPhase++;
             if (this.totalIterations > this.config.maxIterations) break;
+            // Прекращаем лутать если стали сильнее врага
+            if (getHeroPower(this.state.hero) >= enemyPower) break;
         }
     }
 
