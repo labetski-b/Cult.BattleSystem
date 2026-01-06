@@ -143,7 +143,8 @@ export class EconomyTester {
     }
 
     // Лут одного предмета
-    private lootOneItem(): void {
+    // Возвращает true если предмет был экипирован (апгрейд)
+    private lootOneItem(): boolean {
         this.totalLootCounter++;
         const currentStage = this.getCurrentStageNumber();
         const config = getConfig();
@@ -176,12 +177,15 @@ export class EconomyTester {
         const currentItem = this.state.hero.equipment[item.slot];
         const currentPower = currentItem?.power || 0;
 
+        let wasEquipped = false;
         if (item.power > currentPower) {
             equipItem(this.state.hero, item);
             updateHeroStats(this.state.hero);
+            wasEquipped = true;
         }
 
         this.totalIterations++;
+        return wasEquipped;
     }
 
     // Генерация гарантированного апгрейда для самого слабого слота
@@ -231,25 +235,23 @@ export class EconomyTester {
     }
 
     // Фаза лута: лутаем только после поражения
-    // После поражения — максимум 5 лутов перед следующей попыткой боя
-    // (или меньше, если сила уже превысила врага)
+    // Лутаем пока не получим апгрейд (предмет лучше текущего), затем сразу в бой
+    // Защита от бесконечного лута: максимум 100 предметов
     private lootPhase(): void {
         // Лутаем только если был проигрыш
         if (!this.lastBattleLost) {
             return;
         }
 
-        const enemyPower = getAdjustedEnemyPower(this.state.dungeon, this.state.lamp);
-        const maxLootsBeforeBattle = 5;  // Лимит лутов перед следующим боем
-
         this.lastBattleLost = false;
+        const maxLootsPerPhase = 100;  // Защита от бесконечного лута
 
-        // Лутаем до 5 раз или пока сила не превысит врага
-        for (let i = 0; i < maxLootsBeforeBattle; i++) {
-            this.lootOneItem();
+        // Лутаем пока не получим апгрейд
+        for (let i = 0; i < maxLootsPerPhase; i++) {
+            const gotUpgrade = this.lootOneItem();
             if (this.totalIterations > this.config.maxIterations) break;
-            // Прекращаем лутать если стали сильнее врага
-            if (getHeroPower(this.state.hero) >= enemyPower) break;
+            // Получили апгрейд — идём в бой
+            if (gotUpgrade) break;
         }
     }
 
