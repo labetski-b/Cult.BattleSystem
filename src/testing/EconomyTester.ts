@@ -2,7 +2,7 @@ import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
-import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateExpectedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill } from '../models/Lamp';
+import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateSlotBasedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
 import { createDungeonProgress, advanceProgress, isBossStage, getBossMultiplier, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
@@ -351,8 +351,13 @@ export class EconomyTester {
 
     // Записать метрики этапа
     private recordStageMetrics(chapter: number, stage: number, enemyPower: number): void {
-        const targetRarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
         const currentStage = this.getCurrentStageNumber();
+        const unlockedSlots = getUnlockedSlots(currentStage);
+        const targetRarityMultiplier = calculateSlotBasedRarityMultiplier(
+            this.state.lamp.level,
+            unlockedSlots.length,
+            chapter
+        );
         const config = getConfig();
         const baseEveryN = config.guaranteedUpgradeEveryN;
         const increaseRate = config.guaranteedUpgradeIncreaseEveryNStages;
@@ -391,8 +396,14 @@ export class EconomyTester {
     // Записать метрики главы
     private recordChapterMetrics(chapter: number): void {
         // Макс. сила врагов = сила босса (этап 10) с учётом множителей
+        const currentStage = this.getCurrentStageNumber();
+        const unlockedSlots = getUnlockedSlots(currentStage);
         const baseBossPower = getBaseStagePower(chapter, STAGES_PER_CHAPTER);
-        const rarityMultiplier = calculateExpectedRarityMultiplier(this.state.lamp.level);
+        const rarityMultiplier = calculateSlotBasedRarityMultiplier(
+            this.state.lamp.level,
+            unlockedSlots.length,
+            chapter
+        );
         const bossPower = baseBossPower * rarityMultiplier * getBossMultiplier();
 
         this.chapters.push({
