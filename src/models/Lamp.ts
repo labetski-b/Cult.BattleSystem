@@ -112,10 +112,6 @@ export function calculateSlotBasedRarityMultiplier(
     const dropsPerChapter = config.dropsPerChapter;       // 2
     const totalDrops = baseDrops + (chapter - 1) * dropsPerChapter;
     const minProbThreshold = config.minProbForGradualGrowth;  // 0.015 (1.5%)
-    const levelBonus = Math.pow(
-        config.powerGrowthPerLevel,
-        (config.minLevelOffset - config.maxRarityLevelOffset) / 2
-    );
 
     // Считаем общий вес
     let totalWeight = 0;
@@ -127,21 +123,6 @@ export function calculateSlotBasedRarityMultiplier(
 
     if (totalWeight === 0) return 1.0;
 
-    // Определяем максимальную редкость (самая редкая с достаточным шансом)
-    // common не считается — бонус только для редкостей выше common
-    const rarityOrder: Rarity[] = ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal'];
-    let maxRarity: Rarity | null = null;  // null = нет редкости выше common
-    for (const r of rarityOrder) {
-        if (r === 'common') continue;  // common не получает levelBonus
-        const weight = weights[r];
-        if (weight && weight > 0) {
-            const prob = weight / totalWeight;
-            if (prob >= minProbThreshold) {
-                maxRarity = r;  // Обновляем макс редкость если шанс >= порога
-            }
-        }
-    }
-
     // Собираем редкости: только те, что >= minProbThreshold
     const validRarities: { rarity: Rarity; prob: number; mult: number }[] = [];
     for (const [rarity, weight] of Object.entries(weights)) {
@@ -149,10 +130,7 @@ export function calculateSlotBasedRarityMultiplier(
         const prob = weight / totalWeight;
         if (prob < minProbThreshold) continue;  // Исключаем редкие
 
-        let mult = config.rarityMultipliers[rarity as Rarity] || 1.0;
-        if (maxRarity && rarity === maxRarity) {
-            mult *= levelBonus;  // Бонус уровня для макс редкости (не common)
-        }
+        const mult = config.rarityMultipliers[rarity as Rarity] || 1.0;
         validRarities.push({ rarity: rarity as Rarity, prob, mult });
     }
 
