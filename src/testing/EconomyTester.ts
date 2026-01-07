@@ -2,7 +2,7 @@ import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
-import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateSlotBasedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill } from '../models/Lamp';
+import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateSlotBasedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill, getGuaranteedRarity } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
 import { createDungeonProgress, advanceProgress, isBossStage, getBossMultiplier, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
@@ -159,14 +159,24 @@ export class EconomyTester {
             ? baseEveryN + Math.floor((currentStage - 1) / increaseRate)
             : baseEveryN;
 
-        // Проверяем, нужен ли гарантированный апгрейд
-        if (currentEveryN > 0 &&
-            this.totalLootCounter % currentEveryN === 0) {
-            // Гарантированный апгрейд: предмет с максимальным уровнем
+        // Приоритет генерации лута:
+        // 1. Гарантированный апгрейд для слабого слота (каждый currentEveryN-й)
+        // 2. Гарантированная редкость (каждый totalDrops-й)
+        // 3. Обычный рандомный лут
+
+        if (currentEveryN > 0 && this.totalLootCounter % currentEveryN === 0) {
+            // Гарантированный апгрейд: предмет с максимальным уровнем для слабого слота
             item = this.generateGuaranteedUpgrade(currentStage);
         } else {
-            // Обычный рандомный лут
-            item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
+            // Проверяем гарантированную редкость (каждый totalDrops-й лут)
+            const totalDrops = config.baseDropsForMultiplier + (this.state.dungeon.chapter - 1) * config.dropsPerChapter;
+            if (totalDrops > 0 && this.totalLootCounter % totalDrops === 0) {
+                // Гарантированная редкость на основе расчёта заполнения слотов
+                item = this.generateGuaranteedRarityItem(currentStage);
+            } else {
+                // Обычный рандомный лут
+                item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
+            }
         }
 
         this.chapterLoots++;
@@ -186,6 +196,38 @@ export class EconomyTester {
 
         this.totalIterations++;
         return wasEquipped;
+    }
+
+    // Генерация предмета с гарантированной редкостью
+    // Редкость выбирается на основе расчёта заполнения слотов (лучшая с expectedFilled >= 1)
+    private generateGuaranteedRarityItem(currentStage: number): Item {
+        const unlockedSlots = getUnlockedSlots(currentStage);
+        const chapter = this.state.dungeon.chapter;
+
+        // Получаем гарантированную редкость
+        const rarity = getGuaranteedRarity(this.state.lamp.level, unlockedSlots.length, chapter);
+
+        // Случайный слот из разблокированных
+        const slot: SlotType = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
+
+        // Уровень — с бонусом (как для максимальной редкости)
+        const config = getConfig();
+        const levelOffset = config.maxRarityLevelOffset;
+        const itemLevel = Math.max(1, this.state.hero.level - Math.floor(Math.random() * (levelOffset + 1)));
+
+        // Рассчитываем статы
+        const stats = calculateItemStats(slot, itemLevel, rarity);
+
+        return {
+            id: generateItemId(),
+            name: generateItemName(slot, rarity),
+            rarity,
+            level: itemLevel,
+            slot,
+            power: stats.power,
+            hp: stats.hp,
+            damage: stats.damage
+        };
     }
 
     // Генерация гарантированного апгрейда для самого слабого слота

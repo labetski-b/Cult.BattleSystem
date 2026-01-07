@@ -220,6 +220,87 @@ export function updateRarityMultiplierAfterKill(
     );
 }
 
+// Получить гарантированную редкость на основе расчёта заполнения слотов
+// Возвращает лучшую редкость с expectedFilled >= 1.0
+export function getGuaranteedRarity(
+    lampLevel: number,
+    totalSlots: number,
+    chapter: number
+): Rarity {
+    const lampConfig = getLampLevelConfig(lampLevel);
+    const weights = lampConfig.weights;
+    const config = getConfig();
+
+    const totalDrops = config.baseDropsForMultiplier + (chapter - 1) * config.dropsPerChapter;
+
+    // Считаем общий вес
+    let totalWeight = 0;
+    for (const weight of Object.values(weights)) {
+        if (weight && weight > 0) totalWeight += weight;
+    }
+    if (totalWeight === 0) return 'common';
+
+    // Редкости от лучшей к худшей
+    const rarityOrder: Rarity[] = ['immortal', 'legendary', 'mythic', 'epic', 'rare', 'good', 'common'];
+
+    let remainingSlots = totalSlots;
+
+    for (const rarity of rarityOrder) {
+        const weight = weights[rarity];
+        if (!weight || weight <= 0) continue;
+
+        const prob = weight / totalWeight;
+        const drops = totalDrops * prob;
+
+        // Защита от деления на 0
+        if (remainingSlots < 1) break;
+
+        const expectedFilled = remainingSlots * (1 - Math.pow((remainingSlots - 1) / remainingSlots, drops));
+
+        if (expectedFilled >= 1.0) {
+            return rarity;  // Лучшая редкость с ожидаемым заполнением >= 1 слота
+        }
+
+        remainingSlots -= expectedFilled;
+    }
+
+    return 'common';  // Fallback
+}
+
+// Генерация предмета с гарантированной редкостью
+// Используется каждый totalDrops-й лут
+export function generateGuaranteedRarityItem(
+    lamp: Lamp,
+    heroLevel: number,
+    currentStage: number
+): Item {
+    const unlockedSlots = getUnlockedSlots(currentStage);
+    const chapter = Math.floor((currentStage - 1) / 10) + 1;  // STAGES_PER_CHAPTER = 10
+
+    // Получаем гарантированную редкость
+    const rarity = getGuaranteedRarity(lamp.level, unlockedSlots.length, chapter);
+
+    // Случайный слот из разблокированных
+    const slot: SlotType = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
+
+    // Уровень — с бонусом (как для максимальной редкости)
+    const level = rollItemLevel(heroLevel, true);
+
+    // Рассчитываем статы
+    const stats = calculateItemStats(slot, level, rarity);
+
+    return {
+        id: generateItemId(),
+        name: generateItemName(slot, rarity),
+        rarity,
+        level,
+        power: stats.power,
+        hp: stats.hp,
+        damage: stats.damage,
+        slot
+    };
+}
+
 // Генерация предмета из лампы
 // lamp — определяет редкость (веса)
 // heroLevel — определяет уровень предмета (базовые статы)

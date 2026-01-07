@@ -1,7 +1,7 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
 import { Item, migrateItemStats, SlotType, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
-import { Lamp, createLamp, generateItemFromLamp, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity, calculateExpectedRarityMultiplier } from '../models/Lamp';
+import { Lamp, createLamp, generateItemFromLamp, generateGuaranteedRarityItem, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity, calculateExpectedRarityMultiplier } from '../models/Lamp';
 import { getConfig } from '../config/ConfigStore';
 import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward, STAGES_PER_CHAPTER, getAdjustedEnemyPower, getBossMultiplier } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
@@ -207,14 +207,24 @@ export function openLoot(state: GameState): Item | null {
         ? baseEveryN + Math.floor((currentStage - 1) / increaseRate)
         : baseEveryN;
 
-    // Проверяем, нужен ли гарантированный апгрейд
-    if (currentEveryN > 0 &&
-        state.lootCounter % currentEveryN === 0) {
+    // Приоритет генерации лута:
+    // 1. Гарантированный апгрейд для слабого слота (каждый currentEveryN-й)
+    // 2. Гарантированная редкость (каждый totalDrops-й)
+    // 3. Обычный рандомный лут
+
+    if (currentEveryN > 0 && state.lootCounter % currentEveryN === 0) {
         // Гарантированный апгрейд: генерируем предмет для самого слабого слота
         item = generateGuaranteedUpgrade(state, currentStage);
     } else {
-        // Обычный рандомный лут
-        item = generateItemFromLamp(state.lamp, state.hero.level, currentStage);
+        // Проверяем гарантированную редкость (каждый totalDrops-й лут)
+        const totalDrops = config.baseDropsForMultiplier + (state.dungeon.chapter - 1) * config.dropsPerChapter;
+        if (totalDrops > 0 && state.lootCounter % totalDrops === 0) {
+            // Гарантированная редкость на основе расчёта заполнения слотов
+            item = generateGuaranteedRarityItem(state.lamp, state.hero.level, currentStage);
+        } else {
+            // Обычный рандомный лут
+            item = generateItemFromLamp(state.lamp, state.hero.level, currentStage);
+        }
     }
 
     state.inventory.push(item);

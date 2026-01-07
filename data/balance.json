@@ -13,6 +13,6 @@
         "minProbForGradualGrowth": 0,
         "stepsToTarget": 40,
         "baseDrops": 10,
-        "dropsPerChapter": 2
+        "dropsPerChapter": 1
     }
 }
