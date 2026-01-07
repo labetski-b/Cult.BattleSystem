@@ -72,9 +72,9 @@ function printChaptersTable(summary: TestSummary): void {
 
 // Сохранение этапов в CSV
 function saveStagesCSV(summary: TestSummary, filePath: string): void {
-    const headers = 'chapter,stage,loots,battles,defeats,hero_level,slots,hero_hp,hero_damage,hero_power,enemy_power,rarity_multiplier,difficulty_modifier,lamp_level,gold';
+    const headers = 'chapter,stage,loots,battles,defeats,hero_level,slots,hero_hp,hero_damage,hero_power,enemy_power,rarity_multiplier,difficulty_modifier,lamp_level,gold,guaranteed_every_n,guaranteed_rarity,total_drops';
     const rows = summary.stages.map((st: StageMetrics) =>
-        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroLevel},${st.slots},${st.heroHp},${st.heroDamage},${st.heroPower},${st.enemyPower},${st.rarityMultiplier},${st.difficultyModifier},${st.lampLevel},${st.gold}`
+        `${st.chapter},${st.stage},${st.loots},${st.battles},${st.defeats},${st.heroLevel},${st.slots},${st.heroHp},${st.heroDamage},${st.heroPower},${st.enemyPower},${st.rarityMultiplier},${st.difficultyModifier},${st.lampLevel},${st.gold},${st.guaranteedEveryN},${st.guaranteedRarity},${st.totalDrops}`
     );
 
     const csv = [headers, ...rows].join('\n');
