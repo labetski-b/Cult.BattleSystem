@@ -18,7 +18,6 @@ export interface BalanceOverrides {
     // Guaranteed upgrade (items.json)
     guaranteedUpgradeEveryN?: number;           // каждый N-й лут — гарантированный апгрейд
     guaranteedUpgradeIncreaseEveryNStages?: number;  // каждые N стадий everyN увеличивается на 1
-    guaranteedUpgradeMultiplier?: number;       // множитель силы (1.05 = +5%) — не используется
 
     // rarities.json (множители по id)
     rarityMultipliers?: Partial<Record<Rarity, number>>;
@@ -32,7 +31,6 @@ export interface BalanceOverrides {
     bossPowerMultiplier?: number;
 
     // balance.json (rarityMultiplier settings)
-    topPercentForAverage?: number;      // % верхних редкостей для расчёта множителя врагов
     minProbForGradualGrowth?: number;   // минимальный шанс для включения в расчёт
     stepsToTarget?: number;             // шагов для достижения целевого множителя
     baseDropsForMultiplier?: number;    // начальное кол-во дропов для расчёта (10)
@@ -48,13 +46,11 @@ export interface BalanceConfig {
     maxRarityLevelOffset: number;
     guaranteedUpgradeEveryN: number;
     guaranteedUpgradeIncreaseEveryNStages: number;
-    guaranteedUpgradeMultiplier: number;
     rarityMultipliers: Record<Rarity, number>;
     difficultyEnabled: boolean;
     difficultyOnVictory: number;
     difficultyOnDefeat: number;
     bossPowerMultiplier: number;
-    topPercentForAverage: number;
     minProbForGradualGrowth: number;
     stepsToTarget: number;
     baseDropsForMultiplier: number;
@@ -78,13 +74,11 @@ const defaults: BalanceConfig = {
     maxRarityLevelOffset: (itemsConfig.levelRange as { minLevelOffset: number; maxRarityLevelOffset: number }).maxRarityLevelOffset,
     guaranteedUpgradeEveryN: guaranteedUpgrade?.everyNLoots ?? 4,
     guaranteedUpgradeIncreaseEveryNStages: guaranteedUpgrade?.increaseEveryNStages ?? 10,
-    guaranteedUpgradeMultiplier: guaranteedUpgrade?.powerMultiplier ?? 1.05,
     rarityMultipliers: defaultRarityMultipliers,
     difficultyEnabled: false,  // ВРЕМЕННО ОТКЛЮЧЕНО
     difficultyOnVictory: 0.01,
     difficultyOnDefeat: -0.02,
     bossPowerMultiplier: enemiesConfig.boss.powerMultiplier,
-    topPercentForAverage: balanceData.rarityMultiplier.topPercentForAverage,
     minProbForGradualGrowth: balanceData.rarityMultiplier.minProbForGradualGrowth,
     stepsToTarget: balanceData.rarityMultiplier.stepsToTarget,
     baseDropsForMultiplier: (balanceData.rarityMultiplier as { baseDrops: number }).baseDrops,
@@ -114,13 +108,11 @@ export function getConfig(): BalanceConfig {
         maxRarityLevelOffset: currentOverrides.maxRarityLevelOffset ?? defaults.maxRarityLevelOffset,
         guaranteedUpgradeEveryN: currentOverrides.guaranteedUpgradeEveryN ?? defaults.guaranteedUpgradeEveryN,
         guaranteedUpgradeIncreaseEveryNStages: currentOverrides.guaranteedUpgradeIncreaseEveryNStages ?? defaults.guaranteedUpgradeIncreaseEveryNStages,
-        guaranteedUpgradeMultiplier: currentOverrides.guaranteedUpgradeMultiplier ?? defaults.guaranteedUpgradeMultiplier,
         rarityMultipliers: mergedRarityMultipliers,
         difficultyEnabled: currentOverrides.difficultyEnabled ?? defaults.difficultyEnabled,
         difficultyOnVictory: currentOverrides.difficultyOnVictory ?? defaults.difficultyOnVictory,
         difficultyOnDefeat: currentOverrides.difficultyOnDefeat ?? defaults.difficultyOnDefeat,
         bossPowerMultiplier: currentOverrides.bossPowerMultiplier ?? defaults.bossPowerMultiplier,
-        topPercentForAverage: currentOverrides.topPercentForAverage ?? defaults.topPercentForAverage,
         minProbForGradualGrowth: currentOverrides.minProbForGradualGrowth ?? defaults.minProbForGradualGrowth,
         stepsToTarget: currentOverrides.stepsToTarget ?? defaults.stepsToTarget,
         baseDropsForMultiplier: currentOverrides.baseDropsForMultiplier ?? defaults.baseDropsForMultiplier,
