@@ -619,7 +619,8 @@
                     lampLevel: Math.round(summaries.reduce((s, r) => s + r.stages[i].lampLevel, 0) / n),
                     gold: Math.round(summaries.reduce((s, r) => s + r.stages[i].gold, 0) / n),
                     guaranteedEveryN: Math.round(summaries.reduce((s, r) => s + (r.stages[i].guaranteedEveryN || 0), 0) / n),
-                    guaranteedRarity: first.stages[i].guaranteedRarity || 'common'  // берём из первой симуляции
+                    guaranteedRarity: first.stages[i].guaranteedRarity || 'common',  // берём из первой симуляции
+                    totalDrops: Math.round(summaries.reduce((s, r) => s + (r.stages[i].totalDrops || 0), 0) / n * 10) / 10
                 });
             }
 
@@ -1071,8 +1072,9 @@
 
             const loots = stages.map(s => s.loots);
             const everyNValues = stages.map(s => s.guaranteedEveryN || 0);
+            const totalDropsValues = stages.map(s => s.totalDrops || 0);
             const maxLoots = Math.max(...loots, 1);
-            const maxEveryN = Math.max(...everyNValues, 10);
+            const maxEveryN = Math.max(...everyNValues, ...totalDropsValues, 10);
 
             const barWidth = width / stages.length;
 
@@ -1104,13 +1106,25 @@
             ctx.fillStyle = '#ffd70022';
             ctx.fill();
 
-            // EveryN line
+            // EveryN line (Guaranteed Upgrade)
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 2;
             ctx.beginPath();
             for (let i = 0; i < stages.length; i++) {
                 const x = xScale(i);
                 const y = yScaleEveryN(everyNValues[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // TotalDrops line (Guaranteed Rarity) - cyan/teal color
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScaleEveryN(totalDropsValues[i]);
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
@@ -1141,17 +1155,21 @@
             // Legend
             ctx.font = '11px Courier New';
             ctx.fillStyle = '#6bff6b';
-            ctx.fillRect(padding.left + width - 220, padding.top - 20, 12, 12);
-            ctx.fillText('Loots', padding.left + width - 205, padding.top - 10);
+            ctx.fillRect(padding.left + width - 300, padding.top - 20, 12, 12);
+            ctx.fillText('Loots', padding.left + width - 285, padding.top - 10);
 
             ctx.fillStyle = '#ffd700';
+            ctx.fillRect(padding.left + width - 220, padding.top - 20, 12, 12);
+            ctx.fillText('EveryN', padding.left + width - 205, padding.top - 10);
+
+            ctx.fillStyle = '#22d3ee';
             ctx.fillRect(padding.left + width - 140, padding.top - 20, 12, 12);
-            ctx.fillText('EveryN', padding.left + width - 125, padding.top - 10);
+            ctx.fillText('TotalDrops', padding.left + width - 125, padding.top - 10);
 
             // Rarity bar label
             ctx.fillStyle = '#888';
             ctx.textAlign = 'left';
-            ctx.fillText('Rarity ▼', padding.left + width - 60, padding.top - 10);
+            ctx.fillText('Rarity ▼', padding.left + width - 45, padding.top - 10);
         }
 
         function renderLootsChapterChart(chapters) {
@@ -1642,6 +1660,7 @@
                 <div class="tt-title">Stage ${st.chapter}.${st.stage}</div>
                 <div class="tt-row"><span class="tt-label">Loots:</span> <span class="tt-value tt-loots">${st.loots}</span></div>
                 <div class="tt-row"><span class="tt-label">EveryN:</span> <span class="tt-value tt-diff">${st.guaranteedEveryN}</span></div>
+                <div class="tt-row"><span class="tt-label">TotalDrops:</span> <span class="tt-value" style="color:#22d3ee">${st.totalDrops || '-'}</span></div>
                 <div class="tt-row"><span class="tt-label">Rarity:</span> <span class="tt-value" style="color:${rarityColor}">${st.guaranteedRarity || 'common'}</span></div>
                 <div class="tt-row"><span class="tt-label">Defeats:</span> <span class="tt-value">${st.defeats}</span></div>
                 <div class="tt-row"><span class="tt-label">Hero Power:</span> <span class="tt-value tt-hero">${st.heroPower.toLocaleString()}</span></div>

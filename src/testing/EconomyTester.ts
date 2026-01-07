@@ -413,6 +413,9 @@ export class EconomyTester {
         // Гарантированная редкость на основе расчёта заполнения слотов
         const guaranteedRarity = getGuaranteedRarity(this.state.lamp.level, unlockedSlots.length, chapter);
 
+        // Интервал гарантированного лута по редкости
+        const totalDrops = config.baseDropsForMultiplier + (chapter - 1) * config.dropsPerChapter;
+
         this.stages.push({
             chapter,
             stage,
@@ -431,7 +434,8 @@ export class EconomyTester {
             lampLevel: this.state.lamp.level,
             gold: this.state.hero.gold,
             guaranteedEveryN: currentEveryN,
-            guaranteedRarity: guaranteedRarity
+            guaranteedRarity: guaranteedRarity,
+            totalDrops: totalDrops
         });
     }
 
