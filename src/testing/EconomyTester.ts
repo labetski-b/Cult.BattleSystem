@@ -410,6 +410,9 @@ export class EconomyTester {
             ? baseEveryN + Math.floor((currentStage - 1) / increaseRate)
             : baseEveryN;
 
+        // Гарантированная редкость на основе расчёта заполнения слотов
+        const guaranteedRarity = getGuaranteedRarity(this.state.lamp.level, unlockedSlots.length, chapter);
+
         this.stages.push({
             chapter,
             stage,
@@ -427,7 +430,8 @@ export class EconomyTester {
             difficultyModifier: Math.round(this.state.dungeon.difficultyModifier * 100),  // в процентах
             lampLevel: this.state.lamp.level,
             gold: this.state.hero.gold,
-            guaranteedEveryN: currentEveryN
+            guaranteedEveryN: currentEveryN,
+            guaranteedRarity: guaranteedRarity
         });
     }
 

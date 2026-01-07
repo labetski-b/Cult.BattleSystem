@@ -17,6 +17,7 @@ export interface StageMetrics {
     lampLevel: number;       // Уровень лампы
     gold: number;            // Золото у игрока
     guaranteedEveryN: number; // Текущий интервал гарантированного апгрейда
+    guaranteedRarity: string; // Гарантированная редкость (на основе расчёта заполнения слотов)
 }
 
 // Метрики по главе
