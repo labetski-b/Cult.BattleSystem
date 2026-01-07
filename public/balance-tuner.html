@@ -291,6 +291,11 @@
                     <input type="range" id="guaranteedUpgradeIncreaseEveryNStages" min="0" max="30" step="1" value="10">
                     <span class="value-display" id="guaranteedUpgradeIncreaseEveryNStages-val">10</span>
                 </div>
+                <div class="control-row">
+                    <label>Rarity Guarantee</label>
+                    <input type="checkbox" id="guaranteedRarityEnabled" checked>
+                    <span class="value-display" id="guaranteedRarityEnabled-val">ON</span>
+                </div>
             </div>
 
             <div class="control-group">
@@ -613,7 +618,8 @@
                     difficultyModifier: Math.round(summaries.reduce((s, r) => s + r.stages[i].difficultyModifier, 0) / n),
                     lampLevel: Math.round(summaries.reduce((s, r) => s + r.stages[i].lampLevel, 0) / n),
                     gold: Math.round(summaries.reduce((s, r) => s + r.stages[i].gold, 0) / n),
-                    guaranteedEveryN: Math.round(summaries.reduce((s, r) => s + (r.stages[i].guaranteedEveryN || 0), 0) / n)
+                    guaranteedEveryN: Math.round(summaries.reduce((s, r) => s + (r.stages[i].guaranteedEveryN || 0), 0) / n),
+                    guaranteedRarity: first.stages[i].guaranteedRarity || 'common'  // берём из первой симуляции
                 });
             }
 
@@ -665,6 +671,10 @@
             }
             if (settings.guaranteedUpgradeIncreaseEveryNStages !== undefined) {
                 setSlider('guaranteedUpgradeIncreaseEveryNStages', settings.guaranteedUpgradeIncreaseEveryNStages);
+            }
+            if (settings.guaranteedRarityEnabled !== undefined) {
+                document.getElementById('guaranteedRarityEnabled').checked = settings.guaranteedRarityEnabled;
+                document.getElementById('guaranteedRarityEnabled-val').textContent = settings.guaranteedRarityEnabled ? 'ON' : 'OFF';
             }
             if (settings.difficultyEnabled !== undefined) {
                 document.getElementById('difficultyEnabled').checked = settings.difficultyEnabled;
@@ -725,6 +735,7 @@
                 maxRarityLevelOffset: parseInt(document.getElementById('maxRarityLevelOffset').value),
                 guaranteedUpgradeEveryN: parseInt(document.getElementById('guaranteedUpgradeEveryN').value),
                 guaranteedUpgradeIncreaseEveryNStages: parseInt(document.getElementById('guaranteedUpgradeIncreaseEveryNStages').value),
+                guaranteedRarityEnabled: document.getElementById('guaranteedRarityEnabled').checked,
                 difficultyEnabled: document.getElementById('difficultyEnabled').checked,
                 difficultyOnVictory: parseFloat(document.getElementById('difficultyOnVictory').value),
                 difficultyOnDefeat: parseFloat(document.getElementById('difficultyOnDefeat').value),
@@ -1497,6 +1508,12 @@
         const difficultyCheckbox = document.getElementById('difficultyEnabled');
         difficultyCheckbox.addEventListener('change', () => {
             document.getElementById('difficultyEnabled-val').textContent = difficultyCheckbox.checked ? 'ON' : 'OFF';
+        });
+
+        // Checkbox handler for guaranteedRarityEnabled
+        const guaranteedRarityCheckbox = document.getElementById('guaranteedRarityEnabled');
+        guaranteedRarityCheckbox.addEventListener('change', () => {
+            document.getElementById('guaranteedRarityEnabled-val').textContent = guaranteedRarityCheckbox.checked ? 'ON' : 'OFF';
         });
 
         // Load saved settings on page load

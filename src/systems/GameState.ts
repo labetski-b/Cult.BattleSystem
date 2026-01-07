@@ -216,9 +216,9 @@ export function openLoot(state: GameState): Item | null {
         // Гарантированный апгрейд: генерируем предмет для самого слабого слота
         item = generateGuaranteedUpgrade(state, currentStage);
     } else {
-        // Проверяем гарантированную редкость (каждый totalDrops-й лут)
+        // Проверяем гарантированную редкость (каждый totalDrops-й лут), если включено
         const totalDrops = config.baseDropsForMultiplier + (state.dungeon.chapter - 1) * config.dropsPerChapter;
-        if (totalDrops > 0 && state.lootCounter % totalDrops === 0) {
+        if (config.guaranteedRarityEnabled && totalDrops > 0 && state.lootCounter % totalDrops === 0) {
             // Гарантированная редкость на основе расчёта заполнения слотов
             item = generateGuaranteedRarityItem(state.lamp, state.hero.level, currentStage);
         } else {

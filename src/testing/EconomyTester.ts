@@ -168,9 +168,9 @@ export class EconomyTester {
             // Гарантированный апгрейд: предмет с максимальным уровнем для слабого слота
             item = this.generateGuaranteedUpgrade(currentStage);
         } else {
-            // Проверяем гарантированную редкость (каждый totalDrops-й лут)
+            // Проверяем гарантированную редкость (каждый totalDrops-й лут), если включено
             const totalDrops = config.baseDropsForMultiplier + (this.state.dungeon.chapter - 1) * config.dropsPerChapter;
-            if (totalDrops > 0 && this.totalLootCounter % totalDrops === 0) {
+            if (config.guaranteedRarityEnabled && totalDrops > 0 && this.totalLootCounter % totalDrops === 0) {
                 // Гарантированная редкость на основе расчёта заполнения слотов
                 item = this.generateGuaranteedRarityItem(currentStage);
             } else {

@@ -35,6 +35,7 @@ export interface BalanceOverrides {
     stepsToTarget?: number;             // шагов для достижения целевого множителя
     baseDropsForMultiplier?: number;    // начальное кол-во дропов для расчёта (10)
     dropsPerChapter?: number;           // увеличение дропов за главу (2)
+    guaranteedRarityEnabled?: boolean;  // включить/выключить гарантированный дроп по редкости
 }
 
 // Полный конфиг с дефолтными значениями
@@ -55,6 +56,7 @@ export interface BalanceConfig {
     stepsToTarget: number;
     baseDropsForMultiplier: number;
     dropsPerChapter: number;
+    guaranteedRarityEnabled: boolean;
 }
 
 // Загружаем дефолтные множители редкостей из JSON
@@ -83,6 +85,7 @@ const defaults: BalanceConfig = {
     stepsToTarget: balanceData.rarityMultiplier.stepsToTarget,
     baseDropsForMultiplier: (balanceData.rarityMultiplier as { baseDrops: number }).baseDrops,
     dropsPerChapter: (balanceData.rarityMultiplier as { dropsPerChapter: number }).dropsPerChapter,
+    guaranteedRarityEnabled: true,  // по умолчанию включено
 };
 
 // Текущие переопределения
@@ -117,6 +120,7 @@ export function getConfig(): BalanceConfig {
         stepsToTarget: currentOverrides.stepsToTarget ?? defaults.stepsToTarget,
         baseDropsForMultiplier: currentOverrides.baseDropsForMultiplier ?? defaults.baseDropsForMultiplier,
         dropsPerChapter: currentOverrides.dropsPerChapter ?? defaults.dropsPerChapter,
+        guaranteedRarityEnabled: currentOverrides.guaranteedRarityEnabled ?? defaults.guaranteedRarityEnabled,
     };
 }
 
