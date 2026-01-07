@@ -3,8 +3,8 @@
     "powerGrowthPerLevel": 1.5,
     "powerVariance": 0.1,
     "levelRange": {
-        "minLevelOffset": 2,
-        "maxRarityLevelOffset": 1
+        "minLevelOffset": 5,
+        "maxRarityLevelOffset": 3
     },
     "guaranteedUpgrade": {
         "everyNLoots": 4,

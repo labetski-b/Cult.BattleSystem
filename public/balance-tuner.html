@@ -410,7 +410,7 @@
             </div>
 
             <div id="charts-content" class="tab-content active">
-                <h2>Loots per Stage</h2>
+                <h2>Loots per Stage & Guaranteed Upgrade Interval</h2>
                 <div class="chart-container chart-scroll">
                     <canvas id="loots-chart" height="250"></canvas>
                     <div class="chart-tooltip" id="loots-tooltip"></div>
@@ -438,12 +438,6 @@
                 <div class="chart-container">
                     <canvas id="equipped-chart" width="1100" height="280"></canvas>
                     <div class="chart-tooltip" id="equipped-tooltip"></div>
-                </div>
-
-                <h2 style="margin-top: 30px;">Guaranteed Upgrade Interval (EveryN)</h2>
-                <div class="chart-container">
-                    <canvas id="everyn-chart" width="1100" height="200"></canvas>
-                    <div class="chart-tooltip" id="everyn-tooltip"></div>
                 </div>
 
                 <h2 style="margin-top: 30px;">Power Progression by Chapter (log scale)</h2>
@@ -800,7 +794,6 @@
             renderLampMultChart(summary.chapters, summary.stages);
             renderRarityChart(summary.chapters);
             renderEquippedChart(summary.chapters);
-            renderEveryNChart(summary.stages);
             renderPowerChart(summary.chapters);
             renderDifficultyChart(summary.stages);
         }
@@ -1066,13 +1059,16 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const loots = stages.map(s => s.loots);
+            const everyNValues = stages.map(s => s.guaranteedEveryN || 0);
             const maxLoots = Math.max(...loots, 1);
+            const maxEveryN = Math.max(...everyNValues, 10);
 
             const barWidth = width / stages.length;
 
             // Save data for tooltip
-            chartData.loots = { stages, padding, width, height, barWidth, maxLoots };
+            chartData.loots = { stages, padding, width, height, barWidth, maxLoots, maxEveryN };
 
+            // Draw loots bars
             for (let i = 0; i < stages.length; i++) {
                 const x = padding.left + i * barWidth;
                 const barHeight = (loots[i] / maxLoots) * height;
@@ -1082,12 +1078,55 @@
                 ctx.fillRect(x, y, barWidth - 1, barHeight);
             }
 
-            // Y label
-            ctx.fillStyle = '#888';
+            // Draw EveryN line (on right Y axis scale)
+            const yScaleEveryN = (v) => padding.top + height - (v / maxEveryN) * height;
+            const xScale = (i) => padding.left + i * barWidth + barWidth / 2;
+
+            // Fill area under EveryN line
+            ctx.beginPath();
+            ctx.moveTo(xScale(0), padding.top + height);
+            for (let i = 0; i < stages.length; i++) {
+                ctx.lineTo(xScale(i), yScaleEveryN(everyNValues[i]));
+            }
+            ctx.lineTo(xScale(stages.length - 1), padding.top + height);
+            ctx.closePath();
+            ctx.fillStyle = '#ffd70022';
+            ctx.fill();
+
+            // EveryN line
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < stages.length; i++) {
+                const x = xScale(i);
+                const y = yScaleEveryN(everyNValues[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Left Y label (Loots)
+            ctx.fillStyle = '#6bff6b';
             ctx.font = '12px Courier New';
             ctx.textAlign = 'right';
             ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+
+            // Right Y label (EveryN)
+            ctx.fillStyle = '#ffd700';
+            ctx.textAlign = 'left';
+            ctx.fillText(maxEveryN.toString(), padding.left + width + 10, padding.top + 4);
+            ctx.fillText('0', padding.left + width + 10, padding.top + height + 4);
+
+            // Legend
+            ctx.font = '11px Courier New';
+            ctx.fillStyle = '#6bff6b';
+            ctx.fillRect(padding.left + width - 150, padding.top - 20, 12, 12);
+            ctx.fillText('Loots', padding.left + width - 135, padding.top - 10);
+
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(padding.left + width - 70, padding.top - 20, 12, 12);
+            ctx.fillText('EveryN', padding.left + width - 55, padding.top - 10);
         }
 
         function renderLootsChapterChart(chapters) {
@@ -1416,70 +1455,6 @@
             }
         }
 
-        function renderEveryNChart(stages) {
-            const canvas = document.getElementById('everyn-chart');
-            const ctx = canvas.getContext('2d');
-
-            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
-            const width = canvas.width - padding.left - padding.right;
-            const height = canvas.height - padding.top - padding.bottom;
-
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (stages.length === 0) return;
-
-            const everyNValues = stages.map(s => s.guaranteedEveryN || 0);
-            const maxEveryN = Math.max(...everyNValues, 10);
-
-            const xScale = (i) => padding.left + (i / Math.max(1, stages.length - 1)) * width;
-            const yScale = (v) => padding.top + height - (v / maxEveryN) * height;
-
-            // Save data for tooltip
-            chartData.everyN = { stages, padding, width, height, xScale, yScale, maxEveryN };
-
-            // Grid
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 1;
-            for (let v = 0; v <= maxEveryN; v += 2) {
-                const y = yScale(v);
-                ctx.beginPath();
-                ctx.moveTo(padding.left, y);
-                ctx.lineTo(padding.left + width, y);
-                ctx.stroke();
-            }
-
-            // Fill area
-            ctx.beginPath();
-            ctx.moveTo(xScale(0), yScale(0));
-            for (let i = 0; i < stages.length; i++) {
-                ctx.lineTo(xScale(i), yScale(everyNValues[i]));
-            }
-            ctx.lineTo(xScale(stages.length - 1), yScale(0));
-            ctx.closePath();
-            ctx.fillStyle = '#ffd70033';
-            ctx.fill();
-
-            // Line
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
-                const x = xScale(i);
-                const y = yScale(everyNValues[i]);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-
-            // Y labels
-            ctx.fillStyle = '#888';
-            ctx.font = '12px Courier New';
-            ctx.textAlign = 'right';
-            ctx.fillText(maxEveryN.toString(), padding.left - 10, padding.top + 4);
-            ctx.fillText('0', padding.left - 10, padding.top + height + 4);
-        }
-
         // Initialize sliders with value display
         document.querySelectorAll('input[type="range"]').forEach(slider => {
             const valEl = document.getElementById(slider.id + '-val');
@@ -1634,6 +1609,7 @@
             lootsTooltip.innerHTML = `
                 <div class="tt-title">Stage ${st.chapter}.${st.stage}</div>
                 <div class="tt-row"><span class="tt-label">Loots:</span> <span class="tt-value tt-loots">${st.loots}</span></div>
+                <div class="tt-row"><span class="tt-label">EveryN:</span> <span class="tt-value tt-diff">${st.guaranteedEveryN}</span></div>
                 <div class="tt-row"><span class="tt-label">Defeats:</span> <span class="tt-value">${st.defeats}</span></div>
                 <div class="tt-row"><span class="tt-label">Hero Power:</span> <span class="tt-value tt-hero">${st.heroPower.toLocaleString()}</span></div>
             `;
@@ -1849,48 +1825,6 @@
 
         equippedCanvas.addEventListener('mouseleave', () => {
             equippedTooltip.classList.remove('visible');
-        });
-
-        // Tooltip handlers for EveryN chart
-        const everyNCanvas = document.getElementById('everyn-chart');
-        const everyNTooltip = document.getElementById('everyn-tooltip');
-
-        everyNCanvas.addEventListener('mousemove', (e) => {
-            const rect = everyNCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const data = chartData.everyN;
-
-            if (!data.stages || data.stages.length === 0) return;
-
-            const { stages, padding, width } = data;
-
-            const relX = x - padding.left;
-            if (relX < 0 || relX > width) {
-                everyNTooltip.classList.remove('visible');
-                return;
-            }
-
-            const idx = Math.round((relX / width) * (stages.length - 1));
-            if (idx < 0 || idx >= stages.length) {
-                everyNTooltip.classList.remove('visible');
-                return;
-            }
-
-            const st = stages[idx];
-            everyNTooltip.innerHTML = `
-                <div class="tt-title">Stage ${st.chapter}.${st.stage}</div>
-                <div class="tt-row"><span class="tt-label">EveryN:</span> <span class="tt-value tt-diff">${st.guaranteedEveryN}</span></div>
-            `;
-
-            let left = e.clientX - rect.left + 15;
-            if (left + 140 > rect.width) left = e.clientX - rect.left - 140;
-            everyNTooltip.style.left = left + 'px';
-            everyNTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
-            everyNTooltip.classList.add('visible');
-        });
-
-        everyNCanvas.addEventListener('mouseleave', () => {
-            everyNTooltip.classList.remove('visible');
         });
     </script>
 </body>
