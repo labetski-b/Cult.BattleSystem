@@ -8,8 +8,7 @@
     },
     "guaranteedUpgrade": {
         "everyNLoots": 4,
-        "increaseEveryNStages": 10,
-        "powerMultiplier": 1.05
+        "increaseEveryNStages": 14
     },
     "slots": {
         "weapon":   { "unlockStage": 1,   "hpRatio": 0.50, "damageRatio": 0.50 },

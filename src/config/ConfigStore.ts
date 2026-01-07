@@ -63,7 +63,7 @@ const defaultRarityMultipliers: Record<Rarity, number> = Object.fromEntries(
 ) as Record<Rarity, number>;
 
 // Типизация для guaranteedUpgrade
-const guaranteedUpgrade = (itemsConfig as { guaranteedUpgrade?: { everyNLoots: number; increaseEveryNStages: number; powerMultiplier: number } }).guaranteedUpgrade;
+const guaranteedUpgrade = (itemsConfig as { guaranteedUpgrade?: { everyNLoots: number; increaseEveryNStages: number } }).guaranteedUpgrade;
 
 // Дефолтные значения (читаются из JSON при инициализации)
 const defaults: BalanceConfig = {
