@@ -309,22 +309,7 @@
             </div>
 
             <div class="control-group">
-                <h3>Difficulty</h3>
-                <div class="control-row">
-                    <label>Enabled</label>
-                    <input type="checkbox" id="difficultyEnabled" checked>
-                    <span class="value-display" id="difficultyEnabled-val">ON</span>
-                </div>
-                <div class="control-row">
-                    <label>On Victory (%)</label>
-                    <input type="range" id="difficultyOnVictory" min="0" max="0.05" step="0.005" value="0.01">
-                    <span class="value-display" id="difficultyOnVictory-val">+1%</span>
-                </div>
-                <div class="control-row">
-                    <label>On Defeat (%)</label>
-                    <input type="range" id="difficultyOnDefeat" min="-0.1" max="0" step="0.005" value="-0.02">
-                    <span class="value-display" id="difficultyOnDefeat-val">-2%</span>
-                </div>
+                <h3>Boss</h3>
                 <div class="control-row">
                     <label>Boss Multiplier</label>
                     <input type="range" id="bossPowerMultiplier" min="1.0" max="2.0" step="0.05" value="1.1">
@@ -461,11 +446,6 @@
                     <div class="chart-tooltip" id="power-tooltip"></div>
                 </div>
 
-                <h2 style="margin-top: 30px;">Difficulty Modifier %</h2>
-                <div class="chart-container">
-                    <canvas id="difficulty-chart" width="1100" height="250"></canvas>
-                    <div class="chart-tooltip" id="difficulty-tooltip"></div>
-                </div>
             </div>
 
             <div id="chapters-content" class="tab-content">
@@ -498,7 +478,6 @@
         // Chart data storage for tooltips
         let chartData = {
             power: { chapters: [], padding: {}, xScale: null, yScale: null },
-            difficulty: { stages: [], padding: {}, xScale: null, range: 0 },
             loots: { stages: [], padding: {}, barWidth: 0, maxLoots: 0 },
             lootsChapter: { chapters: [], padding: {}, barWidth: 0, maxLoots: 0 },
             lampMult: { chapters: [], stages: [], padding: {}, width: 0, height: 0 },
@@ -661,7 +640,6 @@
                     enemyPower: Math.round(summaries.reduce((s, r) => s + r.stages[i].enemyPower, 0) / n),
                     rarityMultiplier: Math.round(summaries.reduce((s, r) => s + r.stages[i].rarityMultiplier, 0) / n * 100) / 100,
                     currentRarityMultiplier: Math.round(summaries.reduce((s, r) => s + (r.stages[i].currentRarityMultiplier || r.stages[i].rarityMultiplier), 0) / n * 100) / 100,
-                    difficultyModifier: Math.round(summaries.reduce((s, r) => s + r.stages[i].difficultyModifier, 0) / n),
                     lampLevel: Math.round(summaries.reduce((s, r) => s + r.stages[i].lampLevel, 0) / n),
                     gold: Math.round(summaries.reduce((s, r) => s + r.stages[i].gold, 0) / n),
                     guaranteedEveryN: Math.round(summaries.reduce((s, r) => s + (r.stages[i].guaranteedEveryN || 0), 0) / n),
@@ -729,12 +707,6 @@
             if (settings.guaranteedRarityLevelOffset !== undefined) {
                 setSlider('guaranteedRarityLevelOffset', settings.guaranteedRarityLevelOffset);
             }
-            if (settings.difficultyEnabled !== undefined) {
-                document.getElementById('difficultyEnabled').checked = settings.difficultyEnabled;
-                document.getElementById('difficultyEnabled-val').textContent = settings.difficultyEnabled ? 'ON' : 'OFF';
-            }
-            setSlider('difficultyOnVictory', settings.difficultyOnVictory);
-            setSlider('difficultyOnDefeat', settings.difficultyOnDefeat);
             setSlider('bossPowerMultiplier', settings.bossPowerMultiplier);
             if (settings.minProbForGradualGrowth !== undefined) {
                 setSlider('minProbForGradualGrowth', settings.minProbForGradualGrowth);
@@ -791,9 +763,6 @@
                 guaranteedRarityEnabled: document.getElementById('guaranteedRarityEnabled').checked,
                 guaranteedRarityIntervalMultiplier: parseFloat(document.getElementById('guaranteedRarityIntervalMultiplier').value),
                 guaranteedRarityLevelOffset: parseInt(document.getElementById('guaranteedRarityLevelOffset').value),
-                difficultyEnabled: document.getElementById('difficultyEnabled').checked,
-                difficultyOnVictory: parseFloat(document.getElementById('difficultyOnVictory').value),
-                difficultyOnDefeat: parseFloat(document.getElementById('difficultyOnDefeat').value),
                 bossPowerMultiplier: parseFloat(document.getElementById('bossPowerMultiplier').value),
                 minProbForGradualGrowth: parseFloat(document.getElementById('minProbForGradualGrowth').value),
                 stepsToTarget: parseInt(document.getElementById('stepsToTarget').value),
@@ -877,7 +846,6 @@
             renderRarityChart(summary.chapters);
             renderEquippedChart(summary.chapters);
             renderPowerChart(summary.chapters);
-            renderDifficultyChart(summary.stages);
         }
 
         function renderChaptersTable(chapters) {
@@ -909,7 +877,7 @@
             let html = `<table>
                 <tr>
                     <th>Ch.St</th><th>Loots</th><th>Defeats</th>
-                    <th>HLvl</th><th>Power</th><th>Enemy</th><th>Diff%</th><th>Lamp</th>
+                    <th>HLvl</th><th>Power</th><th>Enemy</th><th>Lamp</th>
                 </tr>`;
 
             for (const s of stages) {
@@ -920,7 +888,6 @@
                     <td>${s.heroLevel}</td>
                     <td>${s.heroPower}</td>
                     <td>${s.enemyPower}</td>
-                    <td>${s.difficultyModifier >= 0 ? '+' : ''}${s.difficultyModifier}%</td>
                     <td>${s.lampLevel}</td>
                 </tr>`;
             }
@@ -1053,73 +1020,6 @@
             ctx.fillStyle = '#ff6b6b';
             ctx.fillRect(padding.left + 10, padding.top + 30, 12, 12);
             ctx.fillText('Enemy Power (Boss)', padding.left + 30, padding.top + 40);
-        }
-
-        function renderDifficultyChart(stages) {
-            const canvas = document.getElementById('difficulty-chart');
-            const ctx = canvas.getContext('2d');
-
-            const padding = { top: 30, right: 80, bottom: 50, left: 80 };
-            const width = canvas.width - padding.left - padding.right;
-            const height = canvas.height - padding.top - padding.bottom;
-
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const diffMods = stages.map(s => s.difficultyModifier || 0);
-            const minDiff = Math.min(...diffMods, -10);
-            const maxDiff = Math.max(...diffMods, 10);
-            const range = Math.max(Math.abs(minDiff), Math.abs(maxDiff), 20);
-
-            const xScale = (i) => padding.left + (i / (stages.length - 1)) * width;
-            const yScale = (v) => padding.top + height / 2 - (v / range) * (height / 2);
-
-            // Save data for tooltip
-            chartData.difficulty = { stages, padding, width, height, xScale, range };
-
-            // Zero line
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding.left, yScale(0));
-            ctx.lineTo(padding.left + width, yScale(0));
-            ctx.stroke();
-
-            // Fill
-            ctx.beginPath();
-            ctx.moveTo(xScale(0), yScale(0));
-            for (let i = 0; i < stages.length; i++) {
-                ctx.lineTo(xScale(i), yScale(diffMods[i]));
-            }
-            ctx.lineTo(xScale(stages.length - 1), yScale(0));
-            ctx.closePath();
-
-            const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + height);
-            gradient.addColorStop(0, '#ff6b6b44');
-            gradient.addColorStop(0.5, '#44444444');
-            gradient.addColorStop(1, '#6bff6b44');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Line
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
-                const x = xScale(i);
-                const y = yScale(diffMods[i]);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-
-            // Y labels
-            ctx.fillStyle = '#888';
-            ctx.font = '12px Courier New';
-            ctx.textAlign = 'right';
-            ctx.fillText(`+${Math.round(range)}%`, padding.left - 10, padding.top + 4);
-            ctx.fillText('0%', padding.left - 10, yScale(0) + 4);
-            ctx.fillText(`${Math.round(-range)}%`, padding.left - 10, padding.top + height + 4);
         }
 
         function renderLootsChart(stages) {
@@ -1589,8 +1489,6 @@
                     valEl.textContent = (v * 100).toFixed(2) + '%';
                 } else if (slider.id === 'guaranteedRarityLevelOffset') {
                     valEl.textContent = v === 0 ? '0 (max)' : v.toString();
-                } else if (slider.id.includes('difficulty')) {
-                    valEl.textContent = (v >= 0 ? '+' : '') + Math.round(v * 100) + '%';
                 } else if (slider.id === 'powerGrowthPerLevel' || slider.id === 'bossPowerMultiplier') {
                     valEl.textContent = v.toFixed(2);
                 } else {
@@ -1600,12 +1498,6 @@
 
             // Trigger initial display
             slider.dispatchEvent(new Event('input'));
-        });
-
-        // Checkbox handler for difficultyEnabled
-        const difficultyCheckbox = document.getElementById('difficultyEnabled');
-        difficultyCheckbox.addEventListener('change', () => {
-            document.getElementById('difficultyEnabled-val').textContent = difficultyCheckbox.checked ? 'ON' : 'OFF';
         });
 
         // Checkbox handler for guaranteedRarityEnabled
@@ -1662,51 +1554,6 @@
 
         powerCanvas.addEventListener('mouseleave', () => {
             powerTooltip.classList.remove('visible');
-        });
-
-        // Tooltip handlers for Difficulty chart
-        const diffCanvas = document.getElementById('difficulty-chart');
-        const diffTooltip = document.getElementById('difficulty-tooltip');
-
-        diffCanvas.addEventListener('mousemove', (e) => {
-            const rect = diffCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const data = chartData.difficulty;
-
-            if (!data.stages || data.stages.length === 0) return;
-
-            const { stages, padding, width } = data;
-
-            const relX = x - padding.left;
-            if (relX < 0 || relX > width) {
-                diffTooltip.classList.remove('visible');
-                return;
-            }
-
-            const idx = Math.round((relX / width) * (stages.length - 1));
-            if (idx < 0 || idx >= stages.length) {
-                diffTooltip.classList.remove('visible');
-                return;
-            }
-
-            const st = stages[idx];
-            const diffSign = st.difficultyModifier >= 0 ? '+' : '';
-            diffTooltip.innerHTML = `
-                <div class="tt-title">Stage ${st.chapter}.${st.stage}</div>
-                <div class="tt-row"><span class="tt-label">Difficulty:</span> <span class="tt-value tt-diff">${diffSign}${st.difficultyModifier}%</span></div>
-                <div class="tt-row"><span class="tt-label">Hero Power:</span> <span class="tt-value tt-hero">${st.heroPower.toLocaleString()}</span></div>
-                <div class="tt-row"><span class="tt-label">Enemy Power:</span> <span class="tt-value tt-enemy">${st.enemyPower.toLocaleString()}</span></div>
-            `;
-
-            let left = e.clientX - rect.left + 15;
-            if (left + 180 > rect.width) left = e.clientX - rect.left - 180;
-            diffTooltip.style.left = left + 'px';
-            diffTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
-            diffTooltip.classList.add('visible');
-        });
-
-        diffCanvas.addEventListener('mouseleave', () => {
-            diffTooltip.classList.remove('visible');
         });
 
         // Tooltip handlers for Loots chart
