@@ -811,7 +811,7 @@
 
             // Charts
             renderLootsChart(summary.stages);
-            renderLootsChapterChart(summary.chapters);
+            renderLootsChapterChart(summary.chapters, summary.stages);
             renderLampMultChart(summary.chapters, summary.stages);
             renderRarityChart(summary.chapters);
             renderEquippedChart(summary.chapters);
@@ -1139,15 +1139,6 @@
             }
             ctx.stroke();
 
-            // Draw Guaranteed Rarity dots at bottom
-            const rarityHeight = 8;
-            for (let i = 0; i < stages.length; i++) {
-                const x = padding.left + i * barWidth;
-                const rarity = stages[i].guaranteedRarity || 'common';
-                ctx.fillStyle = RARITY_COLORS[rarity] || '#9ca3af';
-                ctx.fillRect(x, padding.top + height + 2, barWidth - 1, rarityHeight);
-            }
-
             // Left Y label (Loots)
             ctx.fillStyle = '#6bff6b';
             ctx.font = '12px Courier New';
@@ -1174,14 +1165,9 @@
             ctx.fillStyle = '#22d3ee';
             ctx.fillRect(padding.left + width - 140, padding.top - 20, 12, 12);
             ctx.fillText('TotalDrops', padding.left + width - 125, padding.top - 10);
-
-            // Rarity bar label
-            ctx.fillStyle = '#888';
-            ctx.textAlign = 'left';
-            ctx.fillText('Rarity ▼', padding.left + width - 45, padding.top - 10);
         }
 
-        function renderLootsChapterChart(chapters) {
+        function renderLootsChapterChart(chapters, stages) {
             const canvas = document.getElementById('loots-chapter-chart');
             const ctx = canvas.getContext('2d');
 
@@ -1199,8 +1185,15 @@
 
             const barWidth = width / chapters.length;
 
+            // Получаем гарантированную редкость для каждой главы (из последней стадии главы)
+            const chapterRarities = chapters.map(ch => {
+                // Ищем последнюю стадию этой главы (stage 10)
+                const lastStage = stages.find(s => s.chapter === ch.chapter && s.stage === 10);
+                return lastStage?.guaranteedRarity || 'common';
+            });
+
             // Save data for tooltip
-            chartData.lootsChapter = { chapters, padding, width, height, barWidth, maxLoots };
+            chartData.lootsChapter = { chapters, padding, width, height, barWidth, maxLoots, chapterRarities };
 
             for (let i = 0; i < chapters.length; i++) {
                 const x = padding.left + i * barWidth;
@@ -1209,6 +1202,15 @@
 
                 ctx.fillStyle = '#6bff6b';
                 ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
+            }
+
+            // Draw Guaranteed Rarity bar at bottom
+            const rarityHeight = 10;
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * barWidth;
+                const rarity = chapterRarities[i];
+                ctx.fillStyle = RARITY_COLORS[rarity] || '#9ca3af';
+                ctx.fillRect(x + 2, padding.top + height + 2, barWidth - 4, rarityHeight);
             }
 
             // X labels (chapter numbers)
@@ -1226,6 +1228,12 @@
             ctx.textAlign = 'right';
             ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
+
+            // Legend for rarity
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#888';
+            ctx.fillText('Rarity ▼', padding.left + width - 60, padding.top - 10);
         }
 
         function renderLampMultChart(chapters, stages) {
@@ -1712,10 +1720,13 @@
             }
 
             const ch = chapters[idx];
+            const rarity = data.chapterRarities?.[idx] || 'common';
+            const rarityColor = RARITY_COLORS[rarity] || '#9ca3af';
             lootsChapterTooltip.innerHTML = `
                 <div class="tt-title">Chapter ${ch.chapter}</div>
                 <div class="tt-row"><span class="tt-label">Loots:</span> <span class="tt-value tt-loots">${ch.loots}</span></div>
                 <div class="tt-row"><span class="tt-label">Defeats:</span> <span class="tt-value">${ch.defeats}</span></div>
+                <div class="tt-row"><span class="tt-label">Rarity:</span> <span class="tt-value" style="color:${rarityColor}">${rarity}</span></div>
                 <div class="tt-row"><span class="tt-label">Hero Power:</span> <span class="tt-value tt-hero">${ch.heroPower.toLocaleString()}</span></div>
             `;
 
