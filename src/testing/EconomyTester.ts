@@ -1,7 +1,7 @@
 import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
-import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
+import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots, RARITY_ORDER, Rarity } from '../models/Item';
 import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateSlotBasedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill, getGuaranteedRarity, getGuaranteedRarityWithExpected } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
@@ -50,8 +50,17 @@ function createCleanGameState(): GameState {
         inventory: [],
         lastBattleResult: null,
         lastLootedItem: null,
-        lootCounter: 0
+        lootCounter: 0,
+        rarityLootCounter: 0
     };
+}
+
+// Проверить, является ли редкость такой же или лучше целевой
+function isRarityAtLeast(itemRarity: Rarity, targetRarity: Rarity): boolean {
+    const itemIndex = RARITY_ORDER.indexOf(itemRarity);
+    const targetIndex = RARITY_ORDER.indexOf(targetRarity);
+    // RARITY_ORDER идёт от худшей к лучшей: ['common', 'good', 'rare', 'epic', 'mythic', 'legendary', 'immortal']
+    return itemIndex >= targetIndex;
 }
 
 export class EconomyTester {
@@ -83,6 +92,9 @@ export class EconomyTester {
 
     // Счётчик лутов для гарантированного апгрейда
     private totalLootCounter = 0;
+
+    // Счётчик лутов для гарантированной редкости (сбрасывается при дропе нужной редкости)
+    private rarityLootCounter = 0;
 
     constructor(config: Partial<TesterConfig> = {}) {
         this.config = { ...DEFAULT_CONFIG, ...config };
@@ -146,6 +158,7 @@ export class EconomyTester {
     // Возвращает true если предмет был экипирован (апгрейд)
     private lootOneItem(): boolean {
         this.totalLootCounter++;
+        this.rarityLootCounter++;
         const currentStage = this.getCurrentStageNumber();
         const config = getConfig();
 
@@ -159,32 +172,38 @@ export class EconomyTester {
             ? baseEveryN + Math.floor((currentStage - 1) / increaseRate)
             : baseEveryN;
 
+        // Получаем гарантированную редкость для текущей главы
+        const unlockedSlots = getUnlockedSlots(currentStage);
+        const chapter = this.state.dungeon.chapter;
+        const { rarity: guaranteedRarity, expectedFilled, totalDrops } = getGuaranteedRarityWithExpected(
+            this.state.lamp.level,
+            unlockedSlots.length,
+            chapter
+        );
+        const rarityInterval = Math.round((totalDrops / expectedFilled) * config.guaranteedRarityIntervalMultiplier);
+
         // Приоритет генерации лута:
         // 1. Гарантированный апгрейд для слабого слота (каждый currentEveryN-й)
-        // 2. Гарантированная редкость (каждый totalDrops-й)
+        // 2. Гарантированная редкость (каждый rarityInterval-й по счётчику rarityLootCounter)
         // 3. Обычный рандомный лут
 
         if (currentEveryN > 0 && this.totalLootCounter % currentEveryN === 0) {
             // Гарантированный апгрейд: предмет с максимальным уровнем для слабого слота
             item = this.generateGuaranteedUpgrade(currentStage);
+            // Сбрасываем счётчик редкости, если выпала нужная редкость
+            if (isRarityAtLeast(item.rarity as Rarity, guaranteedRarity)) {
+                this.rarityLootCounter = 0;
+            }
+        } else if (config.guaranteedRarityEnabled && rarityInterval > 0 && this.rarityLootCounter >= rarityInterval) {
+            // Гарантированная редкость на основе расчёта заполнения слотов
+            item = this.generateGuaranteedRarityItem(currentStage);
+            this.rarityLootCounter = 0;  // Сбрасываем счётчик после гарантированного дропа
         } else {
-            // Проверяем гарантированную редкость, если включено
-            // Интервал = (totalDrops / expectedFilled) * multiplier
-            const unlockedSlots = getUnlockedSlots(currentStage);
-            const chapter = this.state.dungeon.chapter;
-            const { expectedFilled, totalDrops } = getGuaranteedRarityWithExpected(
-                this.state.lamp.level,
-                unlockedSlots.length,
-                chapter
-            );
-            const rarityInterval = Math.round((totalDrops / expectedFilled) * config.guaranteedRarityIntervalMultiplier);
-
-            if (config.guaranteedRarityEnabled && rarityInterval > 0 && this.totalLootCounter % rarityInterval === 0) {
-                // Гарантированная редкость на основе расчёта заполнения слотов
-                item = this.generateGuaranteedRarityItem(currentStage);
-            } else {
-                // Обычный рандомный лут
-                item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
+            // Обычный рандомный лут
+            item = generateItemFromLamp(this.state.lamp, this.state.hero.level, currentStage);
+            // Если случайно выпала нужная редкость или лучше — сбрасываем счётчик
+            if (isRarityAtLeast(item.rarity as Rarity, guaranteedRarity)) {
+                this.rarityLootCounter = 0;
             }
         }
 
