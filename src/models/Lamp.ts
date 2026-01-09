@@ -220,13 +220,20 @@ export function updateRarityMultiplierAfterKill(
     );
 }
 
+// Результат функции getGuaranteedRarityWithExpected
+export interface GuaranteedRarityResult {
+    rarity: Rarity;
+    expectedFilled: number;  // Ожидаемое заполнение слотов для этой редкости
+    totalDrops: number;      // Базовое количество дропов (для расчёта интервала)
+}
+
 // Получить гарантированную редкость на основе расчёта заполнения слотов
-// Возвращает лучшую редкость с expectedFilled >= 1.0
-export function getGuaranteedRarity(
+// Возвращает лучшую редкость с expectedFilled >= 1.0 и её expectedFilled
+export function getGuaranteedRarityWithExpected(
     lampLevel: number,
     totalSlots: number,
     chapter: number
-): Rarity {
+): GuaranteedRarityResult {
     const lampConfig = getLampLevelConfig(lampLevel);
     const weights = lampConfig.weights;
     const config = getConfig();
@@ -238,7 +245,7 @@ export function getGuaranteedRarity(
     for (const weight of Object.values(weights)) {
         if (weight && weight > 0) totalWeight += weight;
     }
-    if (totalWeight === 0) return 'common';
+    if (totalWeight === 0) return { rarity: 'common', expectedFilled: 1.0, totalDrops };
 
     // Редкости от лучшей к худшей
     const rarityOrder: Rarity[] = ['immortal', 'legendary', 'mythic', 'epic', 'rare', 'good', 'common'];
@@ -258,13 +265,22 @@ export function getGuaranteedRarity(
         const expectedFilled = remainingSlots * (1 - Math.pow((remainingSlots - 1) / remainingSlots, drops));
 
         if (expectedFilled >= 1.0) {
-            return rarity;  // Лучшая редкость с ожидаемым заполнением >= 1 слота
+            return { rarity, expectedFilled, totalDrops };  // Лучшая редкость с ожидаемым заполнением >= 1 слота
         }
 
         remainingSlots -= expectedFilled;
     }
 
-    return 'common';  // Fallback
+    return { rarity: 'common', expectedFilled: 1.0, totalDrops };  // Fallback
+}
+
+// Обёртка для обратной совместимости — возвращает только редкость
+export function getGuaranteedRarity(
+    lampLevel: number,
+    totalSlots: number,
+    chapter: number
+): Rarity {
+    return getGuaranteedRarityWithExpected(lampLevel, totalSlots, chapter).rarity;
 }
 
 // Генерация предмета с гарантированной редкостью

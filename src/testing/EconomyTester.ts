@@ -2,7 +2,7 @@ import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
-import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateSlotBasedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill, getGuaranteedRarity } from '../models/Lamp';
+import { generateItemFromLamp, getUpgradeCost, createLamp, MAX_LAMP_LEVEL, calculateSlotBasedRarityMultiplier, rollRarity, getLampLevelConfig, updateRarityMultiplierAfterKill, getGuaranteedRarity, getGuaranteedRarityWithExpected } from '../models/Lamp';
 import { generateEnemyWave } from '../models/Enemy';
 import { simulateBattle } from '../systems/BattleSystem';
 import { createDungeonProgress, advanceProgress, isBossStage, getBossMultiplier, getBaseStagePower, STAGES_PER_CHAPTER, getStageXpReward, getAdjustedEnemyPower, adjustDifficultyOnVictory, adjustDifficultyOnDefeat } from '../systems/DungeonSystem';
@@ -168,9 +168,18 @@ export class EconomyTester {
             // Гарантированный апгрейд: предмет с максимальным уровнем для слабого слота
             item = this.generateGuaranteedUpgrade(currentStage);
         } else {
-            // Проверяем гарантированную редкость (каждый totalDrops-й лут), если включено
-            const totalDrops = config.baseDropsForMultiplier + (this.state.dungeon.chapter - 1) * config.dropsPerChapter;
-            if (config.guaranteedRarityEnabled && totalDrops > 0 && this.totalLootCounter % totalDrops === 0) {
+            // Проверяем гарантированную редкость, если включено
+            // Интервал = (totalDrops / expectedFilled) * multiplier
+            const unlockedSlots = getUnlockedSlots(currentStage);
+            const chapter = this.state.dungeon.chapter;
+            const { expectedFilled, totalDrops } = getGuaranteedRarityWithExpected(
+                this.state.lamp.level,
+                unlockedSlots.length,
+                chapter
+            );
+            const rarityInterval = Math.round((totalDrops / expectedFilled) * config.guaranteedRarityIntervalMultiplier);
+
+            if (config.guaranteedRarityEnabled && rarityInterval > 0 && this.totalLootCounter % rarityInterval === 0) {
                 // Гарантированная редкость на основе расчёта заполнения слотов
                 item = this.generateGuaranteedRarityItem(currentStage);
             } else {
@@ -411,10 +420,14 @@ export class EconomyTester {
             : baseEveryN;
 
         // Гарантированная редкость на основе расчёта заполнения слотов
-        const guaranteedRarity = getGuaranteedRarity(this.state.lamp.level, unlockedSlots.length, chapter);
+        const { rarity: guaranteedRarity, expectedFilled, totalDrops: baseTotalDrops } = getGuaranteedRarityWithExpected(
+            this.state.lamp.level,
+            unlockedSlots.length,
+            chapter
+        );
 
-        // Интервал гарантированного лута по редкости
-        const totalDrops = config.baseDropsForMultiplier + (chapter - 1) * config.dropsPerChapter;
+        // Интервал гарантированного лута по редкости = (totalDrops / expectedFilled) * multiplier
+        const rarityInterval = Math.round((baseTotalDrops / expectedFilled) * config.guaranteedRarityIntervalMultiplier);
 
         this.stages.push({
             chapter,
@@ -435,7 +448,7 @@ export class EconomyTester {
             gold: this.state.hero.gold,
             guaranteedEveryN: currentEveryN,
             guaranteedRarity: guaranteedRarity,
-            totalDrops: totalDrops
+            totalDrops: rarityInterval
         });
     }
 

@@ -1,7 +1,7 @@
 import { Hero, createHero, updateHeroStats, equipItem, healHero } from '../models/Hero';
 import { Item, migrateItemStats, SlotType, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots } from '../models/Item';
 import { Enemy, generateEnemyWave } from '../models/Enemy';
-import { Lamp, createLamp, generateItemFromLamp, generateGuaranteedRarityItem, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity, calculateExpectedRarityMultiplier } from '../models/Lamp';
+import { Lamp, createLamp, generateItemFromLamp, generateGuaranteedRarityItem, getUpgradeCost, getLampLevelConfig, MAX_LAMP_LEVEL, rollRarity, calculateExpectedRarityMultiplier, getGuaranteedRarityWithExpected } from '../models/Lamp';
 import { getConfig } from '../config/ConfigStore';
 import { DungeonProgress, createDungeonProgress, advanceProgress, isBossStage, BOSS_MULTIPLIER, getStageXpReward, STAGES_PER_CHAPTER, getAdjustedEnemyPower, getBossMultiplier } from './DungeonSystem';
 import { simulateBattle, CombatConfig, BattleResult, BattleState, initBattleFromGameState, executeBattleRound } from './BattleSystem';
@@ -216,9 +216,18 @@ export function openLoot(state: GameState): Item | null {
         // Гарантированный апгрейд: генерируем предмет для самого слабого слота
         item = generateGuaranteedUpgrade(state, currentStage);
     } else {
-        // Проверяем гарантированную редкость (каждый totalDrops-й лут), если включено
-        const totalDrops = config.baseDropsForMultiplier + (state.dungeon.chapter - 1) * config.dropsPerChapter;
-        if (config.guaranteedRarityEnabled && totalDrops > 0 && state.lootCounter % totalDrops === 0) {
+        // Проверяем гарантированную редкость, если включено
+        // Интервал = (totalDrops / expectedFilled) * multiplier
+        const unlockedSlots = getUnlockedSlots(currentStage);
+        const chapter = state.dungeon.chapter;
+        const { expectedFilled, totalDrops } = getGuaranteedRarityWithExpected(
+            state.lamp.level,
+            unlockedSlots.length,
+            chapter
+        );
+        const rarityInterval = Math.round((totalDrops / expectedFilled) * config.guaranteedRarityIntervalMultiplier);
+
+        if (config.guaranteedRarityEnabled && rarityInterval > 0 && state.lootCounter % rarityInterval === 0) {
             // Гарантированная редкость на основе расчёта заполнения слотов
             item = generateGuaranteedRarityItem(state.lamp, state.hero.level, currentStage);
         } else {
