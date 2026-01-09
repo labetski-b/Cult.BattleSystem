@@ -231,6 +231,7 @@ export class EconomyTester {
     private generateGuaranteedRarityItem(currentStage: number): Item {
         const unlockedSlots = getUnlockedSlots(currentStage);
         const chapter = this.state.dungeon.chapter;
+        const config = getConfig();
 
         // Получаем гарантированную редкость
         const rarity = getGuaranteedRarity(this.state.lamp.level, unlockedSlots.length, chapter);
@@ -238,10 +239,9 @@ export class EconomyTester {
         // Случайный слот из разблокированных
         const slot: SlotType = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
 
-        // Уровень — с бонусом (как для максимальной редкости)
-        const config = getConfig();
-        const levelOffset = config.maxRarityLevelOffset;
-        const itemLevel = Math.max(1, this.state.hero.level - Math.floor(Math.random() * (levelOffset + 1)));
+        // Уровень: heroLevel + offset (offset от -5 до 0, где 0 = max)
+        const levelOffset = config.guaranteedRarityLevelOffset;
+        const itemLevel = Math.max(1, this.state.hero.level + levelOffset);
 
         // Рассчитываем статы
         const stats = calculateItemStats(slot, itemLevel, rarity);

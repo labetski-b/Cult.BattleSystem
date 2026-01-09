@@ -292,6 +292,7 @@ export function generateGuaranteedRarityItem(
 ): Item {
     const unlockedSlots = getUnlockedSlots(currentStage);
     const chapter = Math.floor((currentStage - 1) / 10) + 1;  // STAGES_PER_CHAPTER = 10
+    const config = getConfig();
 
     // Получаем гарантированную редкость
     const rarity = getGuaranteedRarity(lamp.level, unlockedSlots.length, chapter);
@@ -299,8 +300,9 @@ export function generateGuaranteedRarityItem(
     // Случайный слот из разблокированных
     const slot: SlotType = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
 
-    // Уровень — с бонусом (как для максимальной редкости)
-    const level = rollItemLevel(heroLevel, true);
+    // Уровень: heroLevel + offset (offset от -5 до 0, где 0 = max)
+    const levelOffset = config.guaranteedRarityLevelOffset;
+    const level = Math.max(1, heroLevel + levelOffset);
 
     // Рассчитываем статы
     const stats = calculateItemStats(slot, level, rarity);

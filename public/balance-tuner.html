@@ -301,6 +301,11 @@
                     <input type="range" id="guaranteedRarityIntervalMultiplier" min="0" max="5" step="0.1" value="1">
                     <span class="value-display" id="guaranteedRarityIntervalMultiplier-val">1.0</span>
                 </div>
+                <div class="control-row">
+                    <label>Rarity Level Offset</label>
+                    <input type="range" id="guaranteedRarityLevelOffset" min="-5" max="0" step="1" value="0">
+                    <span class="value-display" id="guaranteedRarityLevelOffset-val">0 (max)</span>
+                </div>
             </div>
 
             <div class="control-group">
@@ -685,6 +690,9 @@
             if (settings.guaranteedRarityIntervalMultiplier !== undefined) {
                 setSlider('guaranteedRarityIntervalMultiplier', settings.guaranteedRarityIntervalMultiplier);
             }
+            if (settings.guaranteedRarityLevelOffset !== undefined) {
+                setSlider('guaranteedRarityLevelOffset', settings.guaranteedRarityLevelOffset);
+            }
             if (settings.difficultyEnabled !== undefined) {
                 document.getElementById('difficultyEnabled').checked = settings.difficultyEnabled;
                 document.getElementById('difficultyEnabled-val').textContent = settings.difficultyEnabled ? 'ON' : 'OFF';
@@ -746,6 +754,7 @@
                 guaranteedUpgradeIncreaseEveryNStages: parseInt(document.getElementById('guaranteedUpgradeIncreaseEveryNStages').value),
                 guaranteedRarityEnabled: document.getElementById('guaranteedRarityEnabled').checked,
                 guaranteedRarityIntervalMultiplier: parseFloat(document.getElementById('guaranteedRarityIntervalMultiplier').value),
+                guaranteedRarityLevelOffset: parseInt(document.getElementById('guaranteedRarityLevelOffset').value),
                 difficultyEnabled: document.getElementById('difficultyEnabled').checked,
                 difficultyOnVictory: parseFloat(document.getElementById('difficultyOnVictory').value),
                 difficultyOnDefeat: parseFloat(document.getElementById('difficultyOnDefeat').value),
@@ -1526,6 +1535,8 @@
                     valEl.textContent = Math.round(v * 100) + '%';
                 } else if (slider.id === 'minProbForGradualGrowth') {
                     valEl.textContent = (v * 100).toFixed(2) + '%';
+                } else if (slider.id === 'guaranteedRarityLevelOffset') {
+                    valEl.textContent = v === 0 ? '0 (max)' : v.toString();
                 } else if (slider.id.includes('difficulty')) {
                     valEl.textContent = (v >= 0 ? '+' : '') + Math.round(v * 100) + '%';
                 } else if (slider.id === 'powerGrowthPerLevel' || slider.id === 'bossPowerMultiplier') {

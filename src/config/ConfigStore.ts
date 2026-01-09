@@ -37,6 +37,7 @@ export interface BalanceOverrides {
     dropsPerChapter?: number;           // увеличение дропов за главу (2)
     guaranteedRarityEnabled?: boolean;  // включить/выключить гарантированный дроп по редкости
     guaranteedRarityIntervalMultiplier?: number;  // множитель интервала (0-5, default: 1)
+    guaranteedRarityLevelOffset?: number;  // оффсет уровня (-5 до 0, где 0 = макс уровень)
 }
 
 // Полный конфиг с дефолтными значениями
@@ -59,6 +60,7 @@ export interface BalanceConfig {
     dropsPerChapter: number;
     guaranteedRarityEnabled: boolean;
     guaranteedRarityIntervalMultiplier: number;
+    guaranteedRarityLevelOffset: number;
 }
 
 // Загружаем дефолтные множители редкостей из JSON
@@ -89,6 +91,7 @@ const defaults: BalanceConfig = {
     dropsPerChapter: (balanceData.rarityMultiplier as { dropsPerChapter: number }).dropsPerChapter,
     guaranteedRarityEnabled: true,  // по умолчанию включено
     guaranteedRarityIntervalMultiplier: 1,  // по умолчанию = 1 (интервал = totalDrops / expectedFilled)
+    guaranteedRarityLevelOffset: 0,  // по умолчанию = 0 (максимальный уровень = heroLevel)
 };
 
 // Текущие переопределения
@@ -125,6 +128,7 @@ export function getConfig(): BalanceConfig {
         dropsPerChapter: currentOverrides.dropsPerChapter ?? defaults.dropsPerChapter,
         guaranteedRarityEnabled: currentOverrides.guaranteedRarityEnabled ?? defaults.guaranteedRarityEnabled,
         guaranteedRarityIntervalMultiplier: currentOverrides.guaranteedRarityIntervalMultiplier ?? defaults.guaranteedRarityIntervalMultiplier,
+        guaranteedRarityLevelOffset: currentOverrides.guaranteedRarityLevelOffset ?? defaults.guaranteedRarityLevelOffset,
     };
 }
 
