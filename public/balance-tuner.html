@@ -560,6 +560,27 @@
             const n = summaries.length;
             const first = summaries[0];
 
+            // Вычисляем max loots per stage и per chapter для каждой симуляции
+            const maxLootsPerStageValues = summaries.map(s => Math.max(...s.stages.map(st => st.loots)));
+            const maxLootsPerChapterValues = summaries.map(s => Math.max(...s.chapters.map(ch => ch.loots)));
+
+            // Вычисляем среднее и стандартное отклонение
+            const avgMaxLootsPerStage = maxLootsPerStageValues.reduce((a, b) => a + b, 0) / n;
+            const avgMaxLootsPerChapter = maxLootsPerChapterValues.reduce((a, b) => a + b, 0) / n;
+
+            const stdMaxLootsPerStage = Math.sqrt(
+                maxLootsPerStageValues.reduce((sum, v) => sum + Math.pow(v - avgMaxLootsPerStage, 2), 0) / n
+            );
+            const stdMaxLootsPerChapter = Math.sqrt(
+                maxLootsPerChapterValues.reduce((sum, v) => sum + Math.pow(v - avgMaxLootsPerChapter, 2), 0) / n
+            );
+
+            // Min/Max для диапазона
+            const minMaxLootsPerStage = Math.min(...maxLootsPerStageValues);
+            const maxMaxLootsPerStage = Math.max(...maxLootsPerStageValues);
+            const minMaxLootsPerChapter = Math.min(...maxLootsPerChapterValues);
+            const maxMaxLootsPerChapter = Math.max(...maxLootsPerChapterValues);
+
             // Усредняем скаляры
             const avgSummary = {
                 totalChapters: Math.round(summaries.reduce((s, r) => s + r.totalChapters, 0) / n),
@@ -573,7 +594,22 @@
                 finalHeroPower: Math.round(summaries.reduce((s, r) => s + r.finalHeroPower, 0) / n),
                 finalHeroLevel: Math.round(summaries.reduce((s, r) => s + r.finalHeroLevel, 0) / n),
                 chapters: [],
-                stages: []
+                stages: [],
+                // Статистика дисперсии max loots
+                varianceStats: {
+                    maxLootsPerStage: {
+                        avg: Math.round(avgMaxLootsPerStage * 10) / 10,
+                        std: Math.round(stdMaxLootsPerStage * 10) / 10,
+                        min: minMaxLootsPerStage,
+                        max: maxMaxLootsPerStage
+                    },
+                    maxLootsPerChapter: {
+                        avg: Math.round(avgMaxLootsPerChapter * 10) / 10,
+                        std: Math.round(stdMaxLootsPerChapter * 10) / 10,
+                        min: minMaxLootsPerChapter,
+                        max: maxMaxLootsPerChapter
+                    }
+                }
             };
 
             // Усредняем chapters (по индексу)
@@ -786,7 +822,7 @@
 
             // Summary grid
             const avgLabel = numRuns > 1 ? ' (avg)' : '';
-            const summaryHtml = `
+            let summaryHtml = `
                 <div class="summary-item">
                     <div class="summary-value">${summary.totalChapters}</div>
                     <div class="summary-label">Chapters</div>
@@ -812,6 +848,22 @@
                     <div class="summary-label">Final Lamp Lvl</div>
                 </div>
             `;
+
+            // Добавляем статистику дисперсии если есть (только при numRuns > 1)
+            if (summary.varianceStats) {
+                const vs = summary.varianceStats;
+                summaryHtml += `
+                <div class="summary-item" style="background: #3a2a4e;">
+                    <div class="summary-value">${vs.maxLootsPerStage.avg} ±${vs.maxLootsPerStage.std}</div>
+                    <div class="summary-label">Max Loots/Stage (${vs.maxLootsPerStage.min}-${vs.maxLootsPerStage.max})</div>
+                </div>
+                <div class="summary-item" style="background: #3a2a4e;">
+                    <div class="summary-value">${vs.maxLootsPerChapter.avg} ±${vs.maxLootsPerChapter.std}</div>
+                    <div class="summary-label">Max Loots/Chapter (${vs.maxLootsPerChapter.min}-${vs.maxLootsPerChapter.max})</div>
+                </div>
+                `;
+            }
+
             document.getElementById('summary-grid').innerHTML = summaryHtml;
 
             // Tables
