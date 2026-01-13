@@ -265,6 +265,16 @@
                     <span class="value-display" id="guaranteedUpgrade-increase-display">10</span>
                 </div>
             </div>
+
+            <!-- Feature 4: Rarity Display -->
+            <div class="control-group">
+                <h3>Feature 4: Rarity Display</h3>
+                <div class="control-row">
+                    <label>Enabled</label>
+                    <input type="checkbox" id="rarity-enabled" checked>
+                </div>
+                <p style="font-size: 10px; color: #666; margin: 5px 0 0 0;">Показывает полоску редкости на графике Loots per Chapter</p>
+            </div>
         </div>
 
         <div class="buttons">
@@ -327,6 +337,14 @@
                     guaranteedUpgradeEveryN: 0
                 }),
                 isEnabled: () => document.getElementById('guaranteedUpgrade-enabled').checked
+            },
+            {
+                id: 'rarity',
+                name: 'Rarity Display',
+                getOverrides: () => ({}),  // Не меняет симуляцию
+                getDisabled: () => ({}),   // Не меняет симуляцию
+                isEnabled: () => document.getElementById('rarity-enabled').checked,
+                isVisualOnly: true  // Флаг что это только визуальная фича
             }
         ];
 
@@ -341,6 +359,7 @@
 
             try {
                 const results = [];
+                const enabledFeatures = new Set();  // Track which features are enabled for each layer
 
                 // Layer 0: Baseline (all features disabled)
                 let overrides = {};
@@ -351,18 +370,29 @@
                 const baselineSummary = runMultipleSimulations(overrides, maxChapters, numRuns);
                 results.push({
                     name: 'Baseline',
-                    summary: baselineSummary
+                    summary: baselineSummary,
+                    enabledFeatures: new Set()  // No features enabled in baseline
                 });
 
                 // Layers 1-N: sequentially enable features
                 FEATURES.forEach((feature) => {
                     if (!feature.isEnabled()) return;
 
-                    Object.assign(overrides, feature.getOverrides());
-                    const summary = runMultipleSimulations(overrides, maxChapters, numRuns);
+                    enabledFeatures.add(feature.id);
+
+                    // Visual-only features don't change simulation
+                    if (!feature.isVisualOnly) {
+                        Object.assign(overrides, feature.getOverrides());
+                    }
+
+                    const summary = feature.isVisualOnly
+                        ? results[results.length - 1].summary  // Reuse previous summary
+                        : runMultipleSimulations(overrides, maxChapters, numRuns);
+
                     results.push({
                         name: `+ ${feature.name}`,
-                        summary: summary
+                        summary: summary,
+                        enabledFeatures: new Set(enabledFeatures)  // Copy current set
                     });
                 });
 
@@ -470,6 +500,7 @@
                 container.appendChild(layer);
 
                 // Render charts after DOM is updated
+                const enabledFeatures = result.enabledFeatures;
                 setTimeout(() => {
                     renderLootsChart(
                         document.getElementById(`loots-stage-${index}`),
@@ -478,7 +509,8 @@
                     renderLootsChapterChart(
                         document.getElementById(`loots-chapter-${index}`),
                         result.summary.chapters,
-                        result.summary.stages
+                        result.summary.stages,
+                        { showRarity: enabledFeatures.has('rarity') }
                     );
                 }, 0);
             });
@@ -541,44 +573,53 @@
                 ctx.fillRect(x, y, barWidth - 1, barHeight);
             }
 
-            // Draw EveryN line
+            // Check if lines should be drawn (not all zeros)
+            const hasEveryN = everyNValues.some(v => v > 0);
+            const hasTotalDrops = totalDropsValues.some(v => v > 0);
+
             const yScaleEveryN = (v) => padding.top + height - (v / maxEveryN) * height;
             const xScale = (i) => padding.left + i * barWidth + barWidth / 2;
 
-            // Fill area under EveryN line
-            ctx.beginPath();
-            ctx.moveTo(xScale(0), padding.top + height);
-            for (let i = 0; i < stages.length; i++) {
-                ctx.lineTo(xScale(i), yScaleEveryN(everyNValues[i]));
+            // Fill area under EveryN line (only if has values)
+            if (hasEveryN) {
+                ctx.beginPath();
+                ctx.moveTo(xScale(0), padding.top + height);
+                for (let i = 0; i < stages.length; i++) {
+                    ctx.lineTo(xScale(i), yScaleEveryN(everyNValues[i]));
+                }
+                ctx.lineTo(xScale(stages.length - 1), padding.top + height);
+                ctx.closePath();
+                ctx.fillStyle = '#ffd70022';
+                ctx.fill();
             }
-            ctx.lineTo(xScale(stages.length - 1), padding.top + height);
-            ctx.closePath();
-            ctx.fillStyle = '#ffd70022';
-            ctx.fill();
 
-            // EveryN line
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
-                const x = xScale(i);
-                const y = yScaleEveryN(everyNValues[i]);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+            // EveryN line (only if has values)
+            if (hasEveryN) {
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < stages.length; i++) {
+                    const x = xScale(i);
+                    const y = yScaleEveryN(everyNValues[i]);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
             }
-            ctx.stroke();
 
-            // TotalDrops line
-            ctx.strokeStyle = '#22d3ee';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let i = 0; i < stages.length; i++) {
-                const x = xScale(i);
-                const y = yScaleEveryN(totalDropsValues[i]);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+            // TotalDrops line (only if has values)
+            if (hasTotalDrops) {
+                ctx.strokeStyle = '#22d3ee';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < stages.length; i++) {
+                    const x = xScale(i);
+                    const y = yScaleEveryN(totalDropsValues[i]);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
             }
-            ctx.stroke();
 
             // Left Y label (Loots)
             ctx.fillStyle = '#6bff6b';
@@ -587,30 +628,41 @@
             ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
 
-            // Right Y label (EveryN)
-            ctx.fillStyle = '#ffd700';
-            ctx.textAlign = 'left';
-            ctx.fillText(maxEveryN.toString(), padding.left + width + 10, padding.top + 4);
-            ctx.fillText('0', padding.left + width + 10, padding.top + height + 4);
+            // Right Y label (EveryN) - only if has lines
+            if (hasEveryN || hasTotalDrops) {
+                ctx.fillStyle = '#ffd700';
+                ctx.textAlign = 'left';
+                ctx.fillText(maxEveryN.toString(), padding.left + width + 10, padding.top + 4);
+                ctx.fillText('0', padding.left + width + 10, padding.top + height + 4);
+            }
 
             // Legend
             ctx.font = '11px Courier New';
+            let legendX = padding.left + width - 300;
+
             ctx.fillStyle = '#6bff6b';
-            ctx.fillRect(padding.left + width - 300, padding.top - 20, 12, 12);
-            ctx.fillText('Loots', padding.left + width - 285, padding.top - 10);
+            ctx.fillRect(legendX, padding.top - 20, 12, 12);
+            ctx.fillText('Loots', legendX + 15, padding.top - 10);
+            legendX += 80;
 
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(padding.left + width - 220, padding.top - 20, 12, 12);
-            ctx.fillText('EveryN', padding.left + width - 205, padding.top - 10);
+            if (hasEveryN) {
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(legendX, padding.top - 20, 12, 12);
+                ctx.fillText('EveryN', legendX + 15, padding.top - 10);
+                legendX += 80;
+            }
 
-            ctx.fillStyle = '#22d3ee';
-            ctx.fillRect(padding.left + width - 140, padding.top - 20, 12, 12);
-            ctx.fillText('TotalDrops', padding.left + width - 125, padding.top - 10);
+            if (hasTotalDrops) {
+                ctx.fillStyle = '#22d3ee';
+                ctx.fillRect(legendX, padding.top - 20, 12, 12);
+                ctx.fillText('TotalDrops', legendX + 15, padding.top - 10);
+            }
         }
 
-        function renderLootsChapterChart(canvas, chapters, stages) {
+        function renderLootsChapterChart(canvas, chapters, stages, options = {}) {
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
+            const showRarity = options.showRarity || false;
 
             const padding = { top: 30, right: 80, bottom: 50, left: 80 };
             const width = canvas.width - padding.left - padding.right;
@@ -626,11 +678,11 @@
 
             const barWidth = width / chapters.length;
 
-            // Get guaranteed rarity for each chapter
-            const chapterRarities = chapters.map(ch => {
+            // Get guaranteed rarity for each chapter (only if showing)
+            const chapterRarities = showRarity ? chapters.map(ch => {
                 const lastStage = stages.find(s => s.chapter === ch.chapter && s.stage === 10);
                 return lastStage?.guaranteedRarity || 'common';
-            });
+            }) : [];
 
             for (let i = 0; i < chapters.length; i++) {
                 const x = padding.left + i * barWidth;
@@ -641,13 +693,15 @@
                 ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
             }
 
-            // Draw Guaranteed Rarity bar at bottom
-            const rarityHeight = 10;
-            for (let i = 0; i < chapters.length; i++) {
-                const x = padding.left + i * barWidth;
-                const rarity = chapterRarities[i];
-                ctx.fillStyle = RARITY_COLORS[rarity] || '#9ca3af';
-                ctx.fillRect(x + 2, padding.top + height + 2, barWidth - 4, rarityHeight);
+            // Draw Guaranteed Rarity bar at bottom (only if showRarity)
+            if (showRarity) {
+                const rarityHeight = 10;
+                for (let i = 0; i < chapters.length; i++) {
+                    const x = padding.left + i * barWidth;
+                    const rarity = chapterRarities[i];
+                    ctx.fillStyle = RARITY_COLORS[rarity] || '#9ca3af';
+                    ctx.fillRect(x + 2, padding.top + height + 2, barWidth - 4, rarityHeight);
+                }
             }
 
             // X labels
@@ -666,11 +720,13 @@
             ctx.fillText(maxLoots.toString(), padding.left - 10, padding.top + 4);
             ctx.fillText('0', padding.left - 10, padding.top + height + 4);
 
-            // Legend for rarity
-            ctx.font = '11px Courier New';
-            ctx.textAlign = 'left';
-            ctx.fillStyle = '#888';
-            ctx.fillText('Rarity ▼', padding.left + width - 60, padding.top - 10);
+            // Legend for rarity (only when showRarity is enabled)
+            if (showRarity) {
+                ctx.font = '11px Courier New';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#888';
+                ctx.fillText('Rarity ▼', padding.left + width - 60, padding.top - 10);
+            }
         }
 
         // Update value displays when sliders change
