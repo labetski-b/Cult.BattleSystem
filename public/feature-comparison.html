@@ -192,12 +192,18 @@
         .diff-positive { color: #ff6b6b; }
         .diff-negative { color: #6bff6b; }
         .diff-neutral { color: #888; }
+
+        .info-text {
+            font-size: 11px;
+            color: #666;
+            margin: 5px 0 0 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Feature Comparison</h1>
-        <p style="color: #888; margin-bottom: 20px;">Послойная визуализация влияния фич на экономику</p>
+        <p style="color: #888; margin-bottom: 20px;">Независимые симуляторы для сравнения фич</p>
 
         <!-- Controls -->
         <div class="controls-panel">
@@ -214,66 +220,36 @@
                 </div>
             </div>
 
-            <!-- Feature 1: Item Level -->
+            <!-- Simulators Selection -->
             <div class="control-group">
-                <h3>Feature 1: Item Level (Guaranteed Rarity)</h3>
+                <h3>Simulators</h3>
                 <div class="control-row">
-                    <label>Enabled</label>
-                    <input type="checkbox" id="itemLevel-enabled" checked>
+                    <label>V0: Baseline</label>
+                    <input type="checkbox" id="sim-baseline" checked disabled>
                 </div>
                 <div class="control-row">
-                    <label>Interval Multiplier</label>
-                    <input type="range" id="itemLevel-multiplier" min="0" max="5" step="0.1" value="1">
-                    <span class="value-display" id="itemLevel-multiplier-display">1.0</span>
+                    <label>V1: + Item Level</label>
+                    <input type="checkbox" id="sim-itemLevel" checked>
                 </div>
                 <div class="control-row">
-                    <label>Level Offset</label>
-                    <input type="range" id="itemLevel-offset" min="-5" max="0" step="1" value="0">
-                    <span class="value-display" id="itemLevel-offset-display">0</span>
+                    <label>V2: + Power Variance</label>
+                    <input type="checkbox" id="sim-variance" checked>
                 </div>
+                <div class="control-row">
+                    <label>V3: + Guaranteed Upgrade</label>
+                    <input type="checkbox" id="sim-guaranteed" checked>
+                </div>
+                <p class="info-text">Каждый симулятор — независимая копия логики</p>
             </div>
 
-            <!-- Feature 2: Power Variance -->
+            <!-- Rarity Display -->
             <div class="control-group">
-                <h3>Feature 2: Power Variance</h3>
+                <h3>Display Options</h3>
                 <div class="control-row">
-                    <label>Enabled</label>
-                    <input type="checkbox" id="powerVariance-enabled" checked>
+                    <label>Show Rarity Bar</label>
+                    <input type="checkbox" id="showRarity" checked>
                 </div>
-                <div class="control-row">
-                    <label>Variance</label>
-                    <input type="range" id="powerVariance-value" min="0" max="0.5" step="0.05" value="0.15">
-                    <span class="value-display" id="powerVariance-value-display">0.15</span>
-                </div>
-            </div>
-
-            <!-- Feature 3: Guaranteed Upgrade -->
-            <div class="control-group">
-                <h3>Feature 3: Guaranteed Upgrade</h3>
-                <div class="control-row">
-                    <label>Enabled</label>
-                    <input type="checkbox" id="guaranteedUpgrade-enabled" checked>
-                </div>
-                <div class="control-row">
-                    <label>Every N Loots</label>
-                    <input type="range" id="guaranteedUpgrade-everyN" min="0" max="20" step="1" value="4">
-                    <span class="value-display" id="guaranteedUpgrade-everyN-display">4</span>
-                </div>
-                <div class="control-row">
-                    <label>Increase Every N Stages</label>
-                    <input type="range" id="guaranteedUpgrade-increase" min="0" max="50" step="5" value="10">
-                    <span class="value-display" id="guaranteedUpgrade-increase-display">10</span>
-                </div>
-            </div>
-
-            <!-- Feature 4: Rarity Display -->
-            <div class="control-group">
-                <h3>Feature 4: Rarity Display</h3>
-                <div class="control-row">
-                    <label>Enabled</label>
-                    <input type="checkbox" id="rarity-enabled" checked>
-                </div>
-                <p style="font-size: 10px; color: #666; margin: 5px 0 0 0;">Показывает полоску редкости на графике Loots per Chapter</p>
+                <p class="info-text">Полоска редкости на графике Loots per Chapter</p>
             </div>
         </div>
 
@@ -288,7 +264,12 @@
     </div>
 
     <script type="module">
-        import { runSimulation as runSim, getDefaults } from '/src/testing/BrowserEconomyTester.ts';
+        import {
+            BaselineSimulator,
+            ItemLevelSimulator,
+            VarianceSimulator,
+            GuaranteedSimulator
+        } from '../src/testing/comparison/index.ts';
 
         const RARITY_COLORS = {
             common: '#9ca3af',
@@ -300,51 +281,31 @@
             immortal: '#fbbf24'
         };
 
-        // Feature definitions
-        const FEATURES = [
+        // Simulator definitions
+        const SIMULATORS = [
+            {
+                id: 'baseline',
+                name: 'V0: Baseline',
+                class: BaselineSimulator,
+                isEnabled: () => true  // Always enabled
+            },
             {
                 id: 'itemLevel',
-                name: 'Item Level',
-                getOverrides: () => ({
-                    guaranteedRarityEnabled: true,
-                    guaranteedRarityIntervalMultiplier: parseFloat(document.getElementById('itemLevel-multiplier').value),
-                    guaranteedRarityLevelOffset: parseInt(document.getElementById('itemLevel-offset').value)
-                }),
-                getDisabled: () => ({
-                    guaranteedRarityEnabled: false
-                }),
-                isEnabled: () => document.getElementById('itemLevel-enabled').checked
+                name: 'V1: + Item Level',
+                class: ItemLevelSimulator,
+                isEnabled: () => document.getElementById('sim-itemLevel').checked
             },
             {
-                id: 'powerVariance',
-                name: 'Power Variance',
-                getOverrides: () => ({
-                    powerVariance: parseFloat(document.getElementById('powerVariance-value').value)
-                }),
-                getDisabled: () => ({
-                    powerVariance: 0
-                }),
-                isEnabled: () => document.getElementById('powerVariance-enabled').checked
+                id: 'variance',
+                name: 'V2: + Power Variance',
+                class: VarianceSimulator,
+                isEnabled: () => document.getElementById('sim-variance').checked
             },
             {
-                id: 'guaranteedUpgrade',
-                name: 'Guaranteed Upgrade',
-                getOverrides: () => ({
-                    guaranteedUpgradeEveryN: parseInt(document.getElementById('guaranteedUpgrade-everyN').value),
-                    guaranteedUpgradeIncreaseEveryNStages: parseInt(document.getElementById('guaranteedUpgrade-increase').value)
-                }),
-                getDisabled: () => ({
-                    guaranteedUpgradeEveryN: 0
-                }),
-                isEnabled: () => document.getElementById('guaranteedUpgrade-enabled').checked
-            },
-            {
-                id: 'rarity',
-                name: 'Rarity Display',
-                getOverrides: () => ({}),  // Не меняет симуляцию
-                getDisabled: () => ({}),   // Не меняет симуляцию
-                isEnabled: () => document.getElementById('rarity-enabled').checked,
-                isVisualOnly: true  // Флаг что это только визуальная фича
+                id: 'guaranteed',
+                name: 'V3: + Guaranteed Upgrade',
+                class: GuaranteedSimulator,
+                isEnabled: () => document.getElementById('sim-guaranteed').checked
             }
         ];
 
@@ -359,47 +320,23 @@
 
             try {
                 const results = [];
-                const enabledFeatures = new Set();  // Track which features are enabled for each layer
 
-                // Layer 0: Baseline (all features disabled)
-                let overrides = {};
-                FEATURES.forEach(f => {
-                    Object.assign(overrides, f.getDisabled());
-                });
+                for (const sim of SIMULATORS) {
+                    if (!sim.isEnabled()) continue;
 
-                const baselineSummary = runMultipleSimulations(overrides, maxChapters, numRuns);
-                results.push({
-                    name: 'Baseline',
-                    summary: baselineSummary,
-                    enabledFeatures: new Set()  // No features enabled in baseline
-                });
+                    status.textContent = `Running ${sim.name}...`;
 
-                // Layers 1-N: sequentially enable features
-                FEATURES.forEach((feature) => {
-                    if (!feature.isEnabled()) return;
-
-                    enabledFeatures.add(feature.id);
-
-                    // Visual-only features don't change simulation
-                    if (!feature.isVisualOnly) {
-                        Object.assign(overrides, feature.getOverrides());
-                    }
-
-                    const summary = feature.isVisualOnly
-                        ? results[results.length - 1].summary  // Reuse previous summary
-                        : runMultipleSimulations(overrides, maxChapters, numRuns);
-
+                    const summary = runMultipleSimulations(sim.class, maxChapters, numRuns);
                     results.push({
-                        name: `+ ${feature.name}`,
-                        summary: summary,
-                        enabledFeatures: new Set(enabledFeatures)  // Copy current set
+                        name: sim.name,
+                        summary: summary
                     });
-                });
+                }
 
                 // Render results
                 renderLayers(results);
 
-                status.textContent = `Done! ${results.length} layers generated.`;
+                status.textContent = `Done! ${results.length} simulators completed.`;
                 status.className = 'status-done';
             } catch (error) {
                 status.textContent = `Error: ${error.message}`;
@@ -408,14 +345,16 @@
             }
         };
 
-        function runMultipleSimulations(overrides, maxChapters, numRuns) {
+        function runMultipleSimulations(SimulatorClass, maxChapters, numRuns) {
             if (numRuns === 1) {
-                return runSim(overrides, { maxChapters, verbose: false });
+                const sim = new SimulatorClass({ maxChapters });
+                return sim.run();
             }
 
             const summaries = [];
             for (let i = 0; i < numRuns; i++) {
-                summaries.push(runSim(overrides, { maxChapters, verbose: false }));
+                const sim = new SimulatorClass({ maxChapters });
+                summaries.push(sim.run());
             }
             return averageSummaries(summaries);
         }
@@ -423,6 +362,12 @@
         function averageSummaries(summaries) {
             const n = summaries.length;
             const first = summaries[0];
+
+            // Calculate variance for max loots
+            const maxLootsValues = summaries.map(s => Math.max(...s.stages.map(st => st.loots)));
+            const maxLootsAvg = maxLootsValues.reduce((a, b) => a + b, 0) / n;
+            const maxLootsVariance = maxLootsValues.reduce((sum, v) => sum + Math.pow(v - maxLootsAvg, 2), 0) / n;
+            const maxLootsStdDev = Math.sqrt(maxLootsVariance);
 
             const avg = {
                 totalChapters: first.totalChapters,
@@ -435,6 +380,7 @@
                 finalLampLevel: Math.round(summaries.reduce((s, x) => s + x.finalLampLevel, 0) / n),
                 finalHeroPower: Math.round(summaries.reduce((s, x) => s + x.finalHeroPower, 0) / n),
                 finalHeroLevel: first.finalHeroLevel,
+                maxLootsStdDev: maxLootsStdDev,
                 chapters: first.chapters.map((ch, i) => ({
                     ...ch,
                     loots: Math.round(summaries.reduce((s, x) => s + x.chapters[i].loots, 0) / n),
@@ -457,6 +403,7 @@
             container.innerHTML = '';
 
             const baseline = results[0].summary;
+            const showRarity = document.getElementById('showRarity').checked;
 
             results.forEach((result, index) => {
                 const layer = document.createElement('div');
@@ -500,7 +447,6 @@
                 container.appendChild(layer);
 
                 // Render charts after DOM is updated
-                const enabledFeatures = result.enabledFeatures;
                 setTimeout(() => {
                     renderLootsChart(
                         document.getElementById(`loots-stage-${index}`),
@@ -510,7 +456,7 @@
                         document.getElementById(`loots-chapter-${index}`),
                         result.summary.chapters,
                         result.summary.stages,
-                        { showRarity: enabledFeatures.has('rarity') }
+                        { showRarity }
                     );
                 }, 0);
             });
@@ -725,19 +671,9 @@
                 ctx.font = '11px Courier New';
                 ctx.textAlign = 'left';
                 ctx.fillStyle = '#888';
-                ctx.fillText('Rarity ▼', padding.left + width - 60, padding.top - 10);
+                ctx.fillText('Rarity', padding.left + width - 60, padding.top - 10);
             }
         }
-
-        // Update value displays when sliders change
-        document.querySelectorAll('input[type="range"]').forEach(slider => {
-            const display = document.getElementById(slider.id + '-display');
-            if (display) {
-                slider.addEventListener('input', () => {
-                    display.textContent = slider.value;
-                });
-            }
-        });
     </script>
 </body>
 </html>
