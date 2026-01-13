@@ -19,7 +19,7 @@ import {
     BOSS_MULTIPLIER, GOLD_PER_ENEMY, GOLD_PER_STAGE, XP_PER_STAGE,
     HERO_BASE_HP, HERO_BASE_DAMAGE, HERO_HP_PER_LEVEL, HERO_DAMAGE_PER_LEVEL,
     SLOT_CONFIGS, RARITY_MULTIPLIERS, MAX_LAMP_LEVEL,
-    getLampLevelConfig, getUpgradeCost, getUnlockedSlots, rollRarity,
+    getLampLevelConfig, getUpgradeCost, getUnlockedSlots,
     getBaseStagePower, generateItemId
 } from './config';
 
@@ -192,9 +192,8 @@ export class BaselineSimulator {
         // Случайный слот
         const slot = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
 
-        // Случайная редкость по весам лампы
-        const lampConfig = getLampLevelConfig(this.lamp.level);
-        const rarity = rollRarity(lampConfig.weights);
+        // В Baseline нет редкостей — все предметы common
+        const rarity: Rarity = 'common';
 
         // Уровень = уровень героя (в Baseline нет диапазона)
         const level = this.hero.level;

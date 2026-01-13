@@ -1,12 +1,12 @@
 /**
- * V2: GuaranteedRaritySimulator — добавляет гарантированную редкость
+ * V5: GuaranteedRaritySimulator — добавляет гарантированную редкость
  *
- * Отличия от ItemLevelRangeSimulator (V1):
+ * Отличия от RaritySimulator (V4):
  * - Гарантированная редкость каждые N лутов (Coupon Collector формула)
  * - Сбрасывает счётчик если случайно выпала нужная редкость
  */
 
-import { ItemLevelRangeSimulator } from './ItemLevelRangeSimulator';
+import { RaritySimulator } from './RaritySimulator';
 import { Item, Rarity } from './types';
 import {
     RARITY_ORDER,
@@ -19,12 +19,20 @@ const GUARANTEED_RARITY_INTERVAL_MULTIPLIER = 1.0;
 const BASE_DROPS_FOR_MULTIPLIER = 10;
 const DROPS_PER_CHAPTER = 2;
 
-export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
+// Offset для уровня предмета
+const MIN_LEVEL_OFFSET = 5;
+const MAX_RARITY_LEVEL_OFFSET = 0;
+
+export class GuaranteedRaritySimulator extends RaritySimulator {
     // Счётчик лутов для гарантированной редкости
-    protected rarityLootCounter = 0;
+    private rarityLootCounter = 0;
+    // Счётчик для гарантированного апгрейда (перегружаем)
+    private v5GuaranteedUpgradeLootCounter = 0;
 
     protected lootOneItem(): boolean {
         this.rarityLootCounter++;
+        this.v5GuaranteedUpgradeLootCounter++;
+
         const currentStage = this.getCurrentStageNumber();
         const unlockedSlots = getUnlockedSlots(currentStage);
 
@@ -36,15 +44,24 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
         );
         const rarityInterval = Math.round((totalDrops / expectedFilled) * GUARANTEED_RARITY_INTERVAL_MULTIPLIER);
 
-        let item: Item;
+        // Интервал гарантированного апгрейда
+        const guaranteedEveryN = this.calculateGuaranteedEveryN(currentStage);
 
-        // Проверяем гарантированную редкость
-        if (rarityInterval > 0 && this.rarityLootCounter >= rarityInterval) {
+        let item: Item;
+        let isGuaranteedUpgrade = false;
+
+        // Приоритет: гарантированный апгрейд > гарантированная редкость > обычный лут
+        if (guaranteedEveryN > 0 && this.v5GuaranteedUpgradeLootCounter >= guaranteedEveryN) {
+            item = this.generateGuaranteedUpgradeItemV5(currentStage);
+            this.v5GuaranteedUpgradeLootCounter = 0;
+            isGuaranteedUpgrade = true;
+        } else if (rarityInterval > 0 && this.rarityLootCounter >= rarityInterval) {
+            // Гарантированная редкость
             item = this.generateGuaranteedRarityItem(currentStage, guaranteedRarity);
             this.rarityLootCounter = 0;
         } else {
             // Обычный рандомный лут
-            item = this.generateNormalItem(currentStage);
+            item = this.generateNormalItemV5(currentStage);
             // Если случайно выпала нужная редкость — сбрасываем счётчик
             if (this.isRarityAtLeast(item.rarity, guaranteedRarity)) {
                 this.rarityLootCounter = 0;
@@ -60,7 +77,7 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
         const currentItem = this.hero.equipment[item.slot];
         const currentPower = currentItem?.power || 0;
 
-        if (item.power > currentPower) {
+        if (item.power > currentPower || isGuaranteedUpgrade) {
             this.hero.equipment[item.slot] = item;
             this.updateHeroStats();
             return true;
@@ -70,13 +87,16 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
         return false;
     }
 
-    protected generateNormalItem(currentStage: number): Item {
+    /**
+     * Генерация обычного предмета с редкостью
+     */
+    protected generateNormalItemV5(currentStage: number): Item {
         const unlockedSlots = getUnlockedSlots(currentStage);
 
         // Случайный слот
         const slot = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
 
-        // Случайная редкость по весам лампы
+        // Редкость по весам лампы
         const lampConfig = getLampLevelConfig(this.lamp.level);
         const rarity = rollRarity(lampConfig.weights);
 
@@ -85,10 +105,11 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
         const isMaxRarity = rarity === maxRarity;
 
         // Уровень = random(heroLevel - offset, heroLevel)
-        const level = this.rollItemLevel(this.hero.level, isMaxRarity);
+        const level = this.rollItemLevelV5(this.hero.level, isMaxRarity);
 
-        // Сила предмета
-        const targetPower = this.calculateItemPower(level, rarity);
+        // Сила предмета с variance
+        const basePower = this.calculateItemPower(level, rarity);
+        const targetPower = this.applyVariance(basePower);
         const { hp, damage, power } = this.calculateItemStats(slot, targetPower);
 
         return {
@@ -102,6 +123,9 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
         };
     }
 
+    /**
+     * Генерация предмета с гарантированной редкостью
+     */
     protected generateGuaranteedRarityItem(currentStage: number, guaranteedRarity: Rarity): Item {
         const unlockedSlots = getUnlockedSlots(currentStage);
 
@@ -111,8 +135,9 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
         // Уровень = уровень героя (максимальный для гарантированной редкости)
         const level = this.hero.level;
 
-        // Сила предмета
-        const targetPower = this.calculateItemPower(level, guaranteedRarity);
+        // Сила предмета с variance
+        const basePower = this.calculateItemPower(level, guaranteedRarity);
+        const targetPower = this.applyVariance(basePower);
         const { hp, damage, power } = this.calculateItemStats(slot, targetPower);
 
         return {
@@ -126,6 +151,50 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
         };
     }
 
+    /**
+     * Генерация предмета для гарантированного апгрейда
+     */
+    protected generateGuaranteedUpgradeItemV5(currentStage: number): Item {
+        const unlockedSlots = getUnlockedSlots(currentStage);
+
+        // Находим самый слабый слот
+        const slot = this.findWeakestSlot(unlockedSlots);
+
+        // Редкость по весам лампы
+        const lampConfig = getLampLevelConfig(this.lamp.level);
+        const rarity = rollRarity(lampConfig.weights);
+
+        // Уровень = уровень героя (максимальный)
+        const level = this.hero.level;
+
+        // Сила с разбросом
+        const basePower = this.calculateItemPower(level, rarity);
+        const targetPower = this.applyVariance(basePower);
+        const { hp, damage, power } = this.calculateItemStats(slot, targetPower);
+
+        return {
+            id: generateItemId(),
+            slot,
+            rarity,
+            level,
+            power,
+            hp,
+            damage
+        };
+    }
+
+    /**
+     * Генерация уровня предмета с учётом редкости
+     */
+    protected rollItemLevelV5(heroLevel: number, isMaxRarity: boolean): number {
+        const offset = isMaxRarity ? MAX_RARITY_LEVEL_OFFSET : MIN_LEVEL_OFFSET;
+        const minLevel = Math.max(1, heroLevel - offset);
+        return Math.floor(Math.random() * (heroLevel - minLevel + 1)) + minLevel;
+    }
+
+    /**
+     * Проверка: редкость >= целевой
+     */
     protected isRarityAtLeast(itemRarity: Rarity, targetRarity: Rarity): boolean {
         const itemIndex = RARITY_ORDER.indexOf(itemRarity);
         const targetIndex = RARITY_ORDER.indexOf(targetRarity);
@@ -181,6 +250,7 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
     protected recordStageMetrics(chapter: number, stage: number, enemyPower: number): void {
         const currentStage = this.getCurrentStageNumber();
         const unlockedSlots = getUnlockedSlots(currentStage);
+        const guaranteedEveryN = this.calculateGuaranteedEveryN(currentStage);
 
         const { rarity: guaranteedRarity, expectedFilled, totalDrops } = this.getGuaranteedRarityWithExpected(
             this.lamp.level,
@@ -206,7 +276,7 @@ export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
             difficultyModifier: 0,
             lampLevel: this.lamp.level,
             gold: this.hero.gold,
-            guaranteedEveryN: 0,
+            guaranteedEveryN: guaranteedEveryN,
             guaranteedRarity: guaranteedRarity,
             totalDrops: rarityInterval
         });

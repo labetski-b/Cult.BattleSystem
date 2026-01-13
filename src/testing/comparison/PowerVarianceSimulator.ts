@@ -1,39 +1,36 @@
 /**
- * V3: PowerVarianceSimulator — добавляет разброс силы предметов
+ * V2: PowerVarianceSimulator — добавляет разброс силы предметов
  *
- * Отличия от GuaranteedRaritySimulator (V2):
+ * Отличия от ItemLevelRangeSimulator (V1):
  * - Сила предмета = targetPower * (1 - variance + random * 2 * variance)
  * - По умолчанию variance = 0.10 (±10%)
+ * - Редкости пока нет — все предметы common
  */
 
-import { GuaranteedRaritySimulator } from './GuaranteedRaritySimulator';
+import { ItemLevelRangeSimulator } from './ItemLevelRangeSimulator';
 import { Item, Rarity } from './types';
 import {
-    getLampLevelConfig, getUnlockedSlots, rollRarity,
+    getUnlockedSlots,
     generateItemId
 } from './config';
 
 // Параметры Power Variance фичи
 const POWER_VARIANCE = 0.10;  // ±10% разброс силы
 
-export class PowerVarianceSimulator extends GuaranteedRaritySimulator {
+export class PowerVarianceSimulator extends ItemLevelRangeSimulator {
 
-    protected generateNormalItem(currentStage: number): Item {
+    protected lootOneItem(): boolean {
+        const currentStage = this.getCurrentStageNumber();
         const unlockedSlots = getUnlockedSlots(currentStage);
 
         // Случайный слот
         const slot = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
 
-        // Случайная редкость по весам лампы
-        const lampConfig = getLampLevelConfig(this.lamp.level);
-        const rarity = rollRarity(lampConfig.weights);
-
-        // Проверяем, выпала ли максимальная редкость
-        const maxRarity = this.getMaxRarityFromWeights(lampConfig.weights);
-        const isMaxRarity = rarity === maxRarity;
+        // Пока нет редкостей — все common
+        const rarity: Rarity = 'common';
 
         // Уровень = random(heroLevel - offset, heroLevel)
-        const level = this.rollItemLevel(this.hero.level, isMaxRarity);
+        const level = this.rollItemLevel(this.hero.level);
 
         // ИЗМЕНЕНИЕ: Сила с разбросом
         const basePower = this.calculateItemPower(level, rarity);
@@ -41,7 +38,7 @@ export class PowerVarianceSimulator extends GuaranteedRaritySimulator {
 
         const { hp, damage, power } = this.calculateItemStats(slot, targetPower);
 
-        return {
+        const item: Item = {
             id: generateItemId(),
             slot,
             rarity,
@@ -50,32 +47,24 @@ export class PowerVarianceSimulator extends GuaranteedRaritySimulator {
             hp,
             damage
         };
-    }
 
-    protected generateGuaranteedRarityItem(currentStage: number, guaranteedRarity: Rarity): Item {
-        const unlockedSlots = getUnlockedSlots(currentStage);
+        // Статистика
+        this.chapterLoots++;
+        this.stageLoots++;
+        this.chapterLootsByRarity[rarity] = (this.chapterLootsByRarity[rarity] || 0) + 1;
 
-        // Случайный слот
-        const slot = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
+        // Проверяем апгрейд
+        const currentItem = this.hero.equipment[slot];
+        const currentPower = currentItem?.power || 0;
 
-        // Уровень = уровень героя (максимальный для гарантированной редкости)
-        const level = this.hero.level;
+        if (item.power > currentPower) {
+            this.hero.equipment[slot] = item;
+            this.updateHeroStats();
+            return true;
+        }
 
-        // ИЗМЕНЕНИЕ: Сила с разбросом
-        const basePower = this.calculateItemPower(level, guaranteedRarity);
-        const targetPower = this.applyVariance(basePower);
-
-        const { hp, damage, power } = this.calculateItemStats(slot, targetPower);
-
-        return {
-            id: generateItemId(),
-            slot,
-            rarity: guaranteedRarity,
-            level,
-            power,
-            hp,
-            damage
-        };
+        this.totalIterations++;
+        return false;
     }
 
     /**

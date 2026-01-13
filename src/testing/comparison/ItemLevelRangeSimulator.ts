@@ -3,19 +3,18 @@
  *
  * Отличия от Baseline:
  * - Уровень предмета = random(heroLevel - offset, heroLevel) вместо просто heroLevel
- * - Для максимальной редкости offset меньше (предметы ближе к героLevel)
+ * - Редкости пока нет — все предметы common
  */
 
 import { BaselineSimulator } from './BaselineSimulator';
 import { Item, Rarity } from './types';
 import {
-    getLampLevelConfig, getUnlockedSlots, rollRarity,
+    getUnlockedSlots,
     generateItemId
 } from './config';
 
 // Параметры Item Level Range фичи
-const MIN_LEVEL_OFFSET = 5;           // Обычный offset для большинства предметов
-const MAX_RARITY_LEVEL_OFFSET = 3;    // Меньший offset для максимальной редкости
+const MIN_LEVEL_OFFSET = 5;  // Offset для диапазона уровня
 
 export class ItemLevelRangeSimulator extends BaselineSimulator {
 
@@ -26,16 +25,11 @@ export class ItemLevelRangeSimulator extends BaselineSimulator {
         // Случайный слот
         const slot = unlockedSlots[Math.floor(Math.random() * unlockedSlots.length)];
 
-        // Случайная редкость по весам лампы
-        const lampConfig = getLampLevelConfig(this.lamp.level);
-        const rarity = rollRarity(lampConfig.weights);
-
-        // Проверяем, выпала ли максимальная редкость
-        const maxRarity = this.getMaxRarityFromWeights(lampConfig.weights);
-        const isMaxRarity = rarity === maxRarity;
+        // Пока нет редкостей — все common
+        const rarity: Rarity = 'common';
 
         // ИЗМЕНЕНИЕ: Уровень = random(heroLevel - offset, heroLevel)
-        const level = this.rollItemLevel(this.hero.level, isMaxRarity);
+        const level = this.rollItemLevel(this.hero.level);
 
         // Сила предмета
         const targetPower = this.calculateItemPower(level, rarity);
@@ -73,22 +67,8 @@ export class ItemLevelRangeSimulator extends BaselineSimulator {
     /**
      * Генерация уровня предмета с диапазоном
      */
-    protected rollItemLevel(heroLevel: number, isMaxRarity: boolean): number {
-        const offset = isMaxRarity ? MAX_RARITY_LEVEL_OFFSET : MIN_LEVEL_OFFSET;
-        const minLevel = Math.max(1, heroLevel - offset);
+    protected rollItemLevel(heroLevel: number): number {
+        const minLevel = Math.max(1, heroLevel - MIN_LEVEL_OFFSET);
         return Math.floor(Math.random() * (heroLevel - minLevel + 1)) + minLevel;
-    }
-
-    /**
-     * Получить максимальную редкость из весов
-     */
-    protected getMaxRarityFromWeights(weights: Partial<Record<Rarity, number>>): Rarity {
-        const rarityOrder: Rarity[] = ['immortal', 'legendary', 'mythic', 'epic', 'rare', 'good', 'common'];
-        for (const rarity of rarityOrder) {
-            if (weights[rarity] && weights[rarity]! > 0) {
-                return rarity;
-            }
-        }
-        return 'common';
     }
 }

@@ -213,18 +213,22 @@
                     <input type="checkbox" id="sim-itemLevelRange" checked>
                 </div>
                 <div class="control-row">
-                    <label>V2: + Guaranteed Rarity</label>
-                    <input type="checkbox" id="sim-guaranteedRarity" checked>
-                </div>
-                <div class="control-row">
-                    <label>V3: + Power Variance</label>
+                    <label>V2: + Power Variance</label>
                     <input type="checkbox" id="sim-powerVariance" checked>
                 </div>
                 <div class="control-row">
-                    <label>V4: + Guaranteed Upgrade</label>
+                    <label>V3: + Guaranteed Upgrade</label>
                     <input type="checkbox" id="sim-guaranteedUpgrade" checked>
                 </div>
-                <p class="info-text">Каждый симулятор — независимая копия логики</p>
+                <div class="control-row">
+                    <label>V4: + Rarity</label>
+                    <input type="checkbox" id="sim-rarity" checked>
+                </div>
+                <div class="control-row">
+                    <label>V5: + Guaranteed Rarity</label>
+                    <input type="checkbox" id="sim-guaranteedRarity" checked>
+                </div>
+                <p class="info-text">V0-V3: всё common | V4-V5: редкости</p>
             </div>
 
             <!-- Display Options -->
@@ -252,9 +256,10 @@
         import {
             BaselineSimulator,
             ItemLevelRangeSimulator,
-            GuaranteedRaritySimulator,
             PowerVarianceSimulator,
-            GuaranteedUpgradeSimulator
+            GuaranteedUpgradeSimulator,
+            RaritySimulator,
+            GuaranteedRaritySimulator
         } from '../src/testing/comparison/index.ts';
 
         const RARITY_COLORS = {
@@ -282,22 +287,28 @@
                 isEnabled: () => document.getElementById('sim-itemLevelRange').checked
             },
             {
-                id: 'guaranteedRarity',
-                name: 'V2: + Guaranteed Rarity',
-                class: GuaranteedRaritySimulator,
-                isEnabled: () => document.getElementById('sim-guaranteedRarity').checked
-            },
-            {
                 id: 'powerVariance',
-                name: 'V3: + Power Variance',
+                name: 'V2: + Power Variance',
                 class: PowerVarianceSimulator,
                 isEnabled: () => document.getElementById('sim-powerVariance').checked
             },
             {
                 id: 'guaranteedUpgrade',
-                name: 'V4: + Guaranteed Upgrade',
+                name: 'V3: + Guaranteed Upgrade',
                 class: GuaranteedUpgradeSimulator,
                 isEnabled: () => document.getElementById('sim-guaranteedUpgrade').checked
+            },
+            {
+                id: 'rarity',
+                name: 'V4: + Rarity',
+                class: RaritySimulator,
+                isEnabled: () => document.getElementById('sim-rarity').checked
+            },
+            {
+                id: 'guaranteedRarity',
+                name: 'V5: + Guaranteed Rarity',
+                class: GuaranteedRaritySimulator,
+                isEnabled: () => document.getElementById('sim-guaranteedRarity').checked
             }
         ];
 
