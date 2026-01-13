@@ -1,13 +1,12 @@
 /**
- * V1: ItemLevelSimulator — добавляет Item Level фичу
+ * V2: GuaranteedRaritySimulator — добавляет гарантированную редкость
  *
- * Отличия от Baseline:
- * - Уровень предмета = random(chapter - offset, chapter) вместо просто heroLevel
+ * Отличия от ItemLevelRangeSimulator (V1):
  * - Гарантированная редкость каждые N лутов (Coupon Collector формула)
- * - TotalDrops отображается на графике
+ * - Сбрасывает счётчик если случайно выпала нужная редкость
  */
 
-import { BaselineSimulator } from './BaselineSimulator';
+import { ItemLevelRangeSimulator } from './ItemLevelRangeSimulator';
 import { Item, Rarity } from './types';
 import {
     RARITY_ORDER,
@@ -15,13 +14,12 @@ import {
     generateItemId
 } from './config';
 
-// Параметры Item Level фичи
-const MIN_LEVEL_OFFSET = 5;  // Минимальный уровень = chapter - offset
+// Параметры Guaranteed Rarity фичи
 const GUARANTEED_RARITY_INTERVAL_MULTIPLIER = 1.0;
 const BASE_DROPS_FOR_MULTIPLIER = 10;
 const DROPS_PER_CHAPTER = 2;
 
-export class ItemLevelSimulator extends BaselineSimulator {
+export class GuaranteedRaritySimulator extends ItemLevelRangeSimulator {
     // Счётчик лутов для гарантированной редкости
     protected rarityLootCounter = 0;
 
@@ -82,8 +80,12 @@ export class ItemLevelSimulator extends BaselineSimulator {
         const lampConfig = getLampLevelConfig(this.lamp.level);
         const rarity = rollRarity(lampConfig.weights);
 
-        // ИЗМЕНЕНИЕ: Уровень = random(chapter - offset, chapter)
-        const level = this.rollItemLevel(this.chapter);
+        // Проверяем, выпала ли максимальная редкость
+        const maxRarity = this.getMaxRarityFromWeights(lampConfig.weights);
+        const isMaxRarity = rarity === maxRarity;
+
+        // Уровень = random(heroLevel - offset, heroLevel)
+        const level = this.rollItemLevel(this.hero.level, isMaxRarity);
 
         // Сила предмета
         const targetPower = this.calculateItemPower(level, rarity);
@@ -122,11 +124,6 @@ export class ItemLevelSimulator extends BaselineSimulator {
             hp,
             damage
         };
-    }
-
-    protected rollItemLevel(dungeonChapter: number): number {
-        const minLevel = Math.max(1, dungeonChapter - MIN_LEVEL_OFFSET);
-        return Math.floor(Math.random() * (dungeonChapter - minLevel + 1)) + minLevel;
     }
 
     protected isRarityAtLeast(itemRarity: Rarity, targetRarity: Rarity): boolean {
@@ -209,7 +206,7 @@ export class ItemLevelSimulator extends BaselineSimulator {
             difficultyModifier: 0,
             lampLevel: this.lamp.level,
             gold: this.hero.gold,
-            guaranteedEveryN: 0,  // Нет Guaranteed Upgrade в V1
+            guaranteedEveryN: 0,
             guaranteedRarity: guaranteedRarity,
             totalDrops: rarityInterval
         });

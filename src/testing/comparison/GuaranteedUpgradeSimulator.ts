@@ -1,13 +1,13 @@
 /**
- * V3: GuaranteedSimulator — добавляет гарантированный апгрейд
+ * V4: GuaranteedUpgradeSimulator — добавляет гарантированный апгрейд
  *
- * Отличия от VarianceSimulator (V2):
+ * Отличия от PowerVarianceSimulator (V3):
  * - Гарантированный апгрейд каждые N лутов
  * - N увеличивается на 1 каждые increaseEveryNStages стадий
  * - Предмет для самого слабого слота с максимальным уровнем
  */
 
-import { VarianceSimulator } from './VarianceSimulator';
+import { PowerVarianceSimulator } from './PowerVarianceSimulator';
 import { Item, SlotType } from './types';
 import {
     getLampLevelConfig, getUnlockedSlots, rollRarity,
@@ -15,10 +15,10 @@ import {
 } from './config';
 
 // Параметры Guaranteed Upgrade фичи
-const GUARANTEED_UPGRADE_BASE_EVERY_N = 3;
-const GUARANTEED_UPGRADE_INCREASE_EVERY_N_STAGES = 10;
+const GUARANTEED_UPGRADE_BASE_EVERY_N = 4;
+const GUARANTEED_UPGRADE_INCREASE_EVERY_N_STAGES = 14;
 
-export class GuaranteedSimulator extends VarianceSimulator {
+export class GuaranteedUpgradeSimulator extends PowerVarianceSimulator {
     // Счётчик лутов для гарантированного апгрейда
     private guaranteedUpgradeLootCounter = 0;
 

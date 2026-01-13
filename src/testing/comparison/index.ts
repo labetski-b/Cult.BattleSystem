@@ -4,16 +4,18 @@
  * Каждый симулятор — это snapshot логики на момент добавления фичи.
  * Не зависят от основной игры, содержат всю логику внутри себя.
  *
- * V0: BaselineSimulator   — базовая симуляция без фич
- * V1: ItemLevelSimulator  — + уровень предмета по главе + гарантированная редкость
- * V2: VarianceSimulator   — + разброс силы (±15%)
- * V3: GuaranteedSimulator — + гарантированный апгрейд каждые N лутов
+ * V0: BaselineSimulator          — базовая симуляция (itemLevel = heroLevel)
+ * V1: ItemLevelRangeSimulator    — + диапазон уровня предмета (heroLevel - offset)
+ * V2: GuaranteedRaritySimulator  — + гарантированная редкость каждые N лутов
+ * V3: PowerVarianceSimulator     — + разброс силы (±10%)
+ * V4: GuaranteedUpgradeSimulator — + гарантированный апгрейд для слабого слота
  */
 
 export { BaselineSimulator } from './BaselineSimulator';
-export { ItemLevelSimulator } from './ItemLevelSimulator';
-export { VarianceSimulator } from './VarianceSimulator';
-export { GuaranteedSimulator } from './GuaranteedSimulator';
+export { ItemLevelRangeSimulator } from './ItemLevelRangeSimulator';
+export { GuaranteedRaritySimulator } from './GuaranteedRaritySimulator';
+export { PowerVarianceSimulator } from './PowerVarianceSimulator';
+export { GuaranteedUpgradeSimulator } from './GuaranteedUpgradeSimulator';
 
 // Типы
 export type {

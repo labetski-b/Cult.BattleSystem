@@ -1,22 +1,22 @@
 /**
- * V2: VarianceSimulator — добавляет разброс силы предметов
+ * V3: PowerVarianceSimulator — добавляет разброс силы предметов
  *
- * Отличия от ItemLevelSimulator (V1):
+ * Отличия от GuaranteedRaritySimulator (V2):
  * - Сила предмета = targetPower * (1 - variance + random * 2 * variance)
- * - По умолчанию variance = 0.15 (±15%)
+ * - По умолчанию variance = 0.10 (±10%)
  */
 
-import { ItemLevelSimulator } from './ItemLevelSimulator';
+import { GuaranteedRaritySimulator } from './GuaranteedRaritySimulator';
 import { Item, Rarity } from './types';
 import {
     getLampLevelConfig, getUnlockedSlots, rollRarity,
     generateItemId
 } from './config';
 
-// Параметры Variance фичи
-const POWER_VARIANCE = 0.15;  // ±15% разброс силы
+// Параметры Power Variance фичи
+const POWER_VARIANCE = 0.10;  // ±10% разброс силы
 
-export class VarianceSimulator extends ItemLevelSimulator {
+export class PowerVarianceSimulator extends GuaranteedRaritySimulator {
 
     protected generateNormalItem(currentStage: number): Item {
         const unlockedSlots = getUnlockedSlots(currentStage);
@@ -28,8 +28,12 @@ export class VarianceSimulator extends ItemLevelSimulator {
         const lampConfig = getLampLevelConfig(this.lamp.level);
         const rarity = rollRarity(lampConfig.weights);
 
-        // Уровень = random(chapter - offset, chapter)
-        const level = this.rollItemLevel(this.chapter);
+        // Проверяем, выпала ли максимальная редкость
+        const maxRarity = this.getMaxRarityFromWeights(lampConfig.weights);
+        const isMaxRarity = rarity === maxRarity;
+
+        // Уровень = random(heroLevel - offset, heroLevel)
+        const level = this.rollItemLevel(this.hero.level, isMaxRarity);
 
         // ИЗМЕНЕНИЕ: Сила с разбросом
         const basePower = this.calculateItemPower(level, rarity);

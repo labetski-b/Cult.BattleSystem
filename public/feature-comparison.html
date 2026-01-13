@@ -48,9 +48,6 @@
             font-size: 12px;
             color: #aaa;
         }
-        .control-row input[type="range"] {
-            width: 100px;
-        }
         .control-row input[type="number"] {
             width: 70px;
             background: #333;
@@ -64,12 +61,6 @@
             width: 18px;
             height: 18px;
             cursor: pointer;
-        }
-        .value-display {
-            width: 60px;
-            text-align: right;
-            font-size: 12px;
-            color: #ffd700;
         }
 
         /* Buttons */
@@ -92,15 +83,6 @@
             font-weight: bold;
         }
         .btn-primary:hover { background: #ffed4a; }
-        .btn-primary:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
-        .btn-secondary {
-            background: #444;
-            color: #eee;
-        }
-        .btn-secondary:hover { background: #555; }
 
         /* Status */
         #status {
@@ -191,7 +173,6 @@
         }
         .diff-positive { color: #ff6b6b; }
         .diff-negative { color: #6bff6b; }
-        .diff-neutral { color: #888; }
 
         .info-text {
             font-size: 11px;
@@ -228,21 +209,25 @@
                     <input type="checkbox" id="sim-baseline" checked disabled>
                 </div>
                 <div class="control-row">
-                    <label>V1: + Item Level</label>
-                    <input type="checkbox" id="sim-itemLevel" checked>
+                    <label>V1: + Item Level Range</label>
+                    <input type="checkbox" id="sim-itemLevelRange" checked>
                 </div>
                 <div class="control-row">
-                    <label>V2: + Power Variance</label>
-                    <input type="checkbox" id="sim-variance" checked>
+                    <label>V2: + Guaranteed Rarity</label>
+                    <input type="checkbox" id="sim-guaranteedRarity" checked>
                 </div>
                 <div class="control-row">
-                    <label>V3: + Guaranteed Upgrade</label>
-                    <input type="checkbox" id="sim-guaranteed" checked>
+                    <label>V3: + Power Variance</label>
+                    <input type="checkbox" id="sim-powerVariance" checked>
+                </div>
+                <div class="control-row">
+                    <label>V4: + Guaranteed Upgrade</label>
+                    <input type="checkbox" id="sim-guaranteedUpgrade" checked>
                 </div>
                 <p class="info-text">Каждый симулятор — независимая копия логики</p>
             </div>
 
-            <!-- Rarity Display -->
+            <!-- Display Options -->
             <div class="control-group">
                 <h3>Display Options</h3>
                 <div class="control-row">
@@ -266,9 +251,10 @@
     <script type="module">
         import {
             BaselineSimulator,
-            ItemLevelSimulator,
-            VarianceSimulator,
-            GuaranteedSimulator
+            ItemLevelRangeSimulator,
+            GuaranteedRaritySimulator,
+            PowerVarianceSimulator,
+            GuaranteedUpgradeSimulator
         } from '../src/testing/comparison/index.ts';
 
         const RARITY_COLORS = {
@@ -290,22 +276,28 @@
                 isEnabled: () => true  // Always enabled
             },
             {
-                id: 'itemLevel',
-                name: 'V1: + Item Level',
-                class: ItemLevelSimulator,
-                isEnabled: () => document.getElementById('sim-itemLevel').checked
+                id: 'itemLevelRange',
+                name: 'V1: + Item Level Range',
+                class: ItemLevelRangeSimulator,
+                isEnabled: () => document.getElementById('sim-itemLevelRange').checked
             },
             {
-                id: 'variance',
-                name: 'V2: + Power Variance',
-                class: VarianceSimulator,
-                isEnabled: () => document.getElementById('sim-variance').checked
+                id: 'guaranteedRarity',
+                name: 'V2: + Guaranteed Rarity',
+                class: GuaranteedRaritySimulator,
+                isEnabled: () => document.getElementById('sim-guaranteedRarity').checked
             },
             {
-                id: 'guaranteed',
-                name: 'V3: + Guaranteed Upgrade',
-                class: GuaranteedSimulator,
-                isEnabled: () => document.getElementById('sim-guaranteed').checked
+                id: 'powerVariance',
+                name: 'V3: + Power Variance',
+                class: PowerVarianceSimulator,
+                isEnabled: () => document.getElementById('sim-powerVariance').checked
+            },
+            {
+                id: 'guaranteedUpgrade',
+                name: 'V4: + Guaranteed Upgrade',
+                class: GuaranteedUpgradeSimulator,
+                isEnabled: () => document.getElementById('sim-guaranteedUpgrade').checked
             }
         ];
 
@@ -363,12 +355,6 @@
             const n = summaries.length;
             const first = summaries[0];
 
-            // Calculate variance for max loots
-            const maxLootsValues = summaries.map(s => Math.max(...s.stages.map(st => st.loots)));
-            const maxLootsAvg = maxLootsValues.reduce((a, b) => a + b, 0) / n;
-            const maxLootsVariance = maxLootsValues.reduce((sum, v) => sum + Math.pow(v - maxLootsAvg, 2), 0) / n;
-            const maxLootsStdDev = Math.sqrt(maxLootsVariance);
-
             const avg = {
                 totalChapters: first.totalChapters,
                 totalLoots: Math.round(summaries.reduce((s, x) => s + x.totalLoots, 0) / n),
@@ -380,7 +366,6 @@
                 finalLampLevel: Math.round(summaries.reduce((s, x) => s + x.finalLampLevel, 0) / n),
                 finalHeroPower: Math.round(summaries.reduce((s, x) => s + x.finalHeroPower, 0) / n),
                 finalHeroLevel: first.finalHeroLevel,
-                maxLootsStdDev: maxLootsStdDev,
                 chapters: first.chapters.map((ch, i) => ({
                     ...ch,
                     loots: Math.round(summaries.reduce((s, x) => s + x.chapters[i].loots, 0) / n),

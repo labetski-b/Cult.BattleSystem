@@ -446,7 +446,10 @@ export class EconomyTester {
         );
 
         // Интервал гарантированного лута по редкости = (totalDrops / expectedFilled) * multiplier
-        const rarityInterval = Math.round((baseTotalDrops / expectedFilled) * config.guaranteedRarityIntervalMultiplier);
+        // Если guaranteedRarityEnabled выключен — интервал = 0 (не показывается на графике)
+        const rarityInterval = config.guaranteedRarityEnabled
+            ? Math.round((baseTotalDrops / expectedFilled) * config.guaranteedRarityIntervalMultiplier)
+            : 0;
 
         this.stages.push({
             chapter,
@@ -466,7 +469,7 @@ export class EconomyTester {
             lampLevel: this.state.lamp.level,
             gold: this.state.hero.gold,
             guaranteedEveryN: currentEveryN,
-            guaranteedRarity: guaranteedRarity,
+            guaranteedRarity: config.guaranteedRarityEnabled ? guaranteedRarity : 'common',
             totalDrops: rarityInterval
         });
     }
