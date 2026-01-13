@@ -13,7 +13,8 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html'),
-                balanceTuner: resolve(__dirname, 'public/balance-tuner.html')
+                balanceTuner: resolve(__dirname, 'public/balance-tuner.html'),
+                featureComparison: resolve(__dirname, 'public/feature-comparison.html')
             }
         }
     }
