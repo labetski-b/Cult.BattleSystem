@@ -55,18 +55,23 @@ const SLOT_ICONS: Record<SlotType, string> = {
     belt: '🎗️'
 };
 
-// Цена продажи предмета
+// Цены продажи по редкостям
+import sellPricesConfig from '../data/sell-prices.json';
+
+interface SellPriceConfig {
+    rarity: string;
+    minPrice: number;
+    maxPrice: number;
+}
+
+const SELL_PRICES: Record<Rarity, { min: number; max: number }> = Object.fromEntries(
+    (sellPricesConfig as SellPriceConfig[]).map(c => [c.rarity, { min: c.minPrice, max: c.maxPrice }])
+) as Record<Rarity, { min: number; max: number }>;
+
+// Цена продажи предмета (случайная в диапазоне для редкости)
 function calculateSellPrice(item: Item): number {
-    const rarityMultiplier: Record<Rarity, number> = {
-        common: 1,
-        good: 1.5,
-        rare: 2,
-        epic: 5,
-        mythic: 10,
-        legendary: 20,
-        immortal: 50
-    };
-    return Math.floor(item.power * rarityMultiplier[item.rarity] * 0.5);
+    const priceRange = SELL_PRICES[item.rarity];
+    return Math.floor(priceRange.min + Math.random() * (priceRange.max - priceRange.min));
 }
 
 // Анимация Level Up
