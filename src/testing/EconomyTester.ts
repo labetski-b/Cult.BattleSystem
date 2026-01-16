@@ -1,4 +1,4 @@
-import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG } from './TestMetrics';
+import { ChapterMetrics, StageMetrics, TestSummary, TesterConfig, DEFAULT_CONFIG, UnfairBattleStats, createEmptyUnfairStats } from './TestMetrics';
 import { GameState, getBalance } from '../systems/GameState';
 import { Hero, createHero, updateHeroStats, equipItem, healHero, addXp } from '../models/Hero';
 import { SLOT_TYPES, SlotType, Item, generateItemId, generateItemName, calculateItemStats, getUnlockedSlots, RARITY_ORDER, Rarity } from '../models/Item';
@@ -89,6 +89,7 @@ export class EconomyTester {
     private chapterBattles = 0;
     private chapterDefeats = 0;
     private chapterUnfairDefeats = 0;  // Поражения при heroPower > enemyPower
+    private chapterUnfairStats: UnfairBattleStats = createEmptyUnfairStats();
     private chapterGoldEarned = 0;
     private chapterGoldSpent = 0;
     private chapterLootsByRarity: Record<string, number> = {};
@@ -378,6 +379,9 @@ export class EconomyTester {
             isBoss
         );
 
+        const enemyCount = enemies.length;  // 1, 2 или 3 врага
+        const enemyIndex = Math.min(enemyCount - 1, 2);  // индекс 0, 1 или 2
+
         // Симуляция боя
         const result = simulateBattle(
             this.state.hero,
@@ -389,11 +393,21 @@ export class EconomyTester {
         this.chapterBattles++;
         this.stageBattles++;
 
+        // Считаем бой в total для данного количества врагов
+        this.chapterUnfairStats.total[enemyIndex]++;
+
         // Применяем урон
         this.state.hero.hp -= result.heroDamage;
         if (this.state.hero.hp < 0) this.state.hero.hp = 0;
 
+        const heroPower = getHeroPower(this.state.hero);
+
         if (result.victory) {
+            // Проверяем "несправедливую" победу (герой слабее, но выиграл)
+            if (heroPower < targetPower) {
+                this.chapterUnfairStats.wins[enemyIndex]++;
+            }
+
             // Плавно увеличиваем множитель редкости после победы
             // Передаём актуальные слоты и главу для корректного расчёта target
             const currentStageNumber = this.getCurrentStageNumber();
@@ -423,9 +437,9 @@ export class EconomyTester {
             this.chapterDefeats++;
             this.stageDefeats++;
             // Проверяем "несправедливое" поражение (герой сильнее, но проиграл)
-            const heroPower = getHeroPower(this.state.hero);
             if (heroPower > targetPower) {
                 this.chapterUnfairDefeats++;
+                this.chapterUnfairStats.losses[enemyIndex]++;
             }
             // Уменьшаем сложность при поражении (-2%, только 1 раз за stage)
             adjustDifficultyOnDefeat(this.state.dungeon);
@@ -515,6 +529,11 @@ export class EconomyTester {
             battles: this.chapterBattles,
             defeats: this.chapterDefeats,
             unfairDefeats: this.chapterUnfairDefeats,
+            unfairStats: {
+                wins: [...this.chapterUnfairStats.wins] as [number, number, number],
+                losses: [...this.chapterUnfairStats.losses] as [number, number, number],
+                total: [...this.chapterUnfairStats.total] as [number, number, number]
+            },
             lampLevel: this.state.lamp.level,
             heroPower: getHeroPower(this.state.hero),
             heroLevel: this.state.hero.level,
@@ -533,6 +552,7 @@ export class EconomyTester {
         this.chapterBattles = 0;
         this.chapterDefeats = 0;
         this.chapterUnfairDefeats = 0;
+        this.chapterUnfairStats = createEmptyUnfairStats();
         this.chapterGoldEarned = 0;
         this.chapterGoldSpent = 0;
         this.chapterLootsByRarity = {};

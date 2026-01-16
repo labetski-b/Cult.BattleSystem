@@ -1,3 +1,19 @@
+// Статистика unfair боёв по количеству врагов
+export interface UnfairBattleStats {
+    wins: [number, number, number];   // [1 враг, 2 врага, 3 врага] — побед при heroPower < enemyPower
+    losses: [number, number, number]; // [1 враг, 2 врага, 3 врага] — поражений при heroPower > enemyPower
+    total: [number, number, number];  // [1 враг, 2 врага, 3 врага] — всего боёв
+}
+
+// Создать пустую статистику unfair
+export function createEmptyUnfairStats(): UnfairBattleStats {
+    return {
+        wins: [0, 0, 0],
+        losses: [0, 0, 0],
+        total: [0, 0, 0]
+    };
+}
+
 // Метрики по этапу (противнику)
 export interface StageMetrics {
     chapter: number;
@@ -29,6 +45,7 @@ export interface ChapterMetrics {
     battles: number;         // Сколько боёв (включая поражения)
     defeats: number;         // Количество поражений
     unfairDefeats: number;   // Поражения при heroPower > enemyPower
+    unfairStats: UnfairBattleStats;  // Детальная статистика unfair по количеству врагов
     lampLevel: number;       // Уровень лампы на выходе из главы
     heroPower: number;       // Сила культа на выходе (maxHp + damage*4)
     heroLevel: number;       // Уровень героя

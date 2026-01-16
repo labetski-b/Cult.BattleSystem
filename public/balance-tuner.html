@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balance Tuner (Updated: 01-16 20:15)</title>
+    <title>Balance Tuner (Updated: 01-16 20:45)</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -452,6 +452,12 @@
                     <div class="chart-tooltip" id="item-level-tooltip"></div>
                 </div>
 
+                <h2 style="margin-top: 30px;">Unfair Battles by Enemy Count</h2>
+                <div class="chart-container">
+                    <canvas id="unfair-chart" width="1100" height="300"></canvas>
+                    <div class="chart-tooltip" id="unfair-tooltip"></div>
+                </div>
+
                 <h2 style="margin-top: 30px;">Power Progression by Chapter (log scale)</h2>
                 <div class="chart-container">
                     <canvas id="power-chart" width="1100" height="350"></canvas>
@@ -497,7 +503,8 @@
             equipped: { chapters: [], padding: {}, barWidth: 0 },
             expectedRarity: { stages: [], padding: {}, barWidth: 0 },
             everyN: { stages: [], padding: {}, width: 0, height: 0 },
-            itemLevel: { chapters: [], padding: {}, width: 0, height: 0 }
+            itemLevel: { chapters: [], padding: {}, width: 0, height: 0 },
+            unfair: { chapters: [], padding: {}, width: 0, height: 0 }
         };
 
         // Make functions available globally
@@ -620,12 +627,25 @@
                     avgEquippedByRarity[rarity] = Math.round(summaries.reduce((s, r) => s + (r.chapters[i].equippedByRarity?.[rarity] || 0), 0) / n * 10) / 10;
                 }
 
+                // Усредняем unfairStats
+                const avgUnfairStats = {
+                    wins: [0, 0, 0],
+                    losses: [0, 0, 0],
+                    total: [0, 0, 0]
+                };
+                for (let j = 0; j < 3; j++) {
+                    avgUnfairStats.wins[j] = Math.round(summaries.reduce((s, r) => s + (r.chapters[i].unfairStats?.wins[j] || 0), 0) / n * 10) / 10;
+                    avgUnfairStats.losses[j] = Math.round(summaries.reduce((s, r) => s + (r.chapters[i].unfairStats?.losses[j] || 0), 0) / n * 10) / 10;
+                    avgUnfairStats.total[j] = Math.round(summaries.reduce((s, r) => s + (r.chapters[i].unfairStats?.total[j] || 0), 0) / n * 10) / 10;
+                }
+
                 avgSummary.chapters.push({
                     chapter: first.chapters[i].chapter,
                     loots: Math.round(summaries.reduce((s, r) => s + r.chapters[i].loots, 0) / n),
                     battles: Math.round(summaries.reduce((s, r) => s + r.chapters[i].battles, 0) / n),
                     defeats: Math.round(summaries.reduce((s, r) => s + r.chapters[i].defeats, 0) / n),
                     unfairDefeats: Math.round(summaries.reduce((s, r) => s + r.chapters[i].unfairDefeats, 0) / n),
+                    unfairStats: avgUnfairStats,
                     lampLevel: Math.round(summaries.reduce((s, r) => s + r.chapters[i].lampLevel, 0) / n),
                     heroPower: Math.round(summaries.reduce((s, r) => s + r.chapters[i].heroPower, 0) / n),
                     heroLevel: Math.round(summaries.reduce((s, r) => s + r.chapters[i].heroLevel, 0) / n),
@@ -863,6 +883,7 @@
             renderEquippedChart(summary.chapters);
             renderExpectedRarityChart(summary.stages);
             renderItemLevelChart(summary.chapters);
+            renderUnfairChart(summary.chapters);
             renderPowerChart(summary.chapters);
         }
 
@@ -1799,6 +1820,180 @@
             ctx.fillText('Actual', padding.left + width + 35, legendY + 4);
         }
 
+        // Render Unfair Battles chart: wins/losses by enemy count (1/2/3)
+        function renderUnfairChart(chapters) {
+            const canvas = document.getElementById('unfair-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 150, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (chapters.length === 0) return;
+
+            // Colors for different enemy counts
+            const ENEMY_COLORS = {
+                wins: ['#22c55e', '#16a34a', '#15803d'],    // green shades (1, 2, 3 enemies)
+                losses: ['#ef4444', '#dc2626', '#b91c1c']   // red shades (1, 2, 3 enemies)
+            };
+
+            // Calculate cumulative unfair stats
+            const cumulativeStats = chapters.map((ch, idx) => {
+                const cumWins = [0, 0, 0];
+                const cumLosses = [0, 0, 0];
+                const cumTotal = [0, 0, 0];
+                for (let i = 0; i <= idx; i++) {
+                    const stats = chapters[i].unfairStats;
+                    if (stats) {
+                        for (let j = 0; j < 3; j++) {
+                            cumWins[j] += stats.wins[j] || 0;
+                            cumLosses[j] += stats.losses[j] || 0;
+                            cumTotal[j] += stats.total[j] || 0;
+                        }
+                    }
+                }
+                return { cumWins, cumLosses, cumTotal };
+            });
+
+            // Find max percentage for Y scale
+            let maxPct = 0;
+            for (const stats of cumulativeStats) {
+                for (let i = 0; i < 3; i++) {
+                    if (stats.cumTotal[i] > 0) {
+                        const winPct = (stats.cumWins[i] / stats.cumTotal[i]) * 100;
+                        const lossPct = (stats.cumLosses[i] / stats.cumTotal[i]) * 100;
+                        maxPct = Math.max(maxPct, winPct, lossPct);
+                    }
+                }
+            }
+            maxPct = Math.max(maxPct * 1.1, 5);  // At least 5%
+
+            const xScale = width / (chapters.length - 1 || 1);
+            const yScale = height / maxPct;
+
+            // Save data for tooltip
+            chartData.unfair = { chapters, cumulativeStats, padding, width, height, xScale, maxPct };
+
+            // Draw grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (height / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+            }
+
+            // Draw lines for each enemy count (1, 2, 3) - wins and losses
+            for (let enemyIdx = 0; enemyIdx < 3; enemyIdx++) {
+                // Draw wins line (green)
+                ctx.strokeStyle = ENEMY_COLORS.wins[enemyIdx];
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                let hasWins = false;
+                for (let i = 0; i < chapters.length; i++) {
+                    const stats = cumulativeStats[i];
+                    if (stats.cumTotal[enemyIdx] > 0) {
+                        const pct = (stats.cumWins[enemyIdx] / stats.cumTotal[enemyIdx]) * 100;
+                        const x = padding.left + i * xScale;
+                        const y = padding.top + height - pct * yScale;
+                        if (!hasWins) {
+                            ctx.moveTo(x, y);
+                            hasWins = true;
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                }
+                if (hasWins) ctx.stroke();
+
+                // Draw losses line (red, dashed)
+                ctx.strokeStyle = ENEMY_COLORS.losses[enemyIdx];
+                ctx.setLineDash([5, 3]);
+                ctx.beginPath();
+                let hasLosses = false;
+                for (let i = 0; i < chapters.length; i++) {
+                    const stats = cumulativeStats[i];
+                    if (stats.cumTotal[enemyIdx] > 0) {
+                        const pct = (stats.cumLosses[enemyIdx] / stats.cumTotal[enemyIdx]) * 100;
+                        const x = padding.left + i * xScale;
+                        const y = padding.top + height - pct * yScale;
+                        if (!hasLosses) {
+                            ctx.moveTo(x, y);
+                            hasLosses = true;
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                }
+                if (hasLosses) ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // X labels (chapter numbers)
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * xScale;
+                if (chapters.length <= 30 || i % Math.ceil(chapters.length / 30) === 0) {
+                    ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
+                }
+            }
+
+            // Y labels (percentage)
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const val = Math.round(maxPct * (5 - i) / 5);
+                const y = padding.top + (height / 5) * i + 4;
+                ctx.fillText(val + '%', padding.left - 10, y);
+            }
+
+            // Title
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'left';
+            ctx.fillText('Unfair Battles (cumulative %)', padding.left, padding.top - 10);
+
+            // Legend
+            ctx.font = '10px Courier New';
+            let legendY = padding.top;
+
+            ctx.fillStyle = '#888';
+            ctx.fillText('Wins (solid):', padding.left + width + 10, legendY);
+            legendY += 14;
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = ENEMY_COLORS.wins[i];
+                ctx.fillRect(padding.left + width + 10, legendY, 15, 3);
+                ctx.fillStyle = '#888';
+                ctx.fillText(`${i + 1} enemy`, padding.left + width + 30, legendY + 4);
+                legendY += 14;
+            }
+
+            legendY += 10;
+            ctx.fillStyle = '#888';
+            ctx.fillText('Losses (dashed):', padding.left + width + 10, legendY);
+            legendY += 14;
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = ENEMY_COLORS.losses[i];
+                ctx.setLineDash([3, 2]);
+                ctx.strokeStyle = ENEMY_COLORS.losses[i];
+                ctx.beginPath();
+                ctx.moveTo(padding.left + width + 10, legendY);
+                ctx.lineTo(padding.left + width + 25, legendY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#888';
+                ctx.fillText(`${i + 1} enemy`, padding.left + width + 30, legendY + 4);
+                legendY += 14;
+            }
+        }
+
         // Initialize sliders with value display
         document.querySelectorAll('input[type="range"]').forEach(slider => {
             const valEl = document.getElementById(slider.id + '-val');
@@ -2250,6 +2445,61 @@
 
         itemLevelCanvas.addEventListener('mouseleave', () => {
             itemLevelTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for Unfair Battles chart
+        const unfairCanvas = document.getElementById('unfair-chart');
+        const unfairTooltip = document.getElementById('unfair-tooltip');
+
+        unfairCanvas.addEventListener('mousemove', (e) => {
+            const rect = unfairCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.unfair;
+
+            if (!data.chapters || data.chapters.length === 0) return;
+
+            const { chapters, cumulativeStats, padding, width } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > width) {
+                unfairTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.round((relX / width) * (chapters.length - 1));
+            if (idx < 0 || idx >= chapters.length) {
+                unfairTooltip.classList.remove('visible');
+                return;
+            }
+
+            const ch = chapters[idx];
+            const stats = cumulativeStats[idx];
+
+            // Build tooltip rows for each enemy count
+            let rows = '';
+            for (let i = 0; i < 3; i++) {
+                const total = stats.cumTotal[i];
+                const wins = stats.cumWins[i];
+                const losses = stats.cumLosses[i];
+                const winPct = total > 0 ? (wins / total * 100).toFixed(1) : '0.0';
+                const lossPct = total > 0 ? (losses / total * 100).toFixed(1) : '0.0';
+                rows += `<div class="tt-row"><span class="tt-label">${i + 1} enemy:</span> <span class="tt-value" style="color:#22c55e">W:${wins} (${winPct}%)</span> <span class="tt-value" style="color:#ef4444">L:${losses} (${lossPct}%)</span> / ${total}</div>`;
+            }
+
+            unfairTooltip.innerHTML = `
+                <div class="tt-title">Chapter ${ch.chapter} (cumulative)</div>
+                ${rows}
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 220 > rect.width) left = e.clientX - rect.left - 220;
+            unfairTooltip.style.left = left + 'px';
+            unfairTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            unfairTooltip.classList.add('visible');
+        });
+
+        unfairCanvas.addEventListener('mouseleave', () => {
+            unfairTooltip.classList.remove('visible');
         });
     </script>
 </body>
