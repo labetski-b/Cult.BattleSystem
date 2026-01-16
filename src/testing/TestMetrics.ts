@@ -18,7 +18,8 @@ export interface StageMetrics {
     gold: number;            // Золото у игрока
     guaranteedEveryN: number; // Текущий интервал гарантированного апгрейда
     guaranteedRarity: string; // Гарантированная редкость (на основе расчёта заполнения слотов)
-    totalDrops: number;       // Интервал гарантированного лута по редкости (каждый N-й лут)
+    rarityInterval: number;   // Интервал гарантированного лута по редкости (каждый N-й лут)
+    totalDrops: number;       // Ожидаемое количество дропов для расчёта (baseDrops + chapter*dropsPerChapter)
 }
 
 // Метрики по главе

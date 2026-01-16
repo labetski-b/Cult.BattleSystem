@@ -470,7 +470,8 @@ export class EconomyTester {
             gold: this.state.hero.gold,
             guaranteedEveryN: currentEveryN,
             guaranteedRarity: config.guaranteedRarityEnabled ? guaranteedRarity : 'common',
-            totalDrops: rarityInterval
+            rarityInterval: rarityInterval,
+            totalDrops: baseTotalDrops
         });
     }
 
