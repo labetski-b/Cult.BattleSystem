@@ -440,6 +440,12 @@
                     <div class="chart-tooltip" id="equipped-tooltip"></div>
                 </div>
 
+                <h2 style="margin-top: 30px;">Expected Rarity per Chapter (Coupon Collector)</h2>
+                <div class="chart-container">
+                    <canvas id="expected-rarity-chart" width="1100" height="280"></canvas>
+                    <div class="chart-tooltip" id="expected-rarity-tooltip"></div>
+                </div>
+
                 <h2 style="margin-top: 30px;">Power Progression by Chapter (log scale)</h2>
                 <div class="chart-container">
                     <canvas id="power-chart" width="1100" height="350"></canvas>
@@ -483,6 +489,7 @@
             lampMult: { chapters: [], stages: [], padding: {}, width: 0, height: 0 },
             rarity: { chapters: [], padding: {}, barWidth: 0 },
             equipped: { chapters: [], padding: {}, barWidth: 0 },
+            expectedRarity: { stages: [], padding: {}, barWidth: 0 },
             everyN: { stages: [], padding: {}, width: 0, height: 0 }
         };
 
@@ -846,6 +853,7 @@
             renderLampMultChart(summary.chapters, summary.stages);
             renderRarityChart(summary.chapters);
             renderEquippedChart(summary.chapters);
+            renderExpectedRarityChart(summary.stages);
             renderPowerChart(summary.chapters);
         }
 
@@ -1494,6 +1502,183 @@
                 ctx.fillText(rarity, padding.left + width + 28, legendY + 10);
                 legendY += 18;
             }
+        }
+
+        // Expected Rarity per Chapter (based on Coupon Collector formula)
+        // Shows theoretical slot distribution based on lamp weights and totalDrops
+        function renderExpectedRarityChart(stages) {
+            const canvas = document.getElementById('expected-rarity-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 120, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (stages.length === 0) return;
+
+            // Group stages by chapter (take last stage of each chapter for display)
+            const chapterStages = [];
+            let currentChapter = 0;
+            for (const stage of stages) {
+                if (stage.chapter !== currentChapter) {
+                    currentChapter = stage.chapter;
+                }
+                // Always update to get the last stage of each chapter
+                if (stage.stage === 10 || stages.indexOf(stage) === stages.length - 1) {
+                    chapterStages.push(stage);
+                }
+            }
+
+            const barWidth = width / chapterStages.length;
+
+            // Save data for tooltip
+            chartData.expectedRarity = { stages: chapterStages, padding, width, height, barWidth };
+
+            // Calculate expected rarity distribution for each chapter
+            // Using the same formula as calculateSlotBasedRarityMultiplier
+            const overrides = getOverridesFromUI();
+            const rarityMultipliers = overrides.rarityMultipliers;
+            const baseDrops = overrides.baseDropsForMultiplier;
+            const dropsPerChapter = overrides.dropsPerChapter;
+
+            // Get lamp weights from lamp-levels.json (imported via the tester)
+            // We'll compute expected distribution based on stage data
+
+            for (let i = 0; i < chapterStages.length; i++) {
+                const stage = chapterStages[i];
+                const x = padding.left + i * barWidth;
+
+                // Get slot count and totalDrops from stage
+                const totalSlots = stage.slots || 6;
+                const totalDrops = stage.totalDrops || (baseDrops + (stage.chapter - 1) * dropsPerChapter);
+                const lampLevel = stage.lampLevel;
+
+                // Calculate expected distribution
+                const expected = calculateExpectedDistribution(lampLevel, totalSlots, totalDrops, rarityMultipliers);
+
+                // Draw 100% stacked bar
+                let yOffset = 0;
+                for (const rarity of RARITY_ORDER) {
+                    const slotCount = expected[rarity] || 0;
+                    const barHeight = (slotCount / totalSlots) * height;
+
+                    if (barHeight > 0) {
+                        ctx.fillStyle = RARITY_COLORS[rarity];
+                        ctx.fillRect(x + 1, padding.top + height - yOffset - barHeight, barWidth - 2, barHeight);
+                        yOffset += barHeight;
+                    }
+                }
+            }
+
+            // X labels
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapterStages.length; i++) {
+                const x = padding.left + i * barWidth + barWidth / 2;
+                if (chapterStages.length <= 30 || i % Math.ceil(chapterStages.length / 30) === 0) {
+                    ctx.fillText(chapterStages[i].chapter.toString(), x, padding.top + height + 20);
+                }
+            }
+
+            // Y labels (percentage)
+            ctx.textAlign = 'right';
+            ctx.fillText('100%', padding.left - 10, padding.top + 4);
+            ctx.fillText('0%', padding.left - 10, padding.top + height + 4);
+
+            // Legend
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'left';
+            let legendY = padding.top;
+            for (const rarity of [...RARITY_ORDER].reverse()) {
+                ctx.fillStyle = RARITY_COLORS[rarity];
+                ctx.fillRect(padding.left + width + 10, legendY, 12, 12);
+                ctx.fillStyle = '#888';
+                ctx.fillText(rarity, padding.left + width + 28, legendY + 10);
+                legendY += 18;
+            }
+        }
+
+        // Calculate expected slot distribution using Coupon Collector formula
+        // Mirrors the logic in calculateSlotBasedRarityMultiplier
+        function calculateExpectedDistribution(lampLevel, totalSlots, totalDrops, rarityMultipliers) {
+            // Lamp weights by level (hardcoded key levels, interpolated)
+            const lampWeights = getLampWeightsForLevel(lampLevel);
+
+            const result = {};
+            for (const rarity of RARITY_ORDER) {
+                result[rarity] = 0;
+            }
+
+            // Calculate total weight
+            let totalWeight = 0;
+            for (const weight of Object.values(lampWeights)) {
+                if (weight > 0) totalWeight += weight;
+            }
+            if (totalWeight === 0) {
+                result['common'] = totalSlots;
+                return result;
+            }
+
+            // Build valid rarities with prob and mult, sorted by mult descending
+            const validRarities = [];
+            for (const [rarity, weight] of Object.entries(lampWeights)) {
+                if (weight <= 0) continue;
+                const prob = weight / totalWeight;
+                const mult = rarityMultipliers[rarity] || 1.0;
+                validRarities.push({ rarity, prob, mult });
+            }
+            validRarities.sort((a, b) => b.mult - a.mult);
+
+            // Calculate slot filling
+            let remainingSlots = totalSlots;
+
+            for (const { rarity, prob } of validRarities) {
+                if (remainingSlots < 1) break;
+
+                const drops = totalDrops * prob;
+                const expectedFilled = remainingSlots * (1 - Math.pow((remainingSlots - 1) / remainingSlots, drops));
+
+                // Skip if expectedFilled < 1
+                if (expectedFilled < 1) continue;
+
+                const filledSlots = Math.min(expectedFilled, remainingSlots);
+                result[rarity] = filledSlots;
+                remainingSlots -= filledSlots;
+            }
+
+            // Remaining slots go to common
+            if (remainingSlots > 0) {
+                result['common'] = (result['common'] || 0) + remainingSlots;
+            }
+
+            return result;
+        }
+
+        // Get lamp weights for a given level (simplified lookup)
+        function getLampWeightsForLevel(level) {
+            // Hardcoded from lamp-levels.json
+            const lampLevels = [
+                { level: 1, weights: { common: 100 } },
+                { level: 2, weights: { common: 99, good: 1 } },
+                { level: 7, weights: { common: 90, good: 10 } },
+                { level: 8, weights: { common: 80, good: 20, rare: 0.01 } },
+                { level: 15, weights: { common: 18, good: 81, rare: 1 } },
+                { level: 20, weights: { common: 8, good: 82, rare: 10 } },
+                { level: 21, weights: { good: 80, rare: 20, epic: 0.01 } },
+                { level: 28, weights: { good: 18, rare: 81, epic: 1 } },
+                { level: 33, weights: { good: 8, rare: 82, epic: 10 } }
+            ];
+
+            // Find closest level
+            let closest = lampLevels[0];
+            for (const l of lampLevels) {
+                if (l.level <= level) closest = l;
+            }
+            return closest.weights;
         }
 
         // Initialize sliders with value display
