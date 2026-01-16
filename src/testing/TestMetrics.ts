@@ -1,15 +1,19 @@
-// Статистика unfair боёв по количеству врагов
+// Статистика боёв по количеству врагов (fair/unfair)
 export interface UnfairBattleStats {
-    wins: [number, number, number];   // [1 враг, 2 врага, 3 врага] — побед при heroPower < enemyPower
-    losses: [number, number, number]; // [1 враг, 2 врага, 3 врага] — поражений при heroPower > enemyPower
-    total: [number, number, number];  // [1 враг, 2 врага, 3 врага] — всего боёв
+    wins: [number, number, number];      // [1 враг, 2 врага, 3 врага] — unfair побед (heroPower < enemyPower)
+    losses: [number, number, number];    // [1 враг, 2 врага, 3 врага] — unfair поражений (heroPower > enemyPower)
+    victories: [number, number, number]; // [1 враг, 2 врага, 3 врага] — всего побед
+    defeats: [number, number, number];   // [1 враг, 2 врага, 3 врага] — всего поражений
+    total: [number, number, number];     // [1 враг, 2 врага, 3 врага] — всего боёв
 }
 
-// Создать пустую статистику unfair
+// Создать пустую статистику
 export function createEmptyUnfairStats(): UnfairBattleStats {
     return {
         wins: [0, 0, 0],
         losses: [0, 0, 0],
+        victories: [0, 0, 0],
+        defeats: [0, 0, 0],
         total: [0, 0, 0]
     };
 }

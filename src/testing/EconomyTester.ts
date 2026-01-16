@@ -403,6 +403,8 @@ export class EconomyTester {
         const heroPower = getHeroPower(this.state.hero);
 
         if (result.victory) {
+            // Считаем победу по количеству врагов
+            this.chapterUnfairStats.victories[enemyIndex]++;
             // Проверяем "несправедливую" победу (герой слабее, но выиграл)
             if (heroPower < targetPower) {
                 this.chapterUnfairStats.wins[enemyIndex]++;
@@ -436,6 +438,8 @@ export class EconomyTester {
         } else {
             this.chapterDefeats++;
             this.stageDefeats++;
+            // Считаем поражение по количеству врагов
+            this.chapterUnfairStats.defeats[enemyIndex]++;
             // Проверяем "несправедливое" поражение (герой сильнее, но проиграл)
             if (heroPower > targetPower) {
                 this.chapterUnfairDefeats++;
@@ -532,6 +536,8 @@ export class EconomyTester {
             unfairStats: {
                 wins: [...this.chapterUnfairStats.wins] as [number, number, number],
                 losses: [...this.chapterUnfairStats.losses] as [number, number, number],
+                victories: [...this.chapterUnfairStats.victories] as [number, number, number],
+                defeats: [...this.chapterUnfairStats.defeats] as [number, number, number],
                 total: [...this.chapterUnfairStats.total] as [number, number, number]
             },
             lampLevel: this.state.lamp.level,
