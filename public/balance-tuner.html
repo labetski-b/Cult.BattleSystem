@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balance Tuner (Updated: 01-16 19:45)</title>
+    <title>Balance Tuner (Updated: 01-16 20:15)</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -446,6 +446,12 @@
                     <div class="chart-tooltip" id="expected-rarity-tooltip"></div>
                 </div>
 
+                <h2 style="margin-top: 30px;">Item Level: Expected vs Actual</h2>
+                <div class="chart-container">
+                    <canvas id="item-level-chart" width="1100" height="250"></canvas>
+                    <div class="chart-tooltip" id="item-level-tooltip"></div>
+                </div>
+
                 <h2 style="margin-top: 30px;">Power Progression by Chapter (log scale)</h2>
                 <div class="chart-container">
                     <canvas id="power-chart" width="1100" height="350"></canvas>
@@ -490,7 +496,8 @@
             rarity: { chapters: [], padding: {}, barWidth: 0 },
             equipped: { chapters: [], padding: {}, barWidth: 0 },
             expectedRarity: { stages: [], padding: {}, barWidth: 0 },
-            everyN: { stages: [], padding: {}, width: 0, height: 0 }
+            everyN: { stages: [], padding: {}, width: 0, height: 0 },
+            itemLevel: { chapters: [], padding: {}, width: 0, height: 0 }
         };
 
         // Make functions available globally
@@ -626,7 +633,8 @@
                     goldSpent: Math.round(summaries.reduce((s, r) => s + r.chapters[i].goldSpent, 0) / n),
                     maxEnemyPower: Math.round(summaries.reduce((s, r) => s + r.chapters[i].maxEnemyPower, 0) / n),
                     lootsByRarity: avgLootsByRarity,
-                    equippedByRarity: avgEquippedByRarity
+                    equippedByRarity: avgEquippedByRarity,
+                    avgItemLevel: Math.round(summaries.reduce((s, r) => s + (r.chapters[i].avgItemLevel || 0), 0) / n * 10) / 10
                 });
             }
 
@@ -854,6 +862,7 @@
             renderRarityChart(summary.chapters);
             renderEquippedChart(summary.chapters);
             renderExpectedRarityChart(summary.stages);
+            renderItemLevelChart(summary.chapters);
             renderPowerChart(summary.chapters);
         }
 
@@ -1679,6 +1688,115 @@
                 if (l.level <= level) closest = l;
             }
             return closest.weights;
+        }
+
+        // Render Item Level chart: Expected vs Actual per chapter
+        function renderItemLevelChart(chapters) {
+            const canvas = document.getElementById('item-level-chart');
+            const ctx = canvas.getContext('2d');
+
+            const padding = { top: 30, right: 120, bottom: 50, left: 80 };
+            const width = canvas.width - padding.left - padding.right;
+            const height = canvas.height - padding.top - padding.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (chapters.length === 0) return;
+
+            // Expected item level = heroLevel (which equals chapter number at end of chapter)
+            // Actual item level = avgItemLevel from chapter data
+            const maxLevel = Math.max(...chapters.map(c => Math.max(c.heroLevel, c.avgItemLevel || 0))) * 1.1;
+            const xScale = width / (chapters.length - 1 || 1);
+
+            // Save data for tooltip
+            chartData.itemLevel = { chapters, padding, width, height, xScale, maxLevel };
+
+            // Y-axis scale
+            const yScale = height / maxLevel;
+
+            // Draw grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (height / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + width, y);
+                ctx.stroke();
+            }
+
+            // Draw Expected line (heroLevel = chapter)
+            ctx.strokeStyle = '#4ade80';  // green
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * xScale;
+                const y = padding.top + height - chapters[i].heroLevel * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Draw Actual line (avgItemLevel)
+            ctx.strokeStyle = '#f97316';  // orange
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            let hasActual = false;
+            for (let i = 0; i < chapters.length; i++) {
+                const avgLevel = chapters[i].avgItemLevel || 0;
+                if (avgLevel > 0) {
+                    const x = padding.left + i * xScale;
+                    const y = padding.top + height - avgLevel * yScale;
+                    if (!hasActual) {
+                        ctx.moveTo(x, y);
+                        hasActual = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            if (hasActual) ctx.stroke();
+
+            // X labels (chapter numbers)
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < chapters.length; i++) {
+                const x = padding.left + i * xScale;
+                if (chapters.length <= 30 || i % Math.ceil(chapters.length / 30) === 0) {
+                    ctx.fillText(chapters[i].chapter.toString(), x, padding.top + height + 20);
+                }
+            }
+
+            // Y labels
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const val = Math.round(maxLevel * (5 - i) / 5);
+                const y = padding.top + (height / 5) * i + 4;
+                ctx.fillText(val.toString(), padding.left - 10, y);
+            }
+
+            // Title
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'left';
+            ctx.fillText('Item Level', padding.left, padding.top - 10);
+
+            // Legend
+            ctx.font = '11px Courier New';
+            let legendY = padding.top + 20;
+
+            ctx.fillStyle = '#4ade80';
+            ctx.fillRect(padding.left + width + 10, legendY, 20, 3);
+            ctx.fillStyle = '#888';
+            ctx.fillText('Expected', padding.left + width + 35, legendY + 4);
+            legendY += 20;
+
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(padding.left + width + 10, legendY, 20, 3);
+            ctx.fillStyle = '#888';
+            ctx.fillText('Actual', padding.left + width + 35, legendY + 4);
         }
 
         // Initialize sliders with value display

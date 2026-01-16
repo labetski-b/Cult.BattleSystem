@@ -37,6 +37,7 @@ export interface ChapterMetrics {
     maxEnemyPower: number;   // Макс. сила врагов на главе (босс)
     lootsByRarity: Record<string, number>;  // Количество лутов по редкостям { common: N, good: N, ... }
     equippedByRarity: Record<string, number>;  // Распределение экипировки по редкостям (количество слотов)
+    avgItemLevel: number;    // Средний уровень экипированных предметов
 }
 
 // Итоговые метрики теста

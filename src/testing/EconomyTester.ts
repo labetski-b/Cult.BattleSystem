@@ -37,6 +37,20 @@ function getEquippedByRarity(hero: Hero): Record<string, number> {
     return result;
 }
 
+// Средний уровень экипированных предметов
+function getAvgItemLevel(hero: Hero): number {
+    let totalLevel = 0;
+    let count = 0;
+    for (const slot of SLOT_TYPES) {
+        const item = hero.equipment[slot];
+        if (item) {
+            totalLevel += item.level;
+            count++;
+        }
+    }
+    return count > 0 ? Math.round(totalLevel / count * 10) / 10 : 0;
+}
+
 // Создание чистого GameState (без localStorage)
 function createCleanGameState(): GameState {
     const hero = createHero();
@@ -508,7 +522,8 @@ export class EconomyTester {
             goldSpent: this.chapterGoldSpent,
             maxEnemyPower: Math.floor(bossPower),
             lootsByRarity: { ...this.chapterLootsByRarity },
-            equippedByRarity: getEquippedByRarity(this.state.hero)
+            equippedByRarity: getEquippedByRarity(this.state.hero),
+            avgItemLevel: getAvgItemLevel(this.state.hero)
         });
     }
 
