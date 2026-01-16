@@ -1829,7 +1829,7 @@
             const canvas = document.getElementById('unfair-chart');
             const ctx = canvas.getContext('2d');
 
-            const padding = { top: 30, right: 180, bottom: 50, left: 80 };
+            const padding = { top: 30, right: 150, bottom: 50, left: 80 };
             const width = canvas.width - padding.left - padding.right;
             const height = canvas.height - padding.top - padding.bottom;
 
@@ -1839,13 +1839,13 @@
             if (chapters.length === 0) return;
 
             // Colors for different enemy counts
-            // Unfair: green (wins when weaker), red (losses when stronger)
-            // Fair: blue (wins when stronger), orange (losses when weaker)
+            // Fair: blue shades (combined fair wins + fair losses = expected outcomes)
+            // Unfair wins: green (weaker hero won)
+            // Unfair losses: red (stronger hero lost)
             const ENEMY_COLORS = {
+                fair: ['#3b82f6', '#2563eb', '#1d4ed8'],           // blue shades
                 unfairWins: ['#22c55e', '#16a34a', '#15803d'],    // green shades
-                unfairLosses: ['#ef4444', '#dc2626', '#b91c1c'],  // red shades
-                fairWins: ['#3b82f6', '#2563eb', '#1d4ed8'],      // blue shades
-                fairLosses: ['#f97316', '#ea580c', '#c2410c']     // orange shades
+                unfairLosses: ['#ef4444', '#dc2626', '#b91c1c']   // red shades
             };
 
             // Calculate cumulative stats (unfair + fair)
@@ -1867,10 +1867,9 @@
                         }
                     }
                 }
-                // Fair = total - unfair
-                const cumFairWins = cumVictories.map((v, j) => v - cumUnfairWins[j]);
-                const cumFairLosses = cumDefeats.map((d, j) => d - cumUnfairLosses[j]);
-                return { cumUnfairWins, cumUnfairLosses, cumFairWins, cumFairLosses, cumVictories, cumDefeats, cumTotal };
+                // Fair = (victories - unfairWins) + (defeats - unfairLosses) = total - unfairWins - unfairLosses
+                const cumFair = cumTotal.map((t, j) => t - cumUnfairWins[j] - cumUnfairLosses[j]);
+                return { cumUnfairWins, cumUnfairLosses, cumFair, cumVictories, cumDefeats, cumTotal };
             });
 
             // Find max percentage for Y scale
@@ -1880,9 +1879,8 @@
                     if (stats.cumTotal[i] > 0) {
                         const unfairWinPct = (stats.cumUnfairWins[i] / stats.cumTotal[i]) * 100;
                         const unfairLossPct = (stats.cumUnfairLosses[i] / stats.cumTotal[i]) * 100;
-                        const fairWinPct = (stats.cumFairWins[i] / stats.cumTotal[i]) * 100;
-                        const fairLossPct = (stats.cumFairLosses[i] / stats.cumTotal[i]) * 100;
-                        maxPct = Math.max(maxPct, unfairWinPct, unfairLossPct, fairWinPct, fairLossPct);
+                        const fairPct = (stats.cumFair[i] / stats.cumTotal[i]) * 100;
+                        maxPct = Math.max(maxPct, unfairWinPct, unfairLossPct, fairPct);
                     }
                 }
             }
@@ -1931,10 +1929,8 @@
 
             // Draw lines for each enemy count (1, 2, 3)
             for (let enemyIdx = 0; enemyIdx < 3; enemyIdx++) {
-                // Fair wins (blue, solid) - stronger hero won
-                drawLine(cumulativeStats.map(s => s.cumFairWins[enemyIdx]), 'fairWins', enemyIdx, false);
-                // Fair losses (orange, dashed) - weaker hero lost
-                drawLine(cumulativeStats.map(s => s.cumFairLosses[enemyIdx]), 'fairLosses', enemyIdx, true);
+                // Fair (blue, solid) - expected outcomes (stronger won OR weaker lost)
+                drawLine(cumulativeStats.map(s => s.cumFair[enemyIdx]), 'fair', enemyIdx, false);
                 // Unfair wins (green, solid) - weaker hero won
                 drawLine(cumulativeStats.map(s => s.cumUnfairWins[enemyIdx]), 'unfairWins', enemyIdx, false);
                 // Unfair losses (red, dashed) - stronger hero lost
@@ -1965,75 +1961,54 @@
             ctx.fillStyle = '#ffd700';
             ctx.font = '12px Courier New';
             ctx.textAlign = 'left';
-            ctx.fillText('Fair/Unfair Battles (cumulative %)', padding.left, padding.top - 10);
+            ctx.fillText('Battle Outcomes (cumulative %)', padding.left, padding.top - 10);
 
-            // Legend - compact 2-column layout
-            ctx.font = '9px Courier New';
+            // Legend
+            ctx.font = '10px Courier New';
             let legendY = padding.top;
-            const col1 = padding.left + width + 8;
-            const col2 = padding.left + width + 90;
+            const legendX = padding.left + width + 10;
 
-            // Column 1: Fair
+            // Fair (blue)
             ctx.fillStyle = '#888';
-            ctx.fillText('FAIR (expected):', col1, legendY);
-            legendY += 12;
-            ctx.fillStyle = '#888';
-            ctx.fillText('Win (solid):', col1, legendY);
-            legendY += 10;
+            ctx.fillText('FAIR (expected):', legendX, legendY);
+            legendY += 14;
             for (let i = 0; i < 3; i++) {
-                ctx.fillStyle = ENEMY_COLORS.fairWins[i];
-                ctx.fillRect(col1, legendY, 12, 2);
+                ctx.fillStyle = ENEMY_COLORS.fair[i];
+                ctx.fillRect(legendX, legendY, 15, 3);
                 ctx.fillStyle = '#666';
-                ctx.fillText(`${i + 1}e`, col1 + 15, legendY + 3);
-                legendY += 10;
-            }
-            legendY += 4;
-            ctx.fillStyle = '#888';
-            ctx.fillText('Loss (dash):', col1, legendY);
-            legendY += 10;
-            for (let i = 0; i < 3; i++) {
-                ctx.strokeStyle = ENEMY_COLORS.fairLosses[i];
-                ctx.setLineDash([3, 2]);
-                ctx.beginPath();
-                ctx.moveTo(col1, legendY);
-                ctx.lineTo(col1 + 12, legendY);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.fillStyle = '#666';
-                ctx.fillText(`${i + 1}e`, col1 + 15, legendY + 3);
-                legendY += 10;
+                ctx.fillText(`${i + 1} enemy`, legendX + 20, legendY + 4);
+                legendY += 12;
             }
 
-            // Column 2: Unfair
-            legendY = padding.top;
+            // Unfair wins (green)
+            legendY += 8;
             ctx.fillStyle = '#888';
-            ctx.fillText('UNFAIR (upset):', col2, legendY);
-            legendY += 12;
-            ctx.fillStyle = '#888';
-            ctx.fillText('Win (solid):', col2, legendY);
-            legendY += 10;
+            ctx.fillText('UNFAIR Win:', legendX, legendY);
+            legendY += 14;
             for (let i = 0; i < 3; i++) {
                 ctx.fillStyle = ENEMY_COLORS.unfairWins[i];
-                ctx.fillRect(col2, legendY, 12, 2);
+                ctx.fillRect(legendX, legendY, 15, 3);
                 ctx.fillStyle = '#666';
-                ctx.fillText(`${i + 1}e`, col2 + 15, legendY + 3);
-                legendY += 10;
+                ctx.fillText(`${i + 1} enemy`, legendX + 20, legendY + 4);
+                legendY += 12;
             }
-            legendY += 4;
+
+            // Unfair losses (red, dashed)
+            legendY += 8;
             ctx.fillStyle = '#888';
-            ctx.fillText('Loss (dash):', col2, legendY);
-            legendY += 10;
+            ctx.fillText('UNFAIR Loss:', legendX, legendY);
+            legendY += 14;
             for (let i = 0; i < 3; i++) {
                 ctx.strokeStyle = ENEMY_COLORS.unfairLosses[i];
                 ctx.setLineDash([3, 2]);
                 ctx.beginPath();
-                ctx.moveTo(col2, legendY);
-                ctx.lineTo(col2 + 12, legendY);
+                ctx.moveTo(legendX, legendY);
+                ctx.lineTo(legendX + 15, legendY);
                 ctx.stroke();
                 ctx.setLineDash([]);
                 ctx.fillStyle = '#666';
-                ctx.fillText(`${i + 1}e`, col2 + 15, legendY + 3);
-                legendY += 10;
+                ctx.fillText(`${i + 1} enemy`, legendX + 20, legendY + 4);
+                legendY += 12;
             }
         }
 
@@ -2522,23 +2497,20 @@
             let rows = '';
             for (let i = 0; i < 3; i++) {
                 const total = stats.cumTotal[i];
-                const fairW = stats.cumFairWins[i];
-                const fairL = stats.cumFairLosses[i];
+                const fair = stats.cumFair[i];
                 const unfairW = stats.cumUnfairWins[i];
                 const unfairL = stats.cumUnfairLosses[i];
-                const fairWPct = total > 0 ? (fairW / total * 100).toFixed(1) : '0.0';
-                const fairLPct = total > 0 ? (fairL / total * 100).toFixed(1) : '0.0';
+                const fairPct = total > 0 ? (fair / total * 100).toFixed(1) : '0.0';
                 const unfairWPct = total > 0 ? (unfairW / total * 100).toFixed(1) : '0.0';
                 const unfairLPct = total > 0 ? (unfairL / total * 100).toFixed(1) : '0.0';
                 rows += `<div class="tt-row"><span class="tt-label">${i + 1}e:</span> ` +
-                    `<span style="color:#3b82f6">FW:${fairWPct}%</span> ` +
-                    `<span style="color:#f97316">FL:${fairLPct}%</span> ` +
+                    `<span style="color:#3b82f6">Fair:${fairPct}%</span> ` +
                     `<span style="color:#22c55e">UW:${unfairWPct}%</span> ` +
                     `<span style="color:#ef4444">UL:${unfairLPct}%</span> (${total})</div>`;
             }
 
             unfairTooltip.innerHTML = `
-                <div class="tt-title">Ch ${ch.chapter} (cum.): FW=Fair Win, FL=Fair Loss, UW=Unfair Win, UL=Unfair Loss</div>
+                <div class="tt-title">Ch ${ch.chapter} (cumulative)</div>
                 ${rows}
             `;
 
