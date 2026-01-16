@@ -2132,6 +2132,125 @@
         equippedCanvas.addEventListener('mouseleave', () => {
             equippedTooltip.classList.remove('visible');
         });
+
+        // Tooltip handlers for Expected Rarity chart
+        const expectedRarityCanvas = document.getElementById('expected-rarity-chart');
+        const expectedRarityTooltip = document.getElementById('expected-rarity-tooltip');
+
+        expectedRarityCanvas.addEventListener('mousemove', (e) => {
+            const rect = expectedRarityCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.expectedRarity;
+
+            if (!data.stages || data.stages.length === 0) return;
+
+            const { stages, padding, barWidth } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > barWidth * stages.length) {
+                expectedRarityTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.floor(relX / barWidth);
+            if (idx < 0 || idx >= stages.length) {
+                expectedRarityTooltip.classList.remove('visible');
+                return;
+            }
+
+            const stage = stages[idx];
+            const overrides = getOverridesFromUI();
+            const rarityMultipliers = overrides.rarityMultipliers;
+            const baseDrops = overrides.baseDropsForMultiplier;
+            const dropsPerChapter = overrides.dropsPerChapter;
+
+            const totalSlots = stage.slots || 6;
+            const totalDrops = stage.totalDrops || (baseDrops + (stage.chapter - 1) * dropsPerChapter);
+            const lampLevel = stage.lampLevel;
+
+            // Calculate expected distribution
+            const expected = calculateExpectedDistribution(lampLevel, totalSlots, totalDrops, rarityMultipliers);
+
+            // Calculate total and percentages
+            let totalFilled = 0;
+            for (const r of RARITY_ORDER) {
+                totalFilled += expected[r] || 0;
+            }
+
+            const expectedRows = RARITY_ORDER.map(r => {
+                const count = expected[r] || 0;
+                const pct = totalSlots > 0 ? Math.round(count / totalSlots * 100) : 0;
+                return count > 0.01 ? `<div class="tt-row"><span class="tt-label" style="color:${RARITY_COLORS[r]}">${r}:</span> <span class="tt-value">${count.toFixed(1)} (${pct}%)</span></div>` : '';
+            }).join('');
+
+            expectedRarityTooltip.innerHTML = `
+                <div class="tt-title">Chapter ${stage.chapter}</div>
+                <div class="tt-row"><span class="tt-label">Lamp:</span> <span class="tt-value">${lampLevel}</span></div>
+                <div class="tt-row"><span class="tt-label">Slots:</span> <span class="tt-value">${totalSlots}</span></div>
+                <div class="tt-row"><span class="tt-label">Drops:</span> <span class="tt-value">${totalDrops}</span></div>
+                <hr style="border-color:#444; margin:4px 0">
+                ${expectedRows}
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 180 > rect.width) left = e.clientX - rect.left - 180;
+            expectedRarityTooltip.style.left = left + 'px';
+            expectedRarityTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            expectedRarityTooltip.classList.add('visible');
+        });
+
+        expectedRarityCanvas.addEventListener('mouseleave', () => {
+            expectedRarityTooltip.classList.remove('visible');
+        });
+
+        // Tooltip handlers for Item Level chart
+        const itemLevelCanvas = document.getElementById('item-level-chart');
+        const itemLevelTooltip = document.getElementById('item-level-tooltip');
+
+        itemLevelCanvas.addEventListener('mousemove', (e) => {
+            const rect = itemLevelCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const data = chartData.itemLevel;
+
+            if (!data.chapters || data.chapters.length === 0) return;
+
+            const { chapters, padding, width } = data;
+
+            const relX = x - padding.left;
+            if (relX < 0 || relX > width) {
+                itemLevelTooltip.classList.remove('visible');
+                return;
+            }
+
+            const idx = Math.round((relX / width) * (chapters.length - 1));
+            if (idx < 0 || idx >= chapters.length) {
+                itemLevelTooltip.classList.remove('visible');
+                return;
+            }
+
+            const ch = chapters[idx];
+            const expected = ch.heroLevel;
+            const actual = ch.avgItemLevel || 0;
+            const diff = actual - expected;
+            const diffStr = diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
+
+            itemLevelTooltip.innerHTML = `
+                <div class="tt-title">Chapter ${ch.chapter}</div>
+                <div class="tt-row"><span class="tt-label" style="color:#4ade80">Expected:</span> <span class="tt-value">${expected}</span></div>
+                <div class="tt-row"><span class="tt-label" style="color:#f97316">Actual:</span> <span class="tt-value">${actual.toFixed(1)}</span></div>
+                <div class="tt-row"><span class="tt-label">Diff:</span> <span class="tt-value">${diffStr}</span></div>
+            `;
+
+            let left = e.clientX - rect.left + 15;
+            if (left + 150 > rect.width) left = e.clientX - rect.left - 150;
+            itemLevelTooltip.style.left = left + 'px';
+            itemLevelTooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+            itemLevelTooltip.classList.add('visible');
+        });
+
+        itemLevelCanvas.addEventListener('mouseleave', () => {
+            itemLevelTooltip.classList.remove('visible');
+        });
     </script>
 </body>
 </html>
