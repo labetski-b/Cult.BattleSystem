@@ -11,7 +11,7 @@ import { Item, Rarity } from './types';
 import {
     RARITY_ORDER,
     getLampLevelConfig, getUnlockedSlots, rollRarity,
-    generateItemId
+    generateItemId, calculateSellPrice
 } from './config';
 
 // Параметры Guaranteed Rarity фичи
@@ -78,9 +78,15 @@ export class GuaranteedRaritySimulator extends RaritySimulator {
         const currentPower = currentItem?.power || 0;
 
         if (item.power > currentPower || isGuaranteedUpgrade) {
+            // Апгрейд — надеваем
             this.hero.equipment[item.slot] = item;
             this.updateHeroStats();
             return true;
+        } else {
+            // Не апгрейд — продаём
+            const sellPrice = calculateSellPrice(item.rarity);
+            this.hero.gold += sellPrice;
+            this.chapterGoldEarned += sellPrice;
         }
 
         this.totalIterations++;

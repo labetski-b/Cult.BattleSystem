@@ -16,11 +16,11 @@ import {
 
 import {
     STAGES_PER_CHAPTER, BASE_POWER_PER_LEVEL, POWER_GROWTH_PER_LEVEL,
-    BOSS_MULTIPLIER, GOLD_PER_ENEMY, GOLD_PER_STAGE, XP_PER_STAGE,
+    BOSS_MULTIPLIER, XP_PER_STAGE,
     HERO_BASE_HP, HERO_BASE_DAMAGE, HERO_HP_PER_LEVEL, HERO_DAMAGE_PER_LEVEL,
     SLOT_CONFIGS, RARITY_MULTIPLIERS, MAX_LAMP_LEVEL,
     getLampLevelConfig, getUpgradeCost, getUnlockedSlots,
-    getBaseStagePower, generateItemId
+    getBaseStagePower, generateItemId, calculateSellPrice
 } from './config';
 
 const DEFAULT_CONFIG: SimulatorConfig = {
@@ -224,9 +224,15 @@ export class BaselineSimulator {
         const currentPower = currentItem?.power || 0;
 
         if (item.power > currentPower) {
+            // Апгрейд — надеваем
             this.hero.equipment[slot] = item;
             this.updateHeroStats();
             return true;
+        } else {
+            // Не апгрейд — продаём
+            const sellPrice = calculateSellPrice(item.rarity);
+            this.hero.gold += sellPrice;
+            this.chapterGoldEarned += sellPrice;
         }
 
         this.totalIterations++;
@@ -286,12 +292,7 @@ export class BaselineSimulator {
             this.recordStageMetrics(this.chapter, this.stage, enemyPower);
             this.resetStageCounters();
 
-            // Награды
-            const goldReward = GOLD_PER_ENEMY * 3 + GOLD_PER_STAGE;
-            this.hero.gold += goldReward;
-            this.chapterGoldEarned += goldReward;
-
-            // XP
+            // XP (золото теперь только от продажи предметов)
             this.addXp(XP_PER_STAGE);
 
             // Переход на следующую стадию

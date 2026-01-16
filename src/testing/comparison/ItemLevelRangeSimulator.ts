@@ -10,7 +10,8 @@ import { BaselineSimulator } from './BaselineSimulator';
 import { Item, Rarity } from './types';
 import {
     getUnlockedSlots,
-    generateItemId
+    generateItemId,
+    calculateSellPrice
 } from './config';
 
 // Параметры Item Level Range фичи
@@ -55,9 +56,15 @@ export class ItemLevelRangeSimulator extends BaselineSimulator {
         const currentPower = currentItem?.power || 0;
 
         if (item.power > currentPower) {
+            // Апгрейд — надеваем
             this.hero.equipment[slot] = item;
             this.updateHeroStats();
             return true;
+        } else {
+            // Не апгрейд — продаём
+            const sellPrice = calculateSellPrice(item.rarity);
+            this.hero.gold += sellPrice;
+            this.chapterGoldEarned += sellPrice;
         }
 
         this.totalIterations++;

@@ -7,6 +7,7 @@ import { Rarity, SlotType, LampLevelConfig, SlotConfig } from './types';
 import itemsConfig from '../../../data/items.json';
 import raritiesConfig from '../../../data/rarities.json';
 import lampLevelsConfig from '../../../data/lamp-levels.json';
+import sellPricesConfig from '../../../data/sell-prices.json';
 
 // ============= КОНСТАНТЫ =============
 
@@ -22,9 +23,16 @@ export const ENEMY_POWER_GROWTH = 1.5;
 // Босс
 export const BOSS_MULTIPLIER = 1.5;
 
-// Золото
-export const GOLD_PER_ENEMY = 5;
-export const GOLD_PER_STAGE = 10;
+// Цены продажи предметов из sell-prices.json
+interface SellPriceData {
+    rarity: string;
+    minPrice: number;
+    maxPrice: number;
+}
+
+export const SELL_PRICES: Record<Rarity, { min: number; max: number }> = Object.fromEntries(
+    (sellPricesConfig as SellPriceData[]).map(c => [c.rarity, { min: c.minPrice, max: c.maxPrice }])
+) as Record<Rarity, { min: number; max: number }>;
 
 // XP
 export const XP_PER_STAGE = 1;
@@ -150,4 +158,12 @@ export function getBaseStagePower(chapter: number, stage: number): number {
  */
 export function generateItemId(): string {
     return `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Расчёт цены продажи предмета (случайная в диапазоне для редкости)
+ */
+export function calculateSellPrice(rarity: Rarity): number {
+    const priceRange = SELL_PRICES[rarity];
+    return Math.floor(priceRange.min + Math.random() * (priceRange.max - priceRange.min));
 }
