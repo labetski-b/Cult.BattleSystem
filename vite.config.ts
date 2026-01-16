@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-export default defineConfig({
-    // Base path для GitHub Pages - название репозитория
-    base: '/Cult.BattleSystem/',
+export default defineConfig(({ command }) => ({
+    // Base path: / для dev, /Cult.BattleSystem/ для build (GitHub Pages)
+    base: command === 'serve' ? '/' : '/Cult.BattleSystem/',
     server: {
         host: true, // Доступ с телефона в локальной сети
         port: 5173
@@ -18,4 +18,4 @@ export default defineConfig({
             }
         }
     }
-});
+}));
